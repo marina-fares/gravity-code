@@ -1,0 +1,234 @@
+import * as React from 'react';
+import AppBar from '@mui/material/AppBar';
+import Box from '@mui/material/Box';
+import Toolbar from '@mui/material/Toolbar';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Menu from '@mui/material/Menu';
+import MenuIcon from '@mui/icons-material/Menu';
+import Container from '@mui/material/Container';
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import MenuItem from '@mui/material/MenuItem';
+import AdbIcon from '@mui/icons-material/Adb';
+import theme from '../theme';
+import { ThemeProvider } from '@mui/material';
+import logout from '../logic/logout'
+import { Navigate, useNavigate } from "react-router-dom";
+import { end_shift } from '../../apps/start_shift/shifts_functions';
+import logo from '../../gravity.png'
+import { get_user_and_jwt } from '../logic/users';
+import { get_shift } from '../../apps/start_shift/shifts_functions';
+import { get_localstorage } from '../logic/localstorage';
+import { useEffect } from 'react';
+import Alert from '@mui/material/Alert';
+
+
+const pages = ['Available Sessions', 'Options', 'Inventory', 'Old Shift'];
+const settings = ['End Shift', 'Logout'];
+
+const NavBar = () => {
+  const [anchorElNav, setAnchorElNav] = React.useState(null);
+  const [anchorElUser, setAnchorElUser] = React.useState(null);
+  let [shift, set_shift] = React.useState();
+  let [alert, set_alert] = React.useState(false)
+  let [check_password, set_check_password] = React.useState(false)
+
+  useEffect(() => {
+    get_shift_data()
+	}, []);
+
+  function get_shift_data (){
+    let shit_data = get_shift();
+		shit_data.then((x) => {
+      if(x.square_secret !== null)
+      {
+			  set_shift(x);
+      }
+		});
+  }
+
+  const navigate = useNavigate();
+  
+  const handleOpenNavMenu = (event) => {
+    setAnchorElNav(event.currentTarget);
+  };
+  const handleOpenUserMenu = (event) => {
+    setAnchorElUser(event.currentTarget);
+  };
+
+  const handleCloseNavMenu = (e) => {
+
+        if(e.currentTarget.id === "Available Sessions")
+        {
+          navigate('/home')
+        }
+        if(e.currentTarget.id === "Inventory")
+        {
+          navigate('/inventory')
+        }
+        if(e.currentTarget.id === "Options")
+        {
+          navigate('/options')
+        }
+        if(e.currentTarget.id === "Old Shift")
+        {
+          navigate('/old_shift')
+        }
+    
+      setAnchorElNav(null);
+  };
+
+  const handleCloseUserMenu = (element) => {
+
+    if(element.currentTarget.id === 'Logout')
+    {
+      
+      logout()
+    }
+    else if(element.currentTarget.id === 'End Shift')
+    {
+      if(check_password){
+        set_alert(true)
+      }
+      else{
+        set_alert(false)
+        navigate('/end_sub_shift')
+        
+      }
+    }
+    setAnchorElUser(null);
+  };
+  
+
+  return (
+
+    <ThemeProvider theme={theme}>
+    <AppBar position="static">
+      <Container maxWidth="xl">
+        <Toolbar disableGutters>
+          <Typography
+            variant="h6"
+            noWrap
+            component="a"
+            href="/"
+            sx={{
+              mr: 2,
+              display: { xs: 'none', md: 'flex' },
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              letterSpacing: '.3rem',
+              color: 'inherit',
+              textDecoration: 'none',
+            }}
+          >
+            <img src={logo} alt="logo" style={{width: '50px', height: '50px'}}/>
+          </Typography>
+
+          <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+            <IconButton
+              size="large"
+              aria-label="account of current user"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleOpenNavMenu}
+              color="inherit"
+            >
+              <MenuIcon />
+            </IconButton>
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorElNav}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
+              open={Boolean(anchorElNav)}
+              onClose={handleCloseNavMenu}
+              sx={{
+                display: { xs: 'block', md: 'none' },
+              }}
+            >
+              {pages.map((page) => (
+                <MenuItem key={page} onClick={handleCloseNavMenu} id={page} >
+                  <Typography textAlign="center"  >{page}</Typography>
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
+          <Typography
+            variant="h5"
+            noWrap
+            component="a"
+            href=""
+            sx={{
+              mr: 2,
+              display: { xs: 'flex', md: 'none' },
+              flexGrow: 1,
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              letterSpacing: '.3rem',
+              color: 'inherit',
+              textDecoration: 'none',
+            }}
+          >
+                        <img src={logo} alt="logo" style={{width: '50px', height: '50px'}}/>
+
+          </Typography>
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+            {pages.map((page) => (
+              <Button
+                key={page}
+                id={page}
+                onClick={handleCloseNavMenu}
+                sx={{ my: 2, color: 'white', display: 'block' }}
+              >
+                {page}
+              </Button>
+            ))}
+          </Box>
+
+          <Box sx={{ flexGrow: 0 }}>
+            <Tooltip title={get_user_and_jwt().user.username}>
+              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                <Avatar alt={get_user_and_jwt().user.username} src="../../../frontend/public/gravity.png" />
+              </IconButton>
+            </Tooltip>
+            <Menu
+              sx={{ mt: '45px' }}
+              id="menu-appbar"
+              anchorEl={anchorElUser}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorElUser)}
+              onClose={handleCloseUserMenu}
+            >
+              {settings.map((setting) => (
+                <MenuItem  onClick={handleCloseUserMenu} id={setting} key={setting} >
+                  <Typography textAlign="center">{setting}</Typography>
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
+        </Toolbar>
+      </Container>
+    </AppBar>
+    </ ThemeProvider>
+
+
+  );
+};
+export default NavBar;

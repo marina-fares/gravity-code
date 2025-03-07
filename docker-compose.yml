@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+
+  app:
+    build: ./backend
+    image: "backend-app"
+    hostname: "backend-app"
+    domainname: "gravity.com"
+    container_name: "backend-app"
+    tty: true
+    stdin_open: true
+    networks:
+      gravity_default:
+        aliases:
+          - "app.gravity.com"
+    volumes:
+      - ./backend:/usr/src/app
+      - backend-pips-dir:/usr/local/lib/python3.9/site-packages:delegated
+    depends_on:
+      - db
+    ports:
+      - 5000:5000
+    environment:
+      VIRTUAL_HOST: "app.gravity.com"
+      HOST: "app.gravity.com"
+      PORT: 5000
+      HISTFILE: /usr/src/app/src/logs/.bash_history.log
+
+
+  db:
+    image: "postgres:13.7-alpine"
+    hostname: "db"
+    domainname: "gravity.com"
+    container_name: "db"
+    restart: "always"
+    networks:
+      gravity_default:
+        aliases:
+          - "db.gravity.com"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - db-logs:/var/log/postgresql
+    ports:
+      - 8001:5432
+    environment:
+      VIRTUAL_HOST: "db.gravity.com"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+
+    
+volumes:
+  db-data:
+  db-logs:
+  backend-pips-dir:
+
+networks:
+  gravity_default:
