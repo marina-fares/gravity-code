@@ -13,4 +13,4 @@ echo '== Run Migrations'
 python manage.py migrate
 
 echo '== Run Server'
-python manage.py runserver 172.31.94.113:5000
+python manage.py runserver 0.0.0.0:5000

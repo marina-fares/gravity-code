@@ -15,7 +15,7 @@ import Backdropfun from './loading'
 import delete_hold from './delete_hold'
 import BookingAPI from './booking_functions';
 
-let APP_BASE_URL = 'http://172.31.94.113:5000/api/'
+let APP_BASE_URL = 'http://44.201.165.150:5000/api/'
 
 export default function Booking() {
 

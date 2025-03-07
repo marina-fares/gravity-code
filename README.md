@@ -11,7 +11,7 @@ any variavble with the value APP_BASE_URL
 
  is set to 
 ```
-let APP_BASE_URL = 'http://172.31.94.113:5000/api/'
+let APP_BASE_URL = 'http://44.201.165.150:5000/api/'
 ```
 
 build the frontend,
