@@ -38,7 +38,7 @@ import { Row, Col } from 'react-bootstrap';
 import ResponsiveDialog from './alert'
 import { InvoicePrint } from './invoice'
 
-let APP_BASE_URL = 'http://44.201.113.49:5000/api/'
+let APP_BASE_URL = 'http://172.31.94.113:5000/api/'
 
 
 
