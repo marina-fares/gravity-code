@@ -1,6 +1,6 @@
 import { get_jwt } from './users'
 
-let APP_BASE_URL = 'http://44.201.165.150:5000/api/'
+let APP_BASE_URL = 'https://44.201.165.150.nip.io/api/'
 
 
 function app_api_post(url, data){
