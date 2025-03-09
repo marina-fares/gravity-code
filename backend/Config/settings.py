@@ -78,7 +78,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://fobook.gravitycode.me',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = 'Config.urls'
 
 TEMPLATES = [
