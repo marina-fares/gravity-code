@@ -37,7 +37,7 @@ if PLATFORM == 'DEVELOPMENT':
 
 elif PLATFORM == 'PRODUCTION':
     DEBUG = False
-    ALLOWED_HOSTS = []
+    ALLOWED_HOSTS = ['fobook.gravitycode.me']
 
 # Application definition
 
@@ -74,7 +74,11 @@ CORS_ALLOWED_ORIGINS = [
     'https://fobook.gravitycode.me'
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://fobook.gravitycode.me',
+]
+
+CORS_ALLOW_ALL_ORIGINS = False
 ROOT_URLCONF = 'Config.urls'
 
 TEMPLATES = [
