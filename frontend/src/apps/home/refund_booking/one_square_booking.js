@@ -37,7 +37,7 @@ import { experimentalStyled as styled } from '@mui/material/styles';
 import { Row, Col } from 'react-bootstrap';
 import ResponsiveDialog from './alert'
 
-let APP_BASE_URL = 'https://44.201.165.150.nip.io/api/'
+let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
 
 
 

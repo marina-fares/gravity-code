@@ -38,7 +38,7 @@ import { Row, Col } from 'react-bootstrap';
 import ResponsiveDialog from './alert'
 import { InvoicePrint } from './invoice'
 
-let APP_BASE_URL = 'https://44.201.165.150.nip.io/api/'
+let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
 
 
 

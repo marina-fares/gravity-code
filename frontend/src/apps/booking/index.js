@@ -15,7 +15,7 @@ import Backdropfun from './loading'
 import delete_hold from './delete_hold'
 import BookingAPI from './booking_functions';
 
-let APP_BASE_URL = 'https://44.201.165.150.nip.io/api/'
+let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
 
 export default function Booking() {
 
