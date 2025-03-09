@@ -70,7 +70,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     'http://frontend.gravity.com:3001',
     # 'http://44.201.165.150:3000'
-    'http://44.201.165.150:5000'
+    'http://44.201.165.150:5000',
+    'https://fobook.gravitycode.me:5000'
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
