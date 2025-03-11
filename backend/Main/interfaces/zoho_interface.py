@@ -7,7 +7,7 @@ import random
 import json
 import time
 from dotenv import load_dotenv
-
+import os
 class ZohoApiInterface(json.JSONEncoder):
     def __init__(self, domain=ZOHO_DOMAIN_URL, env_id=ZOHO_ENV_ID, access_key=ZOHO_ACCESS_KEY, client_id=ZOHO_CLIENT_ID, client_secret=ZOHO_CLIENT_SECRET, refresh_token=ZOHO_REFRESH_TOKEN):
         self.domain = domain
@@ -33,25 +33,38 @@ class ZohoApiInterface(json.JSONEncoder):
         self.make_zoho_request(request_type, url, payload)
         print("✅ Token refreshed successfully!")
 
+
     def update_access_token(self, new_access_token):
-        print("-----------------------37")
-    # Get the path to the .env file
-        env_path = '.env'
-        
+        env_path = '/usr/src/app/.env'
+
         # Load the existing .env file into a dictionary
         with open(env_path, 'r') as f:
             lines = f.readlines()
 
-        # Update the line that contains ZOHO_ACCESS_TOKEN
-        print("---------------------------46")
+        updated = False  # Track if we updated the key
+
+        # Rewrite the .env file with updated value
         with open(env_path, 'w') as f:
             for line in lines:
-                if line.startswith('ZOHO_ACCESS_KEY'):
+                if line.startswith('ZOHO_ACCESS_KEY='):
                     f.write(f'ZOHO_ACCESS_KEY="{new_access_token}"\n')
-                    print("--------------------------50 the token updated")
+                    updated = True  # Mark as updated
+                    print("✅ Token updated successfully")
                 else:
                     f.write(line)
-        load_dotenv(".env")
+
+            # If the key was not found, add it
+            if not updated:
+                f.write(f'ZOHO_ACCESS_KEY="{new_access_token}"\n')
+                print("✅ Token added successfully")
+
+        # Reload the .env file
+        load_dotenv()
+        print("the new token is", new_access_token)
+        # Update the environment variable for the current process
+        os.environ["ZOHO_ACCESS_KEY"] = new_access_token
+        print("✅ Environment variable updated in memory")
+
 
 
 
