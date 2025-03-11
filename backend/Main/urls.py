@@ -7,6 +7,7 @@ from Main.apis.promo_code_api import PromoCodeApis
 from django.contrib.auth.models import Group
 from .apis import SquareAPI, VerifyUserToken
 from .apis.Bookeo_api import BookeoAPI
+from .apis.Zoho_api import ZohoAPI
 from .apis.users import UsersGroups
 
 urlpatterns = [
@@ -14,6 +15,7 @@ urlpatterns = [
     path('current_group/', UsersGroups.as_view(), name='current_group'),  
     path('square/', SquareAPI.as_view(), name='square'),
     path('bookeo/', BookeoAPI.as_view(), name='bookeo'),
+    path('zoho/', ZohoAPI.as_view(), name='zoho'),
     path('shift/', GetShiftApi.as_view(), name='shift'),
     # post to profile history
     path('old_shift/', GetOldShiftApi.as_view(), name='old_shift'), 

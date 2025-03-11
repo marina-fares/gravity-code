@@ -16,7 +16,7 @@ from pathlib import Path
 from platform import platform
 import dotenv
 
-dotenv.read_dotenv(os.path.join(
+dotenv.load_dotenv(os.path.join(
     os.path.dirname(os.path.dirname(__file__)), '.env'))
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -200,3 +200,11 @@ SQUARE_API_KEY = os.environ.get('SQUARE_API_KEY')
 BOOKEO_API_URL = os.environ.get('BOOKEO_API_URL')
 BOOKEO_API_KEY = os.environ.get('BOOKEO_API_KEY')
 BOOKEO_API_SECRET = os.environ.get('BOOKEO_API_SECRET')
+
+ZOHO_ACCESS_KEY = os.environ.get('ZOHO_ACCESS_KEY')
+ZOHO_ENV_ID = os.environ.get('ZOHO_ENV_ID')
+ZOHO_DOMAIN_URL = os.environ.get('ZOHO_DOMAIN_URL')
+ZOHO_REFRESH_TOKEN = os.environ.get('ZOHO_REFRESH_TOKEN')
+ZOHO_CLIENT_ID = os.environ.get('ZOHO_CLIENT_ID')
+ZOHO_CLIENT_SECRET = os.environ.get('ZOHO_CLIENT_SECRET')
+

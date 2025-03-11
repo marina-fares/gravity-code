@@ -23,6 +23,7 @@ RUN python --version
 RUN pip uninstall -y pipenv setuptools virtualenv
 RUN pip install --upgrade pip
 RUN pip install pipenv --upgrade
+RUN pip install python-dotenv
 
 # Copy Pipfile and Pipfile.lock, then install dependencies using pipenv
 COPY Pipfile.lock /usr/src/app/
