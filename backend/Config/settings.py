@@ -71,7 +71,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://frontend.gravity.com:3001',
     # 'http://44.201.165.150:3000'
     'http://44.201.165.150:5000',
-    'https://fobook.gravitycode.me'
+    'https://fobook.gravitycode.me',
+    'http://localhost:3001'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
