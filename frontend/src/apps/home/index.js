@@ -23,6 +23,7 @@ export default function Home({shift}){
         x.then((y)=> {
             (y.current_shift_id === null)?set_hide(true): set_hide(false)
            set_shift_data(y)
+           console.log("shift data", y)
         })
 
     }, []);
@@ -30,7 +31,7 @@ export default function Home({shift}){
 
     return (
         <>
-            { shift_data && (!hide) ? <Grid container spacing={2}>
+            { shift_data && (shift_data.current_shift_id !== null) && (shift_data.start_time !== null) ? <Grid container spacing={2}>
                 <Grid item xs={12} md={2} style={{marginTop:85}}>
                 <HomeInput date={date} set_date={set_date} set_session_type={set_session_type}/>
                 </Grid>
@@ -41,7 +42,7 @@ export default function Home({shift}){
                 </Grid>
             </Grid>
             :
-            <div>Loading Your shift..., If you haven't started your shift yet, kindly do so.</div>
+            <div>Loading Your shift..., If you haven't started your shift yet, kindly do so1.</div>
         }
 
             </>

@@ -184,7 +184,21 @@ function get_payment_from_square(){
       })
 }
 
+// delete booking in zoho
 function delete_booking(){
+    app_api_get('zoho/', {
+        "request_type": "delete",
+        "url": `/salesreceipts/${booking.sourceIp.split('+')[2]}`,
+        "payload":{},
+    })
+    .then(response => {    
+    console.log(response)
+    delete_booking_2()
+    
+    })
+
+}
+function delete_booking_2(){
     app_api_get('bookeo/', {
         "request_type": "delete",
         "url": `/bookings/${booking_id}`,

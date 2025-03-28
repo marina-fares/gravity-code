@@ -96,7 +96,23 @@ async function end_shift(shift, sub_shift) {
 	// console.log(win)
 }
 
-function get_catalog() {
+async function get_zoho_items(){
+	let zoho_items = {}
+	await app_api_get('zoho/', {
+		request_type: 'get',
+		url: '/items',
+		payload: {},
+	}).then((response)=>{
+		response.items.forEach((item)=>{
+			zoho_items[item.description.split('_')[1]] = [item.item_id, item.rate]
+			console.log("-----------108", zoho_items)
+		})
+		console.log("-----------------110", zoho_items)
+		set_localstorage("zoho_items", JSON.stringify(zoho_items))
+	})
+}
+async function get_catalog() {
+	get_zoho_items()
 	return app_api_get('square/', {
 		request_type: 'get',
 		url: '/catalog/list',
@@ -136,11 +152,14 @@ function get_catalog() {
 			
 
 				item[item_name] = item_id 
-				let old_cat = category_items[obj["item_data"]["category_id"]] 
-				category_items[obj["item_data"]["category_id"]] =  Object.assign({}, old_cat, item);
+				let old_cat = category_items[obj["item_data"]["categories"][0]["id"]] 
+				console.log("------------------156")
+				console.log(obj["item_data"])
+				category_items[obj["item_data"]["categories"][0]["id"]] =  Object.assign({}, old_cat, item);
 					
 				}})
-
+		
+		
 		set_localstorage("category_ids",JSON.stringify(category_ids))
 		set_localstorage("category_items",JSON.stringify(category_items))
 		console.log(category_ids)

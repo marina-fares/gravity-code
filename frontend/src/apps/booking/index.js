@@ -42,9 +42,11 @@ export default function Booking() {
     let [customer_data, set_customer_data] = useState([])
     let [category_ids, set_category_ids] = useState(JSON.parse(get_localstorage('category_ids')))
     let [category_items, set_category_items] = useState(JSON.parse(get_localstorage('category_items')))
+    let [zoho_items, set_zoho_items] = useState(JSON.parse(get_localstorage('zoho_items')))
     // the ids that will add in the square API
     let [options_square_ids, set_options_square_ids] = useState([])
     let [options_square_items, set_options_square_items] = useState([])
+    let [options_zoho_items, set_options_zoho_items] = useState([])
     let [bookingsuccess, set_bookingsuccess] = useState(false)
     let [square_receipt_number, set_square_receipt_number] = useState()
     let [booking_bookeo, set_booking_bookeo] = useState(false)
@@ -52,8 +54,8 @@ export default function Booking() {
     let [open, setOpen] = useState(false)
     let [value, set_value] = useState(false)
     let [test, set_test] = useState(category_items[category_ids[booking_session_object["name"]]])
-    // one hour, two hours
-    let [category_of_session, set_category_of_session] = useState(category_items[category_ids[booking_session_object["name"]]]["1HR Park"])
+    // for the number of players item for square, this is the name of the session type
+    let [category_of_session, set_category_of_session] = useState("1HR Park")
 
     let [square_order_id, set_square_order_id] = useState()
     let [payment_ids, set_payment_ids] = useState([]);
@@ -63,17 +65,18 @@ export default function Booking() {
 const navigate = useNavigate()
 
 
-// For the popup menu
+// set the payment variable
 function set_firstPaid_fun(e){
     const value = Math.max(0, Math.min(10000000000, Number(e.target.value)));
     set_firstPaid(value);
 };
 
-// for loading the page
+// stop loading the page
 const handleClose = () => {
     setOpen(false);
 };
 
+// start loading the page
 const handleToggle = () => {
     setOpen(!open); 
 };     
@@ -85,15 +88,25 @@ if(bookingsuccess){
     navigate("/")
 }
 else{
-    set_alert(false)
+    set_alert(false) // no error
     setOpen(false)
 }
 };
 
+useEffect(()=>{
+    console.log("zoho items", JSON.parse(get_localstorage('zoho_items')))
+    console.log(category_of_session)
+if(category_ids != undefined)
+{
+    set_test(category_items[category_ids[booking_session_object["name"]]])
+    console.log("----------------------100")
+    console.log(category_items)
+    console.log(category_ids)
+}
+}, [category_ids, category_items])
 
 // delete anu holds on startup
 useEffect(() => {
-
     var shift_data = get_shift()
     shift_data.then((x) => {
         set_updated_shift(x);
@@ -105,7 +118,6 @@ useEffect(() => {
 }
     console.log("shift in the booking page")
     console.log(updated_shift)
-    
 
     let headers = {
         'Content-Type': 'application/json'
@@ -139,81 +151,125 @@ get_sub_shift().then((x) => {
 
 // set Dictionary of selected options key:value 
 function set_options_fun(e){ 
-set_options(options => ({
-    ...options,
-    [e.target.name]: ((e.target.value.length === 0 ))? 0: e.target.value
-}));
+
+    set_options(options => ({
+        ...options,
+        [e.target.name]: e.target.value.length === 0 ? 0 : e.target.value
+    }));
 }
 
-// set Array of options for bookeo and square 
+// set Array of options for bookeo and square and zoho
 function set_arr_options_fun(){
 set_arr_options([])
 set_options_square_ids([])
+set_options_zoho_items([])
+
+
 // Bookeo Options 
+console.log("--------------------options_zoho_items", options_zoho_items)
 for( let key in options)
 {
     set_arr_options(arr_options => (
         [
             ...arr_options,{   
     ["name"]: key,
-    ["value"]: options[key]
+    ["value"]: options[key][0]
     }]));    
 }
 
+// add the number of players in the line items 
+    // in case there is no promocode or we have promocode for bookeo only
+    set_options_zoho_items(((promocode && promocode.duration > 1)||(!promocode))? 
+    [{
+        ["item_id"]: zoho_items[category_of_session][0],
+        ["quantity"]: (numbers[0]["number"]).toString(),
+        ["rate"]: zoho_items[category_of_session][1],
+        "tax_id": "5118629000000088105"
+    }] : 
+    // in case we have promocode for the number of players only
+    (promocode && promocode.duration == 1 )?[{
+        ["item_id"]: zoho_items[category_of_session][0],
+        ["quantity"]: (numbers[0]["number"]).toString(),
+        ["rate"]: zoho_items[category_of_session][1],
+        "tax_id": "5118629000000088105",
+        "discount": zoho_items[category_of_session][1]*(numbers[0]["number"])  * Number(promocode.percentage)/100
+    }] :
+    []
+)
+
+    for (const [key, value] of Object.entries(options)) {
+        
+        if(value !== 0)
+        {
+            set_options_zoho_items(options_zoho_items => ((promocode && !promotrue)?
+        [
+                    ...options_zoho_items,{   
+            ["quantity"]: (value).toString(),
+            ["item_id"]: zoho_items[key][0],
+            ["rate"]: zoho_items[key][1],
+            "tax_id": "5118629000000088105",
+            "discount": zoho_items[key][1]*(value) * Number(promocode.percentage)/100
+            
+        }] :
+
+        [
+                    ...options_zoho_items,{   
+            ["quantity"]: (value).toString(),
+            ["item_id"]: zoho_items[key][0],
+            ["rate"]: zoho_items[key][1],
+            "tax_id": "5118629000000088105"
+            
+        }]
+    
+    ));
+    
+        }
+    }
+
+
 // square options
-// if promocode
+// Add the number of players in square options
 if(promocode)
 {
-// don't calculate the number of players in square
-if(promocode.duration > 1)
-{
-    console.log("promooooooooooooooo")
-    console.log(promocode.duration)
-}
-// calculare the number of players 
-else{
-    if(promotrue){
-        set_options_square_ids([Object.assign({}, {
-            ["quantity"]: (numbers[0]["number"]).toString(),
-            ["catalog_object_id"]: category_of_session,
-        } , {"applied_discounts":[0]})])
+    // don't calculate the number of players in square
+    if(promocode.duration > 1)
+    {
+        console.log("promooooooooooooooo")
+        console.log(promocode.duration)
     }
+    // calculare the number of players in square
     else{
-        set_options_square_ids([{
-            ["quantity"]: (numbers[0]["number"]).toString(),
-            ["catalog_object_id"]: category_of_session,
-        }    
-        ])
+        if(promotrue){
+            set_options_square_ids([Object.assign({}, {
+                ["quantity"]: (numbers[0]["number"]).toString(),
+                ["catalog_object_id"]: category_items[category_ids[booking_session_object["name"]]][category_of_session],
+            } , {"applied_discounts":[0]})])
+        }
+        else{
+            set_options_square_ids([{
+                ["quantity"]: (numbers[0]["number"]).toString(),
+                ["catalog_object_id"]: category_items[category_ids[booking_session_object["name"]]][category_of_session],
+            }    
+            ])
+        }
+        
     }
-    
 }
-}
-
 else{
-
+// set the number of players in squaree
 set_options_square_ids([{
     ["quantity"]: (numbers[0]["number"]).toString(),
-    ["catalog_object_id"]: category_of_session,
+    ["catalog_object_id"]: category_items[category_ids[booking_session_object["name"]]][category_of_session],
 }])
+
+
+
     
 }
-
-
+// add the options to square options
 for (const [key, value] of Object.entries(options)) {
-    console.log("options = " , options)
-    console.log(options_square_ids)
-    console.log(key)
-    console.log(value)
-    console.log(category_items[category_ids[ booking_session_object["name"]+"+"]])
-    console.log(category_items[category_ids["Add On"]])
-    console.log(category_items)
-    console.log(category_items[category_ids["Add On"]][key]?category_items[category_ids["Add On"]][key] : category_items[category_ids[ booking_session_object["name"]+"+"]][key])
-    console.log(category_items[category_ids[ booking_session_object["name"]+"+"]][key])
-    console.log([ booking_session_object["name"]+"+"])
-    console.log(category_ids[ booking_session_object["name"]+"+"])
     if(value !== 0)
     {
-
         set_options_square_ids(options_square_ids => (
             [
                 ...options_square_ids,{   
@@ -223,9 +279,10 @@ for (const [key, value] of Object.entries(options)) {
     }]));
 
     }
-
-
 }
+
+console.log("-------------------246", options_square_ids)
+console.log(options_zoho_items)
 }
 
 // get the number of players for bookeo
@@ -353,9 +410,14 @@ function setnote(event){
 
   
   
-function set_category_of_session_fun(e){  
+function set_category_of_session_fun(e){ 
+    console.log("categoty of the session")
+    console.log(test)
+    console.log(e.target.value)
     set_category_of_session(e.target.value)
 }
+
+
 
 // base_price_money
 
@@ -369,7 +431,7 @@ return (
            
             <Backdropfun open={open}/>
             <ResponsiveDialog 
-            options_square_items = {options_square_items}
+            options_square_items = {options_square_items} options_zoho_items ={options_zoho_items}
             square_receipt_number={square_receipt_number} updated_shift={updated_shift} square_totalprice={square_totalprice}
             firstPaid = {firstPaid} firstPaid_method ={firstPaid_method}
             bookingsuccess={bookingsuccess} alert={alert} message={message} handleCloseAlert={handleCloseAlert}  
@@ -405,20 +467,20 @@ return (
                             <FormControlLabel 
                             control={<Checkbox checked={promotrue} onChange={((e)=>set_promotrue(!promotrue))} />}
                             />
+
+
                         </Card>
 
                         
 
  
-
+{/* we will read the categoty from sqaure using session_name like park category */}
                         <RadioGroup
                                 row
                                 aria-labelledby="demo-row-radio-buttons-group-label"
                                 name="row-radio-buttons-group"
-                                defaultValue="1HR Park"
                                 value={category_of_session}
                                 onChange={(e) => {
-
                                     set_category_of_session_fun(e)}
                                 }
                                 
@@ -427,10 +489,11 @@ return (
                         //Row For Each option
                         
                         // <FormControlLabel checked={((key=="1HR Park")?true:false)} label={key} value={val}  control={<Radio />} className="w-20 m-0 p-0" />
-                        <FormControlLabel key={key} label={key} value={val}  control={<Radio />} className="w-20 m-0 p-0" />
+                        <FormControlLabel key={key} label={key} value={key}  control={<Radio />} className="w-20 m-0 p-0" />
                         
                         ))} 
                         </RadioGroup>
+
 
                         <Autocomplete
                             disablePortal
@@ -487,8 +550,8 @@ return (
         updated_shift={updated_shift} square_receipt_number={square_receipt_number} set_square_receipt_number={set_square_receipt_number}
         promotrue={promotrue} set_arr_options_fun={set_arr_options_fun} firstPaid={firstPaid} firstPaid_method={firstPaid_method}
         options_square_ids={options_square_ids} set_square_totalprice={set_square_totalprice} set_options_square_items={set_options_square_items} set_alert={set_alert}
-        set_message={set_message} handleClose={handleClose} customer={customer} totalprice={totalprice} options_square_items={options_square_items}
-        event_id={event_id} arr_options={arr_options} note={note} category_items={category_items} category_ids={category_ids}
+        set_message={set_message} handleClose={handleClose} customer={customer} totalprice={totalprice} options_square_items={options_square_items} options_zoho_items = {options_zoho_items}
+        event_id={event_id} arr_options={arr_options} note={note} category_items={category_items} category_ids={category_ids} 
         handleToggle={handleToggle} set_customer={set_customer}  square_order_id={square_order_id}
         set_square_order_id={set_square_order_id} payment_ids={payment_ids} set_payment_ids={set_payment_ids} set_booking_bookeo={set_booking_bookeo}
         booking_bookeo={booking_bookeo} create_order_flag={create_order_flag} current_eventid = {event_id} sub_shift = {sub_shift} set_alert_threshold_amount = {set_alert_threshold_amount}
@@ -510,8 +573,8 @@ return (
                             </h1>
                             {/* number for each option */}
                             {    item.maxValue === 1
-                                    ? <Input className='form-control d-flex flex-column justify-content-start w-25 ' inputProps={{ min: item.minValue, max: item.maxValue }} onChange={(e) => {set_options_fun(e)}} type="checkbox"  name={item.name} label ={item.name} />
-                                    : <Input default={0} className='form-control d-flex flex-column justify-content-start w-25 ' inputProps={{ min: 0, max: item.maxValue }} onChange={(e) => {set_options_fun(e)}} type="number"  name={item.name} label ={item.name}  step="1" />
+                                    ? <Input className='form-control d-flex flex-column justify-content-start w-25 ' inputProps={{ min: item.minValue, max: item.maxValue }} onChange={(e) => {set_options_fun(e)}} type="checkbox"  name={item.name} id={item.id} label ={item.name} />
+                                    : <Input default={0} className='form-control d-flex flex-column justify-content-start w-25 ' inputProps={{ min: 0, max: item.maxValue }} onChange={(e) => {set_options_fun(e)}} type="number"  name={item.name} id={item.id}  step="1" />
                             }   
                         </Card>
                 

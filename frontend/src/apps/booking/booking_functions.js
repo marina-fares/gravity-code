@@ -40,43 +40,38 @@ export default function BookingAPI(data) {
     let [enventory_updated, set_enventory_updated] = useState(false)
     let [three_sessions, set_three_sessions] = useState([])
     const [current_group, set_current_group] = useState();
+    let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
 
+
+// in the start of the page, without condition
+// get three sessions API
+// get the user's group details
 useEffect(() => {
-// get the three sessions API 
-        let startTime = new Date()
-        console.log(startTime)
-        let endTime = new Date(startTime)
-		endTime.setDate(startTime.getDate() + 31)
-        console.log(endTime)
-            app_api_get('bookeo/', {
-                "request_type": "get",
-                "url": "/availability/slots",
-                "payload": { "startTime": startTime , "endTime" : endTime,productId: booking_session_object.productId},
-              }).then(response => {
-                console.log(data.current_eventid)
-                console.log(typeof(response.data))
-                console.log(response.data)
-                for (let i=0  ; i< Object.keys(response.data).length ; i++ )
+    let startTime = new Date()
+    let endTime = new Date(startTime)
+    endTime.setDate(startTime.getDate() + 31)
+    app_api_get('bookeo/', {
+        "request_type": "get",
+        "url": "/availability/slots",
+        "payload": { "startTime": startTime , "endTime" : endTime,productId: booking_session_object.productId},
+        }).then(response => {
+        for (let i=0  ; i< Object.keys(response.data).length ; i++ )
+        {
+            if(response.data[i].eventId == data.current_eventid)
+            {
+                for (let j = i+1 ; j< Object.keys(response.data).length ; j++)
                 {
-                    console.log(response.data[i])
-                    console.log(typeof(response.data[i]))
-                    if(response.data[i].eventId == data.current_eventid)
-                    {
-                        for (let j = i+1 ; j< Object.keys(response.data).length ; j++)
-                        {
-                            console.log(response.data[j])
-                            set_three_sessions(three_sessions => (
-                                [
-                                    ...three_sessions, response.data[j]
-                                ]  
-                                 ))         
-                        }
-                        console.log(three_sessions)
-                        break
-                    }
-                    
+                    set_three_sessions(three_sessions => (
+                        [
+                            ...three_sessions, response.data[j]
+                        ]  
+                            ))         
                 }
-            })
+                break
+            }
+            
+        }
+    })
             
     // get the user's group details
     let current_group_data = app_get('current_group/')
@@ -90,6 +85,7 @@ useEffect(() => {
 }, []);
 
 
+// on any change in the booking page
 useEffect(()=>{
     if(!data.bookingsuccess){
         console.log("options")
@@ -99,44 +95,8 @@ useEffect(()=>{
 
 },[data.options, data.numbers, data.category_of_session, data.promocode, data.promotrue])
 
-
-useEffect(()=>{
-    if(enventory_updated)
-    {
-        data.set_bookingsuccess(true)
-    }
-},[enventory_updated])
-
-useEffect(()=>{
-    console.log("booking success", data.bookingsuccess)
-    if(!data.bookingsuccess && data.square_receipt_number && data.square_order_id)  {
-        bookeo_api()
-    }
-},[data.square_receipt_number])
-
-useEffect(() => {
-if(!data.bookingsuccess){
-    if(data.square_order_id){
-        create_payment_api()
-    }
-}
-}, [data.square_order_id])
-
-useEffect(()=>{
-    console.log("booking flag use effect1")
-if(data.booking_bookeo){
-
-    if(data.firstPaid_method === "cash")
-    {
-        pay_order_api()
-    }
-    else{
-        update_inventory()
-    }
-
-}
-},[data.booking_bookeo])
-
+// condition 1
+// start with the first function
 useEffect(()=>{
     if(data.create_order_flag)
     {
@@ -145,8 +105,60 @@ useEffect(()=>{
     
 },[data.create_order_flag])
 
+// condition 2
+// if the order is created in square 
+// go to phase 3
+useEffect(() => {
+    if(!data.bookingsuccess){
+        if(data.square_order_id){
+            create_payment_api()
+        }
+    }
+    }, [data.square_order_id])
+
+// Condition 3
+// if the square create payment api is done
+// go to phase 5
+useEffect(()=>{
+    console.log("booking success", data.bookingsuccess)
+    if(!data.bookingsuccess && data.square_receipt_number && data.square_order_id)  {
+        create_sales_receipt()
+    }
+},[data.square_receipt_number])
+
+// Condition 4
+// if the sales receipt is created
+// go to phase 5
+useEffect(()=>{
+    if(!data.bookingsuccess && zoho_sales_receipt_id)  {
+        bookeo_api()
+    }
+},[zoho_sales_receipt_id])
+
+// Condition 5
+// if the booking is created in bookeo
+// go to phase 
+useEffect(()=>{
+    if(data.booking_bookeo){
+        pay_order_api()
+    
+    }
+    },[data.booking_bookeo])
+
+// Condition 6
+// if the enventory updated
+// set booking_success_flag true which print the receipt
+useEffect(()=>{
+    if(enventory_updated)
+    {
+        data.set_bookingsuccess(true)
+    }
+},[enventory_updated])
+
+
 //phase 1 
 // check the customer name and money 
+// go to phase 2
 function Book(){
     data.handleToggle()
     if(!data.customer.firstName || !data.customer.lastName)
@@ -165,6 +177,7 @@ function Book(){
 
 // phase 2
 // create an order in square
+// go to condition 2
 function create_order_api(){
 
     app_api_get('square/', {
@@ -193,6 +206,7 @@ function create_order_api(){
 
 // Phase 3
 // create payment at square
+// go to condition 3
 function create_payment_api(){
     data.set_booking_bookeo(false)
     app_api_get('square/', {
@@ -209,11 +223,12 @@ function create_payment_api(){
                 },
             "autocomplete": (data.firstPaid_method === "cash")?false: true, 
             "team_member_id": data.updated_shift.square_team_member_id,
-            "customer_id": data.updated_shift.customer_id
+            "customer_id": data.updated_shift.customer_id,
+            "location_id": data.updated_shift.square_location_id
             }
     }).then(response => {
     // if the api succed
-    if(response.payment){
+    if(!response.errors){
         data.set_payment_ids(response.payment.id)
         data.set_square_receipt_number( response.payment.receipt_number)
     }
@@ -226,8 +241,9 @@ function create_payment_api(){
 
 }
 
-// phase 5
+// phase 6
 // pay order in square
+// go to condition 4
 function pay_order_api(){
     console.log("pay order function")
     console.log(data.square_order_id)
@@ -241,7 +257,7 @@ app_api_get('square/', {
     
     if(response.order)
     {
-        update_inventory()
+        // create_sales_receipt()
     }
     else{
         data.set_payment_ids()
@@ -252,8 +268,9 @@ app_api_get('square/', {
 
 }
   
-// phase 4
+// phase 5
 // create booking in bookeo
+// go to condition 6
 function bookeo_api(){
 
     set_bookbutton(true)
@@ -283,7 +300,7 @@ function bookeo_api(){
                     "paymentMethod": data.firstPaid_method}],     
                 "externalRef": (data.note)?((data.note.length > 64)? data.note.slice('',54): data.note):'',
                 "creationAgent": get_user_and_jwt().user.username,
-                "sourceIp": data.square_order_id + '+' + get_user_and_jwt().user.username
+                "sourceIp": data.square_order_id + '+' + get_user_and_jwt().user.username + '+' + zoho_sales_receipt_id
             }
         }).then(response => {
                 if(response.httpStatus){
@@ -345,8 +362,46 @@ else{
     }
 }
 
+// Phase 4
+// create sales receipt in zoho
+function create_sales_receipt(){
+    const today = new Date();
+    app_api_get('zoho/', {
+        "request_type": "post",
+        "url": "/salesreceipts",
+        "payload": {
+                "is_generic_customer": true,
+                "customer_name": "Walk-in Customer",
+                "date": today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0'),
+             "line_items": data.options_zoho_items,
+             "payment_mode": "Cash",
+             "custom_fields": [{
+               "label": "Product",
+                       "value": "Park"
+             },
+               {
+                 "label": "Gravity Branch",
+                 "value": "3skies"
+               }
+             ]
+             }
+        
+    }).then(response => {
+        console.log(response)
+        if (response.code == 0)
+        {
+            set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id)
+            update_inventory()
+        }
+        else{
+            data.set_alert(true)
+            data.set_message(response.message)
+        }
 
-// phase 6
+    })
+}
+
+// phase 7
 // update inventory "update the shift and sub_shift data"
 async function update_inventory(){
     console.log("111111111111111111111111111111111111")

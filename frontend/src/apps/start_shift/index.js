@@ -11,6 +11,7 @@ import { app_api_post } from '../../components/logic/apis';
 import { get_localstorage } from '../../components/logic/localstorage';
 import Backdropfun from '../../components/logic/loading'
 import ResponsiveDialog from '../../components/logic/alert'
+import { app_api_get } from '../../components/logic/apis';
 
 export default function StartShift() {
 	let [shift, set_shift] = useState({});
@@ -23,7 +24,10 @@ export default function StartShift() {
 	let [message, set_message] = useState()
 
 
+
 	useEffect(() => {
+		
+		
 		get_catalog().then((response) => {
 			set_catalog(response);
 		});
@@ -38,7 +42,7 @@ export default function StartShift() {
 			let shit_data = get_shift();	
 			shit_data.then((x) => {
 				// check if the user started the shift go to home 
-				if (x && x.start_time && !x.end_time ) {
+				if (x && x.start_time && !x.end_time && x.current_shift_id !== null ) {
 					navigate('/home');
 					console.log(x)
 					console.log("35")
