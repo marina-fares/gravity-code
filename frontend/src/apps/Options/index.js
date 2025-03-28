@@ -100,6 +100,8 @@ export default function Options() {
 	let [bookingsucccess, set_bookingsucccess] = useState(false);
 	let [options_square_items, set_options_square_items] = useState();
 	let [updated_shift, set_updated_shift] = useState();
+	let [options_zoho_items, set_options_zoho_items] = useState();
+	let [zoho_items, set_zoho_items] = useState(JSON.parse(get_localstorage('zoho_items')))
     let [payment_for_square_api, set_payment_for_square_api] = useState(
         {
             "amount_money": {
@@ -200,6 +202,7 @@ function create_payment_api(){
 		"url": "/payments",
 		"payload": {...payment_for_square_api, 
 			"order_id": square_order_id,
+			"location_id": updated_shift.square_location_id,
 			"note": `Booking owner: ${get_user_and_jwt().user.username}`,
 			"source_id" : (firstPaid_method === "cash")?"CASH": "EXTERNAL", 
 			"amount" : firstPaid ,
@@ -240,8 +243,7 @@ app_api_get('square/', {
 	console.log("response")
 	console.log(response.order)
 	if(response.order){
-	
-		update_inventory()
+		create_sales_receipt()
 		
 		}
 	else{
@@ -284,16 +286,70 @@ console.log("update inventory")
 	handleClose()
 }
 
+function create_sales_receipt(){
+	const today = new Date();
+	app_api_get('zoho/', {
+		"request_type": "post",
+		"url": "/salesreceipts",
+		"payload": {
+				"is_generic_customer": true,
+				"customer_name": "Options Page",
+				"date": today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0'),
+			 "line_items": options_zoho_items,
+			 "payment_mode": "Cash",
+			 "custom_fields": [{
+			   "label": "Product",
+					   "value": "Park"
+			 },
+			   {
+				 "label": "Gravity Branch",
+				 "value": "3skies"
+			   }
+			 ]
+			 }
+		
+	}).then(response => {
+		console.log(response)
+		if (response.code == 0)
+		{
+			update_inventory()
+		}
+		else{
+			set_alert(true)
+			set_message(response.message)
+		}
+
+	})
+}
+
 function startOrder(){
 	set_options_square_ids([])
+	set_options_zoho_items([])
     for (const [key, value] of Object.entries(options)) {
+		console.log(shift.inventory[key])
+		console.log(value)
         set_options_square_ids(options_square_ids => (
             [
                 ...options_square_ids,{   
         ["quantity"]: String(value),
-        ["catalog_object_id"]: key
+        ["catalog_object_id"]: shift.inventory[key].id
         }]));
+
+		set_options_zoho_items(options_zoho_items => (
+			[
+						...options_zoho_items,{   
+				["quantity"]: (value).toString(),
+				["item_id"]: zoho_items[key][0],
+				["rate"]: zoho_items[key][1],
+				"tax_id": "5118629000000088105"
+				
+			}]
+		
+		))
         }
+
+
+
 }
 
 function set_firstPaid_fun(e){
@@ -339,8 +395,9 @@ function compelete_order(){
 									label={key}
 									step='1'
 									onChange={(e) => {
-
-										setOptions({ ...options, [shift.inventory[key].id]: (e.target.value >= 0 )? e.target.value : 0 });
+										console.log("----------397")
+										console.log(key)
+										setOptions({ ...options, [key]: (e.target.value >= 0 )? e.target.value : 0 });
 									}}
 								/>
 							
