@@ -166,14 +166,16 @@ set_options_zoho_items([])
 
 
 // Bookeo Options 
-console.log("--------------------options_zoho_items", options_zoho_items)
+console.log("--------------------options_zoho_items", options)
+// this array for bookeo
 for( let key in options)
 {
+    console.log("------172", key)
     set_arr_options(arr_options => (
         [
             ...arr_options,{   
     ["name"]: key,
-    ["value"]: options[key][0]
+    ["value"]: options[key]
     }]));    
 }
 

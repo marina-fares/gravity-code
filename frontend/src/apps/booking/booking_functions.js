@@ -41,6 +41,7 @@ export default function BookingAPI(data) {
     let [three_sessions, set_three_sessions] = useState([])
     const [current_group, set_current_group] = useState();
     let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
+    let [order_paid, set_order_paid] = useState(false)
 
 
 // in the start of the page, without condition
@@ -118,13 +119,19 @@ useEffect(() => {
 
 // Condition 3
 // if the square create payment api is done
-// go to phase 5
+// go to phase 4
 useEffect(()=>{
-    console.log("booking success", data.bookingsuccess)
     if(!data.bookingsuccess && data.square_receipt_number && data.square_order_id)  {
-        create_sales_receipt()
+        pay_order_api()
     }
 },[data.square_receipt_number])
+
+
+useEffect(()=>{
+    if(!data.bookingsuccess && order_paid )  {
+        create_sales_receipt()
+    }
+},[order_paid])
 
 // Condition 4
 // if the sales receipt is created
@@ -137,10 +144,10 @@ useEffect(()=>{
 
 // Condition 5
 // if the booking is created in bookeo
-// go to phase 
+// go to phase 6
 useEffect(()=>{
     if(data.booking_bookeo){
-        pay_order_api()
+        update_inventory()
     
     }
     },[data.booking_bookeo])
@@ -241,9 +248,9 @@ function create_payment_api(){
 
 }
 
-// phase 6
+// phase 4
 // pay order in square
-// go to condition 4
+// go to phase 4
 function pay_order_api(){
     console.log("pay order function")
     console.log(data.square_order_id)
@@ -257,7 +264,7 @@ app_api_get('square/', {
     
     if(response.order)
     {
-        // create_sales_receipt()
+        set_order_paid(true)
     }
     else{
         data.set_payment_ids()
@@ -270,7 +277,7 @@ app_api_get('square/', {
   
 // phase 5
 // create booking in bookeo
-// go to condition 6
+// go to condition 5
 function bookeo_api(){
 
     set_bookbutton(true)
@@ -362,8 +369,7 @@ else{
     }
 }
 
-// Phase 4
-// create sales receipt in zoho
+
 function create_sales_receipt(){
     const today = new Date();
     app_api_get('zoho/', {
@@ -396,7 +402,7 @@ function create_sales_receipt(){
         if (response.code == 0)
         {
             set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id)
-            update_inventory()
+            
         }
         else{
             data.set_alert(true)
@@ -409,11 +415,7 @@ function create_sales_receipt(){
 // phase 7
 // update inventory "update the shift and sub_shift data"
 async function update_inventory(){
-    console.log("111111111111111111111111111111111111")
-    console.log("update inventory updated")
-    console.log(data.options_square_items)
-    console.log("sub shift data")
-    console.log(data.sub_shift)
+
     for(var item in data.options_square_items) {
         data.updated_shift.inventory[data.options_square_items[item].name].sold += parseInt(data.options_square_items[item].quantity)
     }
