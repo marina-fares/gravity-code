@@ -3,6 +3,8 @@ import { Fragment, useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { app_api_get } from '../../components/logic/apis';
 import { get_localstorage } from '../../components/logic/localstorage';
+import { app_get } from '../../components/logic/app';
+
 
 import {
 	Avatar,
@@ -59,6 +61,7 @@ export default function Options() {
 	const navigate = useNavigate()
 	const [open, setOpen] = React.useState(false);
 	let [hide, set_hide] = useState(false);
+	const [current_group, set_current_group] = useState();
 
 
 	const handleClose = () => {
@@ -125,6 +128,15 @@ export default function Options() {
 		get_sub_shift().then((data) => {
 			set_sub_shift(data);
 		});
+
+		let current_group_data = app_get('current_group/')
+		current_group_data.then((x) =>{
+			console.log("current_group")
+			console.log(x)
+			console.log(x.cash_threshold_amount)
+			console.log(x.visa_threshold_amount)
+			set_current_group(x)
+		})
 
 	},[])
 
@@ -303,7 +315,7 @@ function create_sales_receipt(){
 			 },
 			   {
 				 "label": "Gravity Branch",
-				 "value": "3skies"
+				 "value": current_group.name
 			   }
 			 ]
 			 }

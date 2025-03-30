@@ -381,8 +381,13 @@ function create_sales_receipt(){
              },
                {
                  "label": "Gravity Branch",
-                 "value": "3skies"
+                 "value": current_group.name
                }
+            //    {
+            //     "label": "Creation Time",
+            //     "value": today.getFullYear() + '/' + String(today.getMonth() + 1).padStart(2, '0') + '/' + String(today.getDate()).padStart(2, '0') + ', ' + String(today.getHours()) + ':' + String(today.getMinutes()) + ':' + String(today.getSeconds()),
+
+            //    }
              ]
              }
         
