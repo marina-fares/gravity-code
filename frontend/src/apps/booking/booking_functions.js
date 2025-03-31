@@ -390,7 +390,7 @@ function create_sales_receipt(){
                 "customer_name": "Walk-in Customer",
                 "date": today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0'),
              "line_items": data.options_zoho_items,
-             "payment_mode": "Cash",
+             "payment_mode": data.firstPaid_method,
              "custom_fields": [{
                "label": "Product",
                        "value": "Park"
