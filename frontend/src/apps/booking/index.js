@@ -85,7 +85,7 @@ const handleToggle = () => {
 const handleCloseAlert = () => {
 
 if(bookingsuccess){
-    navigate("/")
+    navigate("/home")
 }
 else{
     set_alert(false) // no error
