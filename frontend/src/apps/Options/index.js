@@ -142,31 +142,31 @@ export default function Options() {
 
 	
 
-	useEffect(()=>{
+useEffect(()=>{
 
-		if(square_receipt_number && !bookingsucccess )
+	if(square_receipt_number && !bookingsucccess )
+	{
+		if(firstPaid_method === "cash")
 		{
-			if(firstPaid_method === "cash")
-			{
-				pay_order_api()
-			}
-			else{
-				update_inventory()
-			}
-			
+			pay_order_api()
+		}
+		else{
+			create_sales_receipt()
 		}
 		
-	},[square_receipt_number])
+	}
+	
+},[square_receipt_number])
 
 
-	useEffect(()=>{
-		
-		if((options_square_ids.length === Object.keys(options).length) && !bookingsucccess && options_square_ids.length !== 0 ) 
-		{
-			create_order_api()
-		}
-		
-	},[options_square_ids])
+useEffect(()=>{
+	
+	if((options_square_ids.length === Object.keys(options).length) && !bookingsucccess && options_square_ids.length !== 0 ) 
+	{
+		create_order_api()
+	}
+	
+},[options_square_ids])
 
 
 
@@ -308,7 +308,7 @@ function create_sales_receipt(){
 				"customer_name": "Options Page",
 				"date": today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0'),
 			 "line_items": options_zoho_items,
-			 "payment_mode": "Cash",
+			 "payment_mode":firstPaid_method ,
 			 "custom_fields": [{
 			   "label": "Product",
 					   "value": "Park"
@@ -316,7 +316,21 @@ function create_sales_receipt(){
 			   {
 				 "label": "Gravity Branch",
 				 "value": current_group.name
-			   }
+			   },
+			   {
+				"label": "Staff Name",
+				"value": get_user_and_jwt().user.username
+				},
+				{
+				"label": "Date and Time",
+				"value": today.getFullYear() + "-" + 
+				String(today.getMonth() + 1).padStart(2, '0') + "-" + 
+				String(today.getDate()).padStart(2, '0') + " " + 
+				String(today.getHours()).padStart(2, '0') + ":" + 
+				String(today.getMinutes()).padStart(2, '0') + ":" + 
+				String(today.getSeconds()).padStart(2, '0'),
+
+				}
 			 ]
 			 }
 		
