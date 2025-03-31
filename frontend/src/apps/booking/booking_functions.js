@@ -42,6 +42,7 @@ export default function BookingAPI(data) {
     const [current_group, set_current_group] = useState();
     let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
     let [order_paid, set_order_paid] = useState(false)
+    let [booking_time, set_booking_time] = useState()
 
 
 // in the start of the page, without condition
@@ -203,6 +204,7 @@ function create_order_api(){
         data.set_square_order_id(response.order.id) 
         data.set_square_totalprice(response.order.total_money.amount)
         data.set_options_square_items(response.order.line_items)
+        set_booking_time(response.order.created_at)
     }
     else{
         data.set_alert(true)
@@ -371,7 +373,7 @@ else{
 
 
 function create_sales_receipt(){
-    const today = new Date();
+    const today = new Date(booking_time);
     app_api_get('zoho/', {
         "request_type": "post",
         "url": "/salesreceipts",
@@ -388,12 +390,17 @@ function create_sales_receipt(){
                {
                  "label": "Gravity Branch",
                  "value": current_group.name
-               }
-            //    {
-            //     "label": "Creation Time",
-            //     "value": today.getFullYear() + '/' + String(today.getMonth() + 1).padStart(2, '0') + '/' + String(today.getDate()).padStart(2, '0') + ', ' + String(today.getHours()) + ':' + String(today.getMinutes()) + ':' + String(today.getSeconds()),
+               },
+               {
+                "label": "Date and Time",
+                "value": today.getFullYear() + "-" + 
+                String(today.getMonth() + 1).padStart(2, '0') + "-" + 
+                String(today.getDate()).padStart(2, '0') + " " + 
+                String(today.getHours()).padStart(2, '0') + ":" + 
+                String(today.getMinutes()).padStart(2, '0') + ":" + 
+                String(today.getSeconds()).padStart(2, '0'),
 
-            //    }
+               }
              ]
              }
         
