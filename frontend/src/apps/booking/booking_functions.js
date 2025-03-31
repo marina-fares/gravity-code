@@ -123,7 +123,15 @@ useEffect(() => {
 // go to phase 4
 useEffect(()=>{
     if(!data.bookingsuccess && data.square_receipt_number && data.square_order_id)  {
-        pay_order_api()
+        if (data.firstPaid_method === "cash")
+        {
+            pay_order_api()
+        }
+        else
+        {
+            set_order_paid(true)
+        }
+        
     }
 },[data.square_receipt_number])
 
@@ -223,7 +231,7 @@ function create_payment_api(){
         "url": "/payments",
         "payload": {...payment_for_square_api, 
             "order_id": data.square_order_id,
-            "note": `Customer Name : ${data.customer.firstName} ${data.customer.lastName} Booking owner: ${get_user_and_jwt().user.username}`,
+            // "note": `Customer Name : ${data.customer.firstName} ${data.customer.lastName} Booking owner: ${get_user_and_jwt().user.username}`,
             "source_id" : (data.firstPaid_method === "cash")?"CASH": "EXTERNAL", 
             "amount" : data.firstPaid*100 ,
             "amount_money": {
@@ -391,6 +399,10 @@ function create_sales_receipt(){
                  "label": "Gravity Branch",
                  "value": current_group.name
                },
+               {
+                "label": "Staff Name",
+                "value": get_user_and_jwt().user.username
+              },
                {
                 "label": "Date and Time",
                 "value": today.getFullYear() + "-" + 

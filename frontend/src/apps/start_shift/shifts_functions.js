@@ -152,10 +152,12 @@ async function get_catalog() {
 			
 
 				item[item_name] = item_id 
-				let old_cat = category_items[obj["item_data"]["category_id"]] 
+				let cat_obj = obj["item_data"]["categories"][0]["id"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
+				let old_cat = category_items[cat_obj] 
+				// let old_cat = category_items[obj["item_data"]["category_id"]] 
 				console.log("------------------156")
 				console.log(obj["item_data"])
-				category_items[obj["item_data"]["category_id"]] =  Object.assign({}, old_cat, item);
+				category_items[cat_obj] =  Object.assign({}, old_cat, item);
 					
 				}})
 		
