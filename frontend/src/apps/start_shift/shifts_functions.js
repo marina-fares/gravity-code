@@ -105,9 +105,7 @@ async function get_zoho_items(){
 	}).then((response)=>{
 		response.items.forEach((item)=>{
 			zoho_items[item.description.split('_')[1]] = [item.item_id, item.rate]
-			console.log("-----------108", zoho_items)
 		})
-		console.log("-----------------110", zoho_items)
 		set_localstorage("zoho_items", JSON.stringify(zoho_items))
 	})
 }
@@ -152,7 +150,7 @@ async function get_catalog() {
 			
 
 				item[item_name] = item_id 
-				let cat_obj = obj["item_data"]["categories"][0]["id"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
+				let cat_obj = obj["item_data"]["categories"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
 				let old_cat = category_items[cat_obj] 
 				// let old_cat = category_items[obj["item_data"]["category_id"]] 
 				console.log("------------------156")
