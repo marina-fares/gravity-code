@@ -2,11 +2,17 @@ import { app_api_get } from "../../components/logic/apis"
 
 function delete_hold(){
         try{
-	app_api_get('bookeo/', {
-		"request_type": "delete",
-		"url": "/holds/" + localStorage.getItem('hold_ids'),
-		"payload": {}}
-		 )
+			if(localStorage.getItem('hold_ids') !== null)
+			{
+				app_api_get('bookeo/', {
+					"request_type": "delete",
+					"url": "/holds/" + localStorage.getItem('hold_ids'),
+					"payload": {}}
+					 ).then(()=>{
+						set_localstorage('hold_ids', null)
+					 })
+			}
+
 	}catch(error)
 	{
 		console.log("this is no holds to delete", error)
