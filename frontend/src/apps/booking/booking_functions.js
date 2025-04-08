@@ -231,7 +231,7 @@ function create_payment_api(){
         "url": "/payments",
         "payload": {...payment_for_square_api, 
             "order_id": data.square_order_id,
-            // "note": `Customer Name : ${data.customer.firstName} ${data.customer.lastName} Booking owner: ${get_user_and_jwt().user.username}`,
+            "note": `Customer Name : ${data.customer.firstName} ${data.customer.lastName} Booking owner: ${get_user_and_jwt().user.username}`,
             "source_id" : (data.firstPaid_method === "cash")?"CASH": "EXTERNAL", 
             "amount" : data.firstPaid*100 ,
             "amount_money": {

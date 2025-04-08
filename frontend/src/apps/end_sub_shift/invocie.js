@@ -104,7 +104,6 @@ const Invoice = React.forwardRef(({ shift, cash, visa, sub_shift }, ref) => {
 			<PaperRow right='Visa Sales' left={`${sub_shift?.shift_money_visa}`} />
 			<PaperRow right='Cash Refunds' left={`${sub_shift?.refund_cash}`} />
 			<PaperRow right='Visa Refunds' left={`${sub_shift?.refund_visa}`} />
-			<PaperRow right='Paid In/Out' left={`${total_in_out}`} />
 			<PaperRow right='Expected In Drawer Cash' left={`${in_drawer_cash}`} left_bold={true} right_bold={true} />
 			<PaperRow right='Actual In Drawer Cash' left={cash} left_bold={true} right_bold={true} />
 			<PaperRow right='Difference Cash' left={`${difference_cash}`} left_bold={true} right_bold={true} />

@@ -55,7 +55,7 @@ export default function Booking() {
     let [value, set_value] = useState(false)
     let [test, set_test] = useState(category_items[category_ids[booking_session_object["name"]]])
     // for the number of players item for square, this is the name of the session type
-    let [category_of_session, set_category_of_session] = useState("1HR Park")
+    let [category_of_session, set_category_of_session] = useState(`1HR ${booking_session_object.name}`)
 
     let [square_order_id, set_square_order_id] = useState()
     let [payment_ids, set_payment_ids] = useState([]);
@@ -144,8 +144,10 @@ get_sub_shift().then((x) => {
     set_sub_shift(x)
 })
 
+// set the first choise in the session which is 1HR park or 1HR koids
 
 }, []);
+
 
 
 

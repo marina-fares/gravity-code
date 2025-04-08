@@ -30,7 +30,7 @@ import { app_get, app_post } from '../../../components/logic/app';
 import { get_user_and_jwt } from '../../../components/logic/users';
 import Autocomplete from '@mui/material/Autocomplete';
 import { get_jwt } from '../../../components/logic/users';
-import { get_shift, set_shift_fun } from '../../start_shift/shifts_functions';
+import { get_shift, set_shift_fun, get_sub_shift, set_sub_shift_fun } from '../../start_shift/shifts_functions';
 import Paper from '@mui/material/Paper';
 import { experimentalStyled as styled } from '@mui/material/styles';
 
@@ -65,6 +65,7 @@ export default function MyApp() {
     let [success, set_success] = useState(false)
     let [deleted_from_square, set_deleted_from_square] = useState(false)
     let [shift, set_shift] = useState()
+    let [sub_shift, set_sub_shift] = useState()
     let [options, set_options] = useState()
     let [payment_ids, set_payment_ids] = useState()
     let [total_price, set_totalprice] = useState()
@@ -84,6 +85,10 @@ useEffect(() => {
     get_shift().then((data) => {
         set_shift(data);
         console.log("shift ",data)
+    });
+
+    get_sub_shift().then((data) => {
+        set_sub_shift(data);
     });
 
 }, [])
@@ -220,6 +225,7 @@ function delete_booking_2(){
 }
 
     const handleCloseAlert = () => {
+        handleClose()
         if(success){
             navigate('/oldbookings')
         }
@@ -281,15 +287,18 @@ async function update_inventory(){
     {
         console.log("cash refunded")
         shift.refund_cash += total_price
+        sub_shift.refund_cash += total_price
     }
     else{
         console.log("visa refunded ")
         shift.refund_visa += total_price
+        sub_shift.refund_visa += total_price
     }
 
     console.log(shift)
     
     await set_shift_fun(shift)
+    await set_sub_shift_fun(sub_shift)
     set_success(true)
 
 }

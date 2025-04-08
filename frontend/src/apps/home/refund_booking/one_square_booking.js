@@ -30,7 +30,7 @@ import { app_get, app_post } from '../../../components/logic/app';
 import { get_user_and_jwt } from '../../../components/logic/users';
 import Autocomplete from '@mui/material/Autocomplete';
 import { get_jwt } from '../../../components/logic/users';
-import { get_shift, set_shift_fun } from '../../start_shift/shifts_functions';
+import { get_shift, set_shift_fun, get_sub_shift, set_sub_shift_fun } from '../../start_shift/shifts_functions';
 import Paper from '@mui/material/Paper';
 import { experimentalStyled as styled } from '@mui/material/styles';
 import Backdrop from '@mui/material/Backdrop';
@@ -64,6 +64,7 @@ export default function SquareBook() {
     let [alert, set_alert] = useState(false)
     let [success, set_success] = useState(false)
     let [shift, set_shift] = useState()
+    let [sub_shift, set_sub_shift] = useState()
     let [options, set_options] = useState()
     let [payment_ids, set_payment_ids] = useState()
     let [total_price, set_totalprice] = useState()
@@ -85,6 +86,9 @@ useEffect(() => {
     });
     get_order_from_square()
 
+    get_sub_shift().then((data) => {
+        set_sub_shift(data);
+    });
 }, [])
 
 useEffect(()=>{
@@ -200,7 +204,17 @@ async function update_inventory(){
     }
 
 
-    shift.refund_visa += total_price
+    if(total_price_method === "CASH")
+        {
+            console.log("cash refunded")
+            shift.refund_cash += total_price
+            sub_shift.refund_cash += total_price
+        }
+        else{
+            console.log("visa refunded ")
+            shift.refund_visa += total_price
+            sub_shift.refund_visa += total_price
+        }
 
 
     let options_new = []
@@ -216,6 +230,7 @@ async function update_inventory(){
     shift.options2 = []
     
     await set_shift_fun(shift)
+    await set_sub_shift_fun(sub_shift)
     set_success(true)
 
 }
