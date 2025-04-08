@@ -26,7 +26,7 @@ class GravityUserAdmin(UserAdmin):
             current_user_groups = current_user.groups.all()
             current_user_group_names = [
                 group.name for group in current_user_groups]
-            return User.objects.filter(groups__name__in=current_user_group_names)
+            return User.objects.filter(groups__name__in=current_user_group_names).distinct()
 
 
 admin.site.unregister(User)

@@ -139,7 +139,15 @@ def create_square_profile(sender, instance, created, **kwargs):
             instance.profile.save()
             print(response)
 
+@admin.register(Profile)
+class StandaloneProfileAdmin(admin.ModelAdmin):
+    list_filter = ('user__groups','user',)
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(user__groups__in=request.user.groups.all()).distinct()
 
 
 #admin.site.register(PromoCode)
-admin.site.register(Profile)
+# admin.site.register(Profile)

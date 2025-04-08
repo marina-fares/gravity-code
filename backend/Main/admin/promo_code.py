@@ -5,6 +5,7 @@ from django.contrib.auth.admin import UserAdmin
 
 
 class PromoCodeAdmin(admin.ModelAdmin):
+    list_filter = ('group',)
     def get_queryset(self, request):
         current_user = request.user
         if current_user.is_superuser:
