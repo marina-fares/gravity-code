@@ -5,7 +5,8 @@ from django.contrib.auth.admin import UserAdmin
 
 
 class SubShiftHistoryAdmin(admin.ModelAdmin):
-    list_filter=('sub_shift__groups', 'sub_shift',)
+    list_filter=('sub_shift__groups', )
+    search_fields = ('sub_shift__username',)
     def get_queryset(self, request):
         current_user = request.user
         if current_user.is_superuser:

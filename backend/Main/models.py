@@ -141,7 +141,8 @@ def create_square_profile(sender, instance, created, **kwargs):
 
 @admin.register(Profile)
 class StandaloneProfileAdmin(admin.ModelAdmin):
-    list_filter = ('user__groups','user',)
+    list_filter = ('user__groups',)
+    search_fields = ('user__username',)
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:

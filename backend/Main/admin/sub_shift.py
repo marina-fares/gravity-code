@@ -7,6 +7,7 @@ from django.contrib.auth.admin import UserAdmin
 
 class SubShiftAdmin(admin.ModelAdmin):
     list_filter=('user__groups', 'user',)
+    search_fields = ('user__username',)
     def get_queryset(self, request):
         current_user = request.user
         if current_user.is_superuser:

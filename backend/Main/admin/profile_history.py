@@ -16,7 +16,8 @@ class GroupFilter(admin.SimpleListFilter):
         return queryset
 
 class ProfileHistoryAdmin(admin.ModelAdmin):
-    list_filter = (GroupFilter, 'profile',)
+    list_filter = (GroupFilter, )
+    search_fields = ('profile__username',)
     def get_queryset(self, request):
         current_user = request.user
         if current_user.is_superuser:
