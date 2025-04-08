@@ -33,7 +33,7 @@ import { get_jwt } from '../../../components/logic/users';
 import { get_shift, set_shift_fun } from '../../start_shift/shifts_functions';
 import Paper from '@mui/material/Paper';
 import { experimentalStyled as styled } from '@mui/material/styles';
-
+import Backdrop from '@mui/material/Backdrop';
 import { Row, Col } from 'react-bootstrap';
 import ResponsiveDialog from './alert'
 
@@ -69,6 +69,8 @@ export default function SquareBook() {
     let [total_price, set_totalprice] = useState()
     let [total_price_method, set_totalprice_method] = useState()
     let [receipt_number, set_receipt_number] = useState()
+    let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
+    let [open, setOpen] = useState()
     
     const Transition = React.forwardRef(function Transition(props, ref) {
         return <Slide direction="up" ref={ref} {...props} />;
@@ -94,6 +96,7 @@ useEffect(()=>{
 useEffect(()=>{
 if(success)
 {
+    handleClose()
     set_alert(true)
     set_message("Done")
 }
@@ -105,6 +108,14 @@ if(deleted_from_square)
     update_inventory()
 }
 }, [deleted_from_square])
+
+
+const handleClose = () => {
+    setOpen(false);
+  };
+  const handleToggle = () => {
+    setOpen(!open);
+  };
 
 function get_order_from_square(){
     app_api_get('square/', {
@@ -118,12 +129,11 @@ function get_order_from_square(){
             let date = new Date(response.order.updated_at)
             let date2 = date.getFullYear() + "/" + date.getMonth() + "/" + date.getDate()
             let time = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()
-
+            
             set_options(response.order.line_items)
             set_payment_ids(response.order.tenders[0].payment_id)
             set_date(date2)
             set_time(time)
-            set_totalprice(response.order.total_money.amount)
         }
         else{
             console.log("errrrrrrrrrrrrror")
@@ -139,14 +149,22 @@ app_api_get('square/', {
     "payload":{},
     })
     .then(response => {    
-    set_totalprice(response.payment.amount_money.amount/100)
-    set_totalprice_method(response.payment.source_type)
-    set_receipt_number(response.payment.receipt_number)
+        if(response.payment)
+        {
+            let zoho_id = response.payment.note.split('+')[1].split(' ')[2]
+            set_zoho_sales_receipt_id(zoho_id)
+            set_totalprice(response.payment.amount_money.amount/100)
+            console.log("square_payment", response.payment.amount_money.amount/100)
+            set_totalprice_method(response.payment.source_type)
+            set_receipt_number(response.payment.receipt_number)
+        }
+
     })
 }
 
 
-const handleClose = () => {
+const handleCloseAlert = () => {
+    handleClose()
     if(success){
         navigate('/oldbookings')
     }
@@ -174,7 +192,7 @@ const handleClose = () => {
 
     
 
-function update_inventory(){
+async function update_inventory(){
 
     for(let item in options)
     {
@@ -185,7 +203,6 @@ function update_inventory(){
     shift.refund_visa += total_price
 
 
-    console.log(shift.options2)
     let options_new = []
     for(let i in shift.options2)
     {
@@ -198,8 +215,29 @@ function update_inventory(){
     }
     shift.options2 = []
     
-    set_shift_fun(shift)
+    await set_shift_fun(shift)
     set_success(true)
+
+}
+
+function delete_booking_from_zoho(){
+    if(zoho_sales_receipt_id)
+    {
+        app_api_get('zoho/', {
+            "request_type": "delete",
+            "url": `/salesreceipts/${zoho_sales_receipt_id}`,
+            "payload":{},
+        })
+        .then(response => {    
+        delete_booking_from_square()
+        
+        
+        })
+    }
+    else{
+        delete_booking_from_square()
+    }
+
 
 }
 
@@ -238,23 +276,28 @@ app_api_get('square/', {
 
 
 function check_pass_word(){
-
+handleToggle()
 let val = document.getElementById("outlined-basic").value
-console.log(val)
 if(val !== shift.password)
 {
     set_alert(true)
     set_message("Please enter a correct password")
 }
 else{
-    delete_booking_from_square()
+    delete_booking_from_zoho()
 }
 
 }
 return (
     <Card className="m-5">
-        <ResponsiveDialog alert={alert} handleClose={handleClose} message={message} />
-   
+        <ResponsiveDialog alert={alert} handleCloseAlert={handleCloseAlert} message={message} />
+        <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={open}
+        onClick={handleClose}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
     
         <Card>
         {/* <PageHeader title={` Customer Name ${booking.title}`} /> */}
@@ -280,7 +323,7 @@ return (
 		<hr style={{ margin: '10px' }} />
 		<PaperRow right='Total Price' right_bold={true} left={`  ${total_price}`} left_bold={true} />
 		
-		<PaperRow right={`Total Paid: ${total_price_method} `} right_bold={true} left={total_price} left_bold={true} />
+		<PaperRow right={`Total Paid: ${total_price_method == "CASH"? "Cash" : "CreditCard"} `} right_bold={true} left={total_price} left_bold={true} />
 		
 
 		

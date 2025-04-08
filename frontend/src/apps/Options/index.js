@@ -116,31 +116,38 @@ export default function Options() {
             
     }
     )
+	let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
     
-	useEffect(() => {
+useEffect(() => {
 
-		get_shift().then((data) => {
-			setShift(data);
-			(data.current_shift_id === null)?set_hide(true): set_hide(false)
-			set_updated_shift(data)
-		});
+	get_shift().then((data) => {
+		setShift(data);
+		(data.current_shift_id === null)?set_hide(true): set_hide(false)
+		set_updated_shift(data)
+	});
 
-		get_sub_shift().then((data) => {
-			set_sub_shift(data);
-		});
+	get_sub_shift().then((data) => {
+		set_sub_shift(data);
+	});
 
-		let current_group_data = app_get('current_group/')
-		current_group_data.then((x) =>{
-			console.log("current_group")
-			console.log(x)
-			console.log(x.cash_threshold_amount)
-			console.log(x.visa_threshold_amount)
-			set_current_group(x)
-		})
+	let current_group_data = app_get('current_group/')
+	current_group_data.then((x) =>{
+		console.log("current_group")
+		console.log(x)
+		console.log(x.cash_threshold_amount)
+		console.log(x.visa_threshold_amount)
+		set_current_group(x)
+	})
 
-	},[])
+},[])
 
-	
+useEffect(()=>{
+	if(zoho_sales_receipt_id)
+	{
+		create_payment_api()
+		// update_inventory()
+	}
+}, [zoho_sales_receipt_id])
 
 useEffect(()=>{
 
@@ -151,7 +158,7 @@ useEffect(()=>{
 			pay_order_api()
 		}
 		else{
-			create_sales_receipt()
+			update_inventory()
 		}
 		
 	}
@@ -208,14 +215,14 @@ function create_order_api(){
 }
 		  // send the Book API for bookeo and square
 function create_payment_api(){
-	handleToggle()
+	
 	app_api_get('square/', {
 		"request_type": "post",
 		"url": "/payments",
 		"payload": {...payment_for_square_api, 
 			"order_id": square_order_id,
 			"location_id": updated_shift.square_location_id,
-			"note": `Booking owner: ${get_user_and_jwt().user.username}`,
+			"note": `Booking owner: ${get_user_and_jwt().user.username} + ZohoId: ${zoho_sales_receipt_id}`,
 			"source_id" : (firstPaid_method === "cash")?"CASH": "EXTERNAL", 
 			"amount" : firstPaid ,
 			"amount_money": {
@@ -255,7 +262,7 @@ app_api_get('square/', {
 	console.log("response")
 	console.log(response.order)
 	if(response.order){
-		create_sales_receipt()
+		update_inventory()
 		
 		}
 	else{
@@ -335,11 +342,11 @@ function create_sales_receipt(){
 			 }
 		
 	}).then(response => {
-		console.log(response)
 		if (response.code == 0)
-		{
-			update_inventory()
-		}
+			{
+				set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id)	
+			}
+		
 		else{
 			set_alert(true)
 			set_message(response.message)
@@ -383,7 +390,8 @@ function set_firstPaid_fun(e){
     set_firstPaid(value);
 };
 function compelete_order(){
-	create_payment_api()	
+	handleToggle()
+	create_sales_receipt()	
 }
 
 	return (

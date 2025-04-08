@@ -50,7 +50,7 @@ useEffect(() => {
         </DialogContent>
         <DialogActions>
             
-          <Button autoFocus onClick={data.handleClose}>
+          <Button autoFocus onClick={data.handleCloseAlert}>
             Close
           </Button>
           

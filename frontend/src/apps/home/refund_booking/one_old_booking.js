@@ -6,7 +6,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { app_api_get } from '../../../components/logic/apis';
 import { get_localstorage, set_localstorage } from '../../../components/logic/localstorage';
-
+import Backdrop from '@mui/material/Backdrop';
 import { Avatar, Grid, IconButton, ListItem, ListItemAvatar,InputLabel, TextField, ListItemText, List as Mulist, CardContent, CardActions, Button, CardHeader, Input,Divider, div, Span, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Checkbox, checkboxClasses, CircularProgress } from '@mui/material';
 import { Container } from '@mui/system';
 import Card from 'react-bootstrap/Card';
@@ -70,6 +70,7 @@ export default function MyApp() {
     let [total_price, set_totalprice] = useState()
     let [total_price_method, set_totalprice_method] = useState()
     const [val, set_val] = useState()
+    const [open, setOpen] = useState(false);
     
 
     const Transition = React.forwardRef(function Transition(props, ref) {
@@ -99,6 +100,7 @@ useEffect(()=>{
 
     if(success)
     {
+        handleClose()
         set_message("Done") 
         set_alert(true)
     }
@@ -117,6 +119,12 @@ useEffect(()=>{
     }
 },[payment_ids])
 
+const handleClose = () => {
+    setOpen(false);
+  };
+  const handleToggle = () => {
+    setOpen(!open);
+  };
 
 function get_booking_from_bookeo(){
     app_api_get('bookeo/', {
@@ -177,9 +185,7 @@ function get_payment_from_square(){
       .then(response => {    
       set_totalprice(response.payment.amount_money.amount/100)
       set_totalprice_method(response.payment.source_type)
-      console.log("total price method")
-      console.log(response.payment.amount_money.amount/100)
-      console.log(response.payment.source_type)
+      
       
       })
 }
@@ -213,7 +219,7 @@ function delete_booking_2(){
 
 }
 
-    const handleClose = () => {
+    const handleCloseAlert = () => {
         if(success){
             navigate('/oldbookings')
         }
@@ -263,7 +269,7 @@ function delete_booking_2(){
     };
     
 
-function update_inventory(){
+async function update_inventory(){
     
     
     for(let item in options)
@@ -283,7 +289,7 @@ function update_inventory(){
 
     console.log(shift)
     
-    set_shift_fun(shift)
+    await set_shift_fun(shift)
     set_success(true)
 
 }
@@ -321,7 +327,7 @@ app_api_get('square/', {
 
 
 function check_pass_word(){
-
+handleToggle()
 let val = document.getElementById("outlined-basic").value
 console.log(val)
 if(val !== shift.password)
@@ -337,8 +343,14 @@ else{
 return (
     <Card className="containrt border-0 w-100 mt-5">
         
-        <ResponsiveDialog alert={alert} handleClose={handleClose} message={message} />
-   
+        <ResponsiveDialog alert={alert} handleCloseAlert={handleCloseAlert} message={message} />
+        <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={open}
+        onClick={handleClose}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
    <div className="row border-0 w-100">
    <div className='col-4 border-0'>
          { booking && <InvoicePrint shift={
@@ -378,7 +390,7 @@ return (
 		<hr style={{ margin: '10px' }} />
 		<PaperRow right='Total Price' right_bold={true} left={`  ${booking.price.totalNet.amount}`} left_bold={true} />
 		
-		<PaperRow right={`Total Paid: ${total_price_method} `} right_bold={true} left={booking.price.totalPaid.amount} left_bold={true} />
+		<PaperRow right={`Total Paid: ${total_price_method == "CASH"? "Cash" : "CreditCard"} `} right_bold={true} left={booking.price.totalPaid.amount} left_bold={true} />
 		
 
 		
