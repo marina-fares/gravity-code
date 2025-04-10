@@ -394,11 +394,32 @@ function compelete_order(){
 	create_sales_receipt()	
 }
 
+const handleAddInput = (key) => {
+	console.log("---------------339", options)
+	
+	if(options[key] === undefined)
+	{
+		setOptions({ ...options, [key]: [1] })
+	}
+	else{
+		
+		let value = options[key][0] +1
+		console.log(value)
+		setOptions(options => ({
+			...options,
+			[key]: [value ]
+		}));
+	}
+  };
+  const handleInputChange = (key, value) => {
+   console.log("------------403", options[key]);  // Make sure value is non-negative
+  };
 	return (
 		<div>
 		{ (!hide)? shift &&
-		<Grid container spacing={2} className='m-5 flex-column'>
-		    <ResponsiveDialog 
+
+		<Grid container spacing={2} className="p-4">
+					    <ResponsiveDialog 
             options_square_items = {options_square_items} set_square_order_id={set_square_order_id} set_payment_ids={set_payment_ids}
             square_receipt_number={square_receipt_number} updated_shift={updated_shift} square_totalprice={(totalprice)*100}
             firstPaid = {parseInt(firstPaid)/100} firstPaid_method ={firstPaid_method} 
@@ -412,35 +433,44 @@ function compelete_order(){
       >
         <CircularProgress color="inherit" />
       </Backdrop>
-			<Grid container spacing={2} className='m-5 align-items-start flex-row'>
-				{shift && Object.keys(shift.inventory).map((key, index) => {
-					return (
-						<Card key={key} className='w-25 d-flex flex-row border-0 m-2'>
-						
-								<h1 className='form-control d-flex flex-column justify-content-start w-50 mt-2 border-0' align='left'>
-									{key}
-								</h1>
-								<Input
-									// style={{ flex: 1 }}
-									spacing={24}
-									className='form-control d-flex flex-column justify-content-start w-25 '
-									type='number'
-									name={key}
-									label={key}
-									step='1'
-									onChange={(e) => {
-										console.log("----------397")
-										console.log(key)
-										setOptions({ ...options, [key]: (e.target.value >= 0 )? e.target.value : 0 });
-									}}
-								/>
-							
-						</Card>
-					);
-				})}
-			</Grid>
+			{shift && Object.keys(shift.inventory).map((key, index) => (
+				<Grid item xs={12} sm={6} md={4} key={key}>
+					<Card
+					className="p-3 d-flex flex-row gap-3"
+					sx={{ display: 'flex', flexDirection: 'column' }}
+					>
+						<Button
+								variant="outlined"
+								onClick={() => handleAddInput(key)}
+								size="small"
+								sx={{ textTransform: 'none', alignSelf: 'flex-start' }}
+								>
+								{key} ➕
+						</Button>
 
-						<FormControl className="p-2">
+						{(options[key] || ['']).map((value, idx) => (
+							<Input
+							key={idx}
+							fullWidth
+							type="number"
+							value={value}
+							label={`${key} ${idx + 1}`}
+							onChange={(e) => {
+								setOptions(options => ({
+									...options,
+									[key]: (parseInt(e.target.value) > 0) ? [parseInt(e.target.value)] : [0]
+								}))
+								
+							}}
+							/>
+						))}
+					</Card>
+				</Grid>
+			))}
+
+
+
+<FormControl  spacing={2} className="p-4 w-100">
                             <TextField
                                 required
                                 id="First Paid"
@@ -470,8 +500,11 @@ function compelete_order(){
 							Buy
 						</Button>
 						</Card>
-			
-		</Grid> :
+		</Grid>
+		 
+		
+		
+		:
 		<div>Loading Your shift..., If you haven't started your shift yet, kindly do so.</div>
 		}
 		</div>
