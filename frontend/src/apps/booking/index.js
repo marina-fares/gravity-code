@@ -183,49 +183,29 @@ for( let key in options)
 
 // add the number of players in the line items 
     // in case there is no promocode or we have promocode for bookeo only
-    set_options_zoho_items(((promocode && promocode.duration > 1)||(!promocode))? 
+    set_options_zoho_items( 
     [{
         ["item_id"]: zoho_items[category_of_session][0],
         ["quantity"]: (numbers[0]["number"]).toString(),
-        ["rate"]: zoho_items[category_of_session][1],
+        ["rate"]: ((promocode && promocode.duration > 1)||(!promocode))?zoho_items[category_of_session][1]:(promocode && promocode.duration == 1 )?(zoho_items[category_of_session][1] - zoho_items[category_of_session][1]*(numbers[0]["number"])  * Number(promocode.percentage)/100 ): '',
         "tax_id": "5118629000000088105"
-    }] : 
-    // in case we have promocode for the number of players only
-    (promocode && promocode.duration == 1 )?[{
-        ["item_id"]: zoho_items[category_of_session][0],
-        ["quantity"]: (numbers[0]["number"]).toString(),
-        ["rate"]: zoho_items[category_of_session][1],
-        "tax_id": "5118629000000088105",
-        "discount": zoho_items[category_of_session][1]*(numbers[0]["number"])  * Number(promocode.percentage)/100
-    }] :
-    []
+    }] 
 )
 
     for (const [key, value] of Object.entries(options)) {
         
         if(value !== 0)
         {
-            set_options_zoho_items(options_zoho_items => ((promocode && !promotrue)?
+            set_options_zoho_items(options_zoho_items => (
         [
                     ...options_zoho_items,{   
             ["quantity"]: (value).toString(),
             ["item_id"]: zoho_items[key][0],
-            ["rate"]: zoho_items[key][1],
+            ["rate"]: (promocode && !promotrue)?(zoho_items[key][1] -zoho_items[key][1]*(value) * Number(promocode.percentage)/100): zoho_items[key][1],
             "tax_id": "5118629000000088105",
-            "discount": zoho_items[key][1]*(value) * Number(promocode.percentage)/100
             
-        }] :
-
-        [
-                    ...options_zoho_items,{   
-            ["quantity"]: (value).toString(),
-            ["item_id"]: zoho_items[key][0],
-            ["rate"]: zoho_items[key][1],
-            "tax_id": "5118629000000088105"
-            
-        }]
-    
-    ));
+        }] 
+        ))
     
         }
     }
