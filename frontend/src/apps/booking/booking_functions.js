@@ -41,8 +41,11 @@ export default function BookingAPI(data) {
     let [three_sessions, set_three_sessions] = useState([])
     const [current_group, set_current_group] = useState();
     let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
+    let [zoho_sales_receipt_flag, set_zoho_sales_receipt_flag] = useState(false)
     let [order_paid, set_order_paid] = useState(false)
+    let [options_zoho_items_updated_flag, set_options_zoho_items_updated_flag] = useState(false)
     let [booking_time, set_booking_time] = useState()
+    let [options_zoho_items_updated, set_options_zoho_items_updated] = useState([])
 
 
 // in the start of the page, without condition
@@ -107,6 +110,12 @@ useEffect(()=>{
     
 },[data.create_order_flag])
 
+useEffect(()=>{
+    if(options_zoho_items_updated_flag)
+    {
+        create_order_api()
+    }
+},[options_zoho_items_updated_flag])
 // condition 2
 // if the order is created in square 
 // go to phase 3
@@ -142,14 +151,28 @@ useEffect(()=>{
     }
 },[order_paid])
 
+useEffect(()=>{
+    if(enventory_updated)
+    {
+        // data.set_bookingsuccess(true)
+        if(options_zoho_items_updated.length > 0)
+        {
+            create_sales_receipt()
+        }
+        else{
+            set_zoho_sales_receipt_flag(true)
+        }
+    }
+},[enventory_updated])
+
 // Condition 4
 // if the sales receipt is created
 // go to phase 5
 useEffect(()=>{
-    if(!data.bookingsuccess && zoho_sales_receipt_id)  {
+    if(!data.bookingsuccess && zoho_sales_receipt_flag)  {
         bookeo_api()
     }
-},[zoho_sales_receipt_id])
+},[zoho_sales_receipt_flag])
 
 // Condition 5
 // if the booking is created in bookeo
@@ -164,13 +187,7 @@ useEffect(()=>{
 // Condition 6
 // if the enventory updated
 // set booking_success_flag true which print the receipt
-useEffect(()=>{
-    if(enventory_updated)
-    {
-        // data.set_bookingsuccess(true)
-        create_sales_receipt()
-    }
-},[enventory_updated])
+
 
 
 //phase 1 
@@ -189,7 +206,31 @@ function Book(){
         data.set_alert(true)
         data.set_message("Please enter a valid payment")
     }
-    create_order_api()
+    data.options_zoho_items.forEach((item, index) => {
+        console.log("206")
+            console.log(item.rate)
+            console.log(item)
+        if (item.rate != 0)
+        {
+            
+        set_options_zoho_items_updated(options_zoho_items_updated => (
+            [
+                        ...options_zoho_items_updated,{   
+                ["quantity"]: item.quantity,
+                ["item_id"]: item.item_id,
+                ["rate"]: item.rate,
+                "tax_id": "5118629000000088105",
+                
+            }] 
+            ))
+        }
+      });
+   
+    // create_order_api()
+    console.log("---------------217")
+    console.log(options_zoho_items_updated)
+    set_options_zoho_items_updated_flag(true)
+
 }
 
 // phase 2
@@ -389,7 +430,7 @@ function create_sales_receipt(){
                 "is_generic_customer": true,
                 "customer_name": "Walk-in Customer",
                 "date": today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0'),
-             "line_items": data.options_zoho_items,
+             "line_items": options_zoho_items_updated,
              "payment_mode": data.firstPaid_method,
              "custom_fields": [{
                "label": "Product",
@@ -421,6 +462,7 @@ function create_sales_receipt(){
         if (response.code == 0)
         {
             set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id)
+            set_zoho_sales_receipt_flag(true)
             
         }
         else{
