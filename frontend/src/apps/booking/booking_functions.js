@@ -138,7 +138,7 @@ useEffect(()=>{
 
 useEffect(()=>{
     if(!data.bookingsuccess && order_paid )  {
-        create_sales_receipt()
+        update_inventory()
     }
 },[order_paid])
 
@@ -154,12 +154,12 @@ useEffect(()=>{
 // Condition 5
 // if the booking is created in bookeo
 // go to phase 6
-useEffect(()=>{
-    if(data.booking_bookeo){
-        update_inventory()
+// useEffect(()=>{
+//     if(data.booking_bookeo){
+//         update_inventory()
     
-    }
-    },[data.booking_bookeo])
+//     }
+//     },[data.booking_bookeo])
 
 // Condition 6
 // if the enventory updated
@@ -167,7 +167,8 @@ useEffect(()=>{
 useEffect(()=>{
     if(enventory_updated)
     {
-        data.set_bookingsuccess(true)
+        // data.set_bookingsuccess(true)
+        create_sales_receipt()
     }
 },[enventory_updated])
 
@@ -262,8 +263,7 @@ function create_payment_api(){
 // pay order in square
 // go to phase 4
 function pay_order_api(){
-    console.log("pay order function")
-    console.log(data.square_order_id)
+ 
 app_api_get('square/', {
     "request_type": "post",
     "url": `/orders/${data.square_order_id}/pay`,
@@ -329,12 +329,12 @@ function bookeo_api(){
                     {
                         if(data.promocode.duration <= 1)
                         {
-                            data.set_booking_bookeo(true)
+                            data.set_bookingsuccess(true)
                             console.log("the booking is created ")
                         }
                     }
                     else{
-                        data.set_booking_bookeo(true)
+                        data.set_bookingsuccess(true)
                         console.log("the booking is created ")
                     }
                 }
@@ -369,7 +369,7 @@ else{
             console.log("bookeo res", response)
         if(j === data.promocode.duration - 1 )
         {
-            data.set_booking_bookeo(true)
+            data.set_bookingsuccess(true)
         }
     })
     }
