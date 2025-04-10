@@ -181,16 +181,19 @@ for( let key in options)
     }]));    
 }
 
-// add the number of players in the line items 
+// add the number of players in the zoho line items 
     // in case there is no promocode or we have promocode for bookeo only
+    ((promocode && promocode.duration > 1))?set_options_zoho_items([]) 
+    :
     set_options_zoho_items( 
     [{
         ["item_id"]: zoho_items[category_of_session][0],
         ["quantity"]: (numbers[0]["number"]).toString(),
-        ["rate"]: ((promocode && promocode.duration > 1)||(!promocode))?zoho_items[category_of_session][1]:(promocode && promocode.duration == 1 )?(zoho_items[category_of_session][1] - zoho_items[category_of_session][1]*(numbers[0]["number"])  * Number(promocode.percentage)/100 ): '',
+        ["rate"]: (!promocode)?zoho_items[category_of_session][1]:(promocode && promocode.duration == 1 && promocode.square_pre > 0)?(zoho_items[category_of_session][1] - (zoho_items[category_of_session][1]*(numbers[0]["number"])  * Number(promocode.percentage)/100 )): '',
         "tax_id": "5118629000000088105"
     }] 
 )
+// add the options in zoho
 
     for (const [key, value] of Object.entries(options)) {
         
@@ -201,7 +204,7 @@ for( let key in options)
                     ...options_zoho_items,{   
             ["quantity"]: (value).toString(),
             ["item_id"]: zoho_items[key][0],
-            ["rate"]: (promocode && !promotrue)?(zoho_items[key][1] -zoho_items[key][1]*(value) * Number(promocode.percentage)/100): zoho_items[key][1],
+            ["rate"]: (promocode && !promotrue && promocode.square_pre > 0)?(zoho_items[key][1] -zoho_items[key][1]*(value) * Number(promocode.percentage)/100): zoho_items[key][1],
             "tax_id": "5118629000000088105",
             
         }] 
@@ -539,7 +542,7 @@ return (
         handleToggle={handleToggle} set_customer={set_customer}  square_order_id={square_order_id}
         set_square_order_id={set_square_order_id} payment_ids={payment_ids} set_payment_ids={set_payment_ids} set_booking_bookeo={set_booking_bookeo}
         booking_bookeo={booking_bookeo} create_order_flag={create_order_flag} current_eventid = {event_id} sub_shift = {sub_shift} set_alert_threshold_amount = {set_alert_threshold_amount}
-        alert_threshold_amount = {alert_threshold_amount}
+        alert_threshold_amount = {alert_threshold_amount} set_options_zoho_items = {set_options_zoho_items}
         />
                         
                         </Card>
