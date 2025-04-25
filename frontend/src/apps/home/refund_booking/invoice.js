@@ -79,7 +79,7 @@ const today = new Date()
 		<PaperRow right='Total' right_bold={true} left={`E£${(shift.total_price)}.00`} left_bold={true} />
 		
 		{(shift.first_paid !== "") && 
-		<PaperRow right={`${shift.first_paid_method == "CASH"? "Cash" : "CreditCard"}`} right_bold={true} left={`E£${shift.first_paid}.00`} left_bold={true} />
+		<PaperRow right={`${shift.first_paid_method == "CASH"? "Cash" : "creditcard"}`} right_bold={true} left={`E£${shift.first_paid}.00`} left_bold={true} />
 		// <PaperRow right='Change' right_bold={true} left={shift.first_paid} left_bold={true} />
 		}
 

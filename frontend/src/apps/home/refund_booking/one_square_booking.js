@@ -338,7 +338,7 @@ return (
 		<hr style={{ margin: '10px' }} />
 		<PaperRow right='Total Price' right_bold={true} left={`  ${total_price}`} left_bold={true} />
 		
-		<PaperRow right={`Total Paid: ${total_price_method == "CASH"? "Cash" : "CreditCard"} `} right_bold={true} left={total_price} left_bold={true} />
+		<PaperRow right={`Total Paid: ${total_price_method == "CASH"? "Cash" : "creditcard"} `} right_bold={true} left={total_price} left_bold={true} />
 		
 
 		

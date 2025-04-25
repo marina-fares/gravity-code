@@ -523,7 +523,7 @@ return (
                                     defaultValue="cash"
                                 >
                                 <FormControlLabel value="cash" control={<Radio />} label="Cash" className="w-50" />
-                                <FormControlLabel value="creditCard" control={<Radio />} label="Credit" />
+                                <FormControlLabel value="creditcard" control={<Radio />} label="Credit" />
                             </RadioGroup>
                         </FormControl>
 

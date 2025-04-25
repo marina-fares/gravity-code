@@ -285,7 +285,7 @@ console.log("update inventory")
             updated_shift.shift_money_cash += parseInt(firstPaid)/100
             sub_shift.shift_money_cash += parseInt(firstPaid)/100
         }
-        else if(firstPaid_method === 'creditCard')
+        else if(firstPaid_method === 'creditcard')
 		{
             updated_shift.shift_money_visa += parseInt(firstPaid)/100
             sub_shift.shift_money_visa += parseInt(firstPaid)/100
@@ -489,7 +489,7 @@ const handleAddInput = (key) => {
                                     defaultValue="cash"
                                 >
                                 <FormControlLabel value="cash" control={<Radio />} label="Cash" className="w-50" />
-                                <FormControlLabel value="creditCard" control={<Radio />} label="Credit" />
+                                <FormControlLabel value="creditcard" control={<Radio />} label="Credit" />
                             </RadioGroup>
                         </FormControl>
 						<Card key="123" className='w-100 d-flex flex-row border-0 m-2'>		
