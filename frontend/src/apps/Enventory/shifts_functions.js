@@ -7,7 +7,6 @@ function get_shift() {
 }
 
 function set_shift_fun(payload) {
-	console.log(payload)
 	return app_post('shift/', {
 		payload
 	}).then((response) => {

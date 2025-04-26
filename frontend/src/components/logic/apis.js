@@ -1,57 +1,55 @@
+// apis.js
 import { get_jwt } from './users'
+import { safeJson } from './utils' // Importing the safeJson function
 
 let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
 
-
-function app_api_post(url, data){
+function app_api_post(url, data) {
     let headers = {
         'Content-Type': 'application/json'
     }
     let token = get_jwt()
-    if(token){
+    if (token) {
         headers['Authorization'] = `Bearer ${token}`
     }
     return fetch(APP_BASE_URL + url, {
-        'method': 'POST',
+        method: 'POST',
         headers,
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(safeJson) // Using safeJson to handle the response
 }
 
-function app_api_get(url, params){
+function app_api_get(url, params) {
     let headers = {
         'Content-Type': 'application/json'
     }
     let token = get_jwt()
-    if(token){
+    if (token) {
         headers['Authorization'] = `Bearer ${token}`
     }
     return fetch(APP_BASE_URL + url, {
-        'method': 'POST',
+        method: 'POST',
         headers,
         body: JSON.stringify(params)
     })
-    .then(response => response.json())
+    .then(safeJson) // Using safeJson to handle the response
 }
 
-
-function app_api_put(url, data){
+function app_api_put(url, data) {
     let headers = {
         'Content-Type': 'application/json'
     }
     let token = get_jwt()
-
-    
-    if(token !== undefined){
+    if (token !== undefined) {
         headers['Authorization'] = `Bearer ${token}`
     }
     return fetch(APP_BASE_URL + url, {
-        'method': 'PUT',
+        method: 'PUT',
         headers,
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(safeJson) // Using safeJson to handle the response
 }
 
-export { app_api_post, app_api_get , app_api_put}
+export { app_api_post, app_api_get, app_api_put }

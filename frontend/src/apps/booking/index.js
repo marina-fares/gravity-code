@@ -519,7 +519,9 @@ return (
                                     row
                                     aria-labelledby="demo-row-radio-buttons-group-label"
                                     name="row-radio-buttons-group"
-                                    onChange={(e) => set_firstPaid_method(e.target.value)}
+                                    onChange={(e) => {
+                                        console.log(e.target.value)
+                                        set_firstPaid_method(e.target.value)}}
                                     defaultValue="cash"
                                 >
                                 <FormControlLabel value="cash" control={<Radio />} label="Cash" className="w-50" />

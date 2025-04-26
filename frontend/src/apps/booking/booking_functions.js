@@ -13,7 +13,7 @@ import {get_user_and_jwt} from '../../components/logic/users'
 import ResponsiveDialog from './alert'
 import Backdropfun from './loading'
 import delete_hold from './delete_hold'
-import useWaitForDOMRef from '@restart/ui/esm/useWaitForDOMRef';
+import {useWaitForDOMRef} from '@restart/ui';
 import { app_get } from '../../components/logic/app';
 
 let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
@@ -355,7 +355,7 @@ function bookeo_api(){
                     "amount": data.firstPaid.toString(),
                     "currency": "EGP"
                     },
-                    "paymentMethod": data.firstPaid_method}],     
+                    "paymentMethod": (data.firstPaid_method == "cash")?"cash":"creditCard"}],     
                 "externalRef": (data.note)?((data.note.length > 64)? data.note.slice('',54): data.note):'',
                 "creationAgent": get_user_and_jwt().user.username,
                 "sourceIp": data.square_order_id + '+' + get_user_and_jwt().user.username + '+' + zoho_sales_receipt_id

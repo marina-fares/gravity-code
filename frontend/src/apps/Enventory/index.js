@@ -19,8 +19,6 @@ export default function Inventory() {
 		let x = get_shift();		
 		x.then((x) => {
 			set_updated_shift(x);
-			console.log("shift")
-			console.log(x)
 			(x.current_shift_id === null)?set_hide(true): set_hide(false)
 		});
 	}, []);
@@ -31,14 +29,9 @@ export default function Inventory() {
 			let shift2 = y
 			for(let i in updated_shift.inventory)
 			{
-				// console.log(i)
-				console.log("1111111111111111111111111111111111111")
-					console.log(i)
-					console.log(updated_shift.inventory[i]['start_shift'])
-					console.log(shift2.inventory[i]['start_shift'])
 				if (updated_shift.inventory[i]['start_shift'] > shift2.inventory[i]['start_shift'])
 				{
-					console.log("yesssssss")
+
 					shift2.inventory[i]['start_shift'] = updated_shift.inventory[i]['start_shift']
 					// set_shift({...shift})
 				}
@@ -51,8 +44,7 @@ export default function Inventory() {
 
 
 	function updated_shift_fun(key) {
-		console.log("add on")
-		// console.log(shift.inventory)
+
 			let value = document.getElementById(key).value;
 			
 			updated_shift.inventory[key]['start_shift'] = parseInt(value);
