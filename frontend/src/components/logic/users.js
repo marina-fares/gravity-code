@@ -43,16 +43,18 @@ function get_user_and_jwt(){
     return {user, jwt} 
 }
 
-function login(username, password){
-
+function login(username, password) {
     return app_api_post('token/', {username, password})
     .then(data => {
-        if (data.access){
-            set_jwt(data.access)
-            get_and_store_user()
+        if (data.access) {
+            set_jwt(data.access);
+            return get_and_store_user(); // return this Promise
+        } else {
+            throw new Error('Invalid login credentials');
         }
-    })
+    });
 }
+
 
 function get_and_store_user(){
     let data =  app_api_put('current_user/', {}).then(data => {
