@@ -5,7 +5,7 @@ import Card from 'react-bootstrap/Card';
 import Input from '@mui/material/Input';
 import { get_catalog, get_shift, set_shift_fun } from './shifts_functions';
 import { useNavigate } from 'react-router-dom';
-import { InvoicePrint } from './invocie';
+import InvoicePrint from '../../components/ui/InvoicePrint';
 import { end_shift, get_sub_shift, set_sub_shift_fun, split_shift } from '../start_shift/shifts_functions';
 import ReactToPrint from 'react-to-print';
 import { app_post } from '../../components/logic/app';
@@ -27,6 +27,12 @@ export default function EndSubShit() {
 	let [check_password, set_check_password] = React.useState(false)
 	const [hide, set_hide] = useState(false);
 
+		const [calculated_cash, set_calculated_cash] = React.useState(0);
+		const [calculated_visa, set_calculated_visa] = React.useState(0);
+		// const [updated_shift, set_updated_shift] = React.useState(JSON.parse(get_localstorage('shift')));
+		
+
+
 	useEffect(() => {
 		get_shift().then((x) => {
 			(x.current_shift_id === null)?set_hide(true): set_hide(false)
@@ -38,6 +44,18 @@ export default function EndSubShit() {
 		app_get("current_group/")
 		console.log(app_get("current_group/"))
 	}, []);
+
+
+	useEffect(() => {
+		if(sub_shift)
+		{
+			sub_shift.actual_cash = parseInt(calculated_cash)
+			sub_shift.actual_visa = parseInt(calculated_visa)
+			console.log("invoice print")
+			console.log(sub_shift)
+			set_shift_fun(set_updated_shift)
+		}
+	}, [calculated_cash, calculated_visa]);
 
 	const handleSubmit = (event) => {
 		event.preventDefault(); // Prevent page refresh
@@ -58,11 +76,11 @@ export default function EndSubShit() {
 		<> 
 				{!check_password? 
 					<FormControl component='form' onSubmit={handleSubmit} className="m-5">
-					<InputLabel htmlFor="my-input">Add your Password</InputLabel>
-					<Input id="password" aria-describedby="my-helper-text" type="password" />
-					<Button type='submit' fullWidth variant='contained' sx={{ mt: 3, mb: 2 }}>
-						Submit
-					</Button>
+						<InputLabel htmlFor="my-input">Add your Password</InputLabel>
+						<Input id="password" aria-describedby="my-helper-text" type="password" />
+						<Button type='submit' fullWidth variant='contained' sx={{ mt: 3, mb: 2 }}>
+							Submit
+						</Button>
 					</FormControl>
 						:
 					<div>
@@ -70,7 +88,31 @@ export default function EndSubShit() {
 						<Card style={{ marginTop: 100 }}>
 						<Card.Body>
 							<Card.Title>Sub Shift {updated_shift.sub_shift_round}</Card.Title>
-							<InvoicePrint shift={updated_shift} sub_shift={sub_shift}/>
+							<div>
+								<label style={{ margin: '10px' }} className=' d-flex flex-column justify-content-end w-25'>Actual In Drawer Cash</label>
+								<Input
+									className='form-control d-flex flex-column justify-content-end w-25'
+									defaultValue={1}
+									onChange={(e) => set_calculated_cash(e.target.value)}
+									type='number'
+									name='cash'
+									label='cash'
+									value={calculated_cash}
+									// step='0'
+								/>
+								<label style={{ margin: '10px' }} className=' d-flex flex-column justify-content-end w-25'>Actual In Drawer Visa</label>
+								<Input
+									className='form-control d-flex flex-column justify-content-end w-25'
+									defaultValue={1}
+									onChange={(e) => set_calculated_visa(e.target.value)}
+									type='mumber'
+									name='visa'
+									label='Visa'
+									value={calculated_visa}
+									// step='0'
+								/>
+							</div>
+							<InvoicePrint shift={updated_shift} sub_shift={sub_shift} calculated_cash={calculated_cash} calculated_visa={calculated_visa} />
 							{/* <InvoicePrint shift={updated_shift} sub_shift={sub_shift}/> */}
 
 							<Grid container spacing={2} style={{ justifyContent: 'center' }} ref={print_ref}>
