@@ -60,14 +60,18 @@ function App() {
 								<Route path="/square_booking/:square_order_id" element={<SquareBook />} />
 							</>
 						)}
-						{user &
+						{user ? (
 							<>
 								<Route path="/" element={<StartShift />} />
 								<Route path="/old_shift" element={<OldShift />} />
 								<Route path="/one_old_shift" element={<OneOldShift />} />
 							</>
-						 }
-								<Route path="/login" element={<Login />} />
+						) : (
+							<>
+								<Route path="*" element={<Navigate to="/login" replace />} />
+							</>
+						)}
+						<Route path="/login" element={<Login />} />
 					</Routes>
 				</Container>
 
