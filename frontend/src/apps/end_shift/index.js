@@ -5,7 +5,7 @@ import Card from 'react-bootstrap/Card';
 import Input from '@mui/material/Input';
 import { get_catalog, get_shift, set_shift_fun } from './shifts_functions';
 import { useNavigate } from 'react-router-dom';
-import { InvoicePrint } from './invocie';
+import InvoicePrint from '../../components/ui/InvoicePrint';
 import { end_shift, get_sub_shift, set_sub_shift_fun, split_shift } from '../../apps/start_shift/shifts_functions';
 import ReactToPrint from 'react-to-print';
 import { app_post } from '../../components/logic/app';
@@ -26,6 +26,8 @@ export default function EndShit() {
 	let [alert, set_alert] = React.useState(false)
 	let [check_password, set_check_password] = React.useState(false)
 	const [hide, set_hide] = useState();
+	const [calculated_cash, set_calculated_cash] = React.useState(0);
+	const [calculated_visa, set_calculated_visa] = React.useState(0);
 
 	useEffect(() => {
 		let shit_data = get_shift();
@@ -41,6 +43,17 @@ export default function EndShit() {
 			set_sub_shift(x)
 		})
 	}, []);
+
+	useEffect(() => {
+		if(sub_shift)
+		{
+			sub_shift.actual_cash = parseInt(calculated_cash)
+			sub_shift.actual_visa = parseInt(calculated_visa)
+			console.log("invoice print")
+			console.log(sub_shift)
+			set_shift_fun(set_updated_shift)
+		}
+	}, [calculated_cash, calculated_visa]);
 
 	const handleSubmit = (event) => {
 		event.preventDefault(); // Prevent page refresh
@@ -73,8 +86,31 @@ export default function EndShit() {
 			<Card style={{ marginTop: 100 }}>
 			<Card.Body>
 				<Card.Title>End Shift</Card.Title>
-				<InvoicePrint shift={updated_shift} updated_shift={updated_shift}/>
-				{/* <InvoicePrint shift={updated_shift} updated_shift={updated_shift}/> */}
+				<div>
+					<label style={{ margin: '10px' }} className=' d-flex flex-column justify-content-end w-25'>Actual In Drawer Cash</label>
+					<Input
+						className='form-control d-flex flex-column justify-content-end w-25'
+						defaultValue={1}
+						onChange={(e) => set_calculated_cash(e.target.value)}
+						type='number'
+						name='cash'
+						label='cash'
+						value={calculated_cash}
+						// step='0'
+					/>
+					<label style={{ margin: '10px' }} className=' d-flex flex-column justify-content-end w-25'>Actual In Drawer Visa</label>
+					<Input
+						className='form-control d-flex flex-column justify-content-end w-25'
+						defaultValue={1}
+						onChange={(e) => set_calculated_visa(e.target.value)}
+						type='mumber'
+						name='visa'
+						label='Visa'
+						value={calculated_visa}
+						// step='0'
+					/>
+				</div>
+				<InvoicePrint shift={updated_shift} calculated_cash={calculated_cash} calculated_visa={calculated_visa}/>
 
 				<Grid container spacing={2} style={{ justifyContent: 'center' }} ref={print_ref}>
 					<Card style={{ marginTop: 50, marginLeft: 100 }}>
