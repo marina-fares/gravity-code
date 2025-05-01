@@ -1,10 +1,9 @@
 import Invoice from "./Invoice";
 import ReactToPrint from 'react-to-print';
-import { useRef, forwardRef } from 'react';
+import { useRef } from 'react';
 
 const InvoicePrint = ({ shift , sub_shift, calculated_cash, calculated_visa }) => {
     const componentRef = useRef();
-    const componentRef_full_shift = useRef();
     console.log(shift);
     return (
         <div>

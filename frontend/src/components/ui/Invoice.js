@@ -1,5 +1,5 @@
 import { Row, Col } from 'react-bootstrap';
-import { useRef, forwardRef } from 'react';
+import { forwardRef } from 'react';
 import { get_user_and_jwt } from '../../components/logic/users';
 
 // Helper Row with styling
@@ -38,7 +38,7 @@ const Invoice = forwardRef(({ shift, sub_shift, calculated_cash, calculated_visa
 
   const source = sub_shift || shift;
   const startDate = new Date(source?.start_time);
-  const endDate = new Date(source?.end_time);
+  const endDate = new Date();
 
   const totalInOut = source.shift_money_cash - source.refund_cash;
   const expectedDrawer = source.start_shift_cash + totalInOut;
