@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY')
-
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000
 # SECURITY WARNING: don't run with debug turned on in production!
 
 PLATFORM = os.getenv('PLATFORM')
@@ -36,7 +36,7 @@ if PLATFORM == 'DEVELOPMENT':
     ALLOWED_HOSTS = ['*']
 
 elif PLATFORM == 'PRODUCTION':
-    DEBUG = False
+    DEBUG = True
     ALLOWED_HOSTS = ['fobook.gravitycode.me']
 
 # Application definition
@@ -86,7 +86,7 @@ ROOT_URLCONF = 'Config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -186,7 +186,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/django_static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type

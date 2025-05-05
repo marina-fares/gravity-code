@@ -16,6 +16,7 @@ services:
           - "app.gravity.com"
     volumes:
       - ./backend:/usr/src/app
+      - ./backend/static:/usr/src/app/static 
       - backend-pips-dir:/usr/local/lib/python3.9/site-packages:delegated
     depends_on:
       - db
