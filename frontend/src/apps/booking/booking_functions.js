@@ -207,9 +207,8 @@ function Book(){
         data.set_message("Please enter a valid payment")
     }
     data.options_zoho_items.forEach((item, index) => {
-        console.log("206")
-            console.log(item.rate)
-            console.log(item)
+        console.log("----------------210")
+        console.log(item)
         if (item.rate != 0)
         {
             
@@ -458,7 +457,6 @@ function create_sales_receipt(){
              }
         
     }).then(response => {
-        console.log(response)
         if (response.code == 0)
         {
             set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id)

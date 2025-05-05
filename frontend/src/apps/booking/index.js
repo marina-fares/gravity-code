@@ -189,7 +189,7 @@ for( let key in options)
     [{
         ["item_id"]: zoho_items[category_of_session][0],
         ["quantity"]: (numbers[0]["number"]).toString(),
-        ["rate"]: (!promocode)?zoho_items[category_of_session][1]:(promocode && promocode.duration == 1 && promocode.square_pre > 0)?(zoho_items[category_of_session][1] - (zoho_items[category_of_session][1]  * Number(promocode.percentage)/100 )): '',
+        ["rate"]: (!promocode)?zoho_items[category_of_session][1]:(promocode && promocode.duration == 1 && promocode.square_pre > 0)?(zoho_items[category_of_session][1] - (zoho_items[category_of_session][1]  * Number(promocode.percentage)/100 )): zoho_items[category_of_session][1],
         "tax_id": "5118629000000088105"
     }] 
 )
@@ -328,6 +328,8 @@ function set_customer_fun(e){
 
     // send the Hold API for bookeo 
 function hold_api(){
+    console.log("-----------331")
+    console.log(options_zoho_items)
     if(!bookingsuccess)
     {
     handleToggle()
