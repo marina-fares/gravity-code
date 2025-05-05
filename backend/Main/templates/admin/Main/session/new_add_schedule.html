@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <h1>{{ title }}</h1>
+  <p>This is the new session creation page.</p>
+  <form method="POST">
+    {% csrf_token %}
+    <div>
+      <label for="name">New Session Name</label>
+      <input type="text" id="name" name="name">
+    </div>
+    <div>
+      <button type="submit">Save New Schedule</button>
+    </div>
+  </form>
+{% endblock %}

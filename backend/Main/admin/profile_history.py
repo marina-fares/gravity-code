@@ -12,7 +12,7 @@ class GroupFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value():
-            return queryset.filter(profile__user__groups__id=self.value())
+            return queryset.filter(profile__groups__id=self.value())
         return queryset
 
 class ProfileHistoryAdmin(admin.ModelAdmin):

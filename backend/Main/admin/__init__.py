@@ -3,4 +3,7 @@ from .profile_history import *
 from .promo_code import *
 from .sub_shift import *
 from .sub_shift_history import *
+from .bookings import *
+from .session import *
+from .product import *
 #from .group import *

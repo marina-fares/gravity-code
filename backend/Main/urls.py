@@ -9,6 +9,7 @@ from .apis import SquareAPI, VerifyUserToken
 from .apis.Bookeo_api import BookeoAPI
 from .apis.Zoho_api import ZohoAPI
 from .apis.users import UsersGroups
+from .views import select_weekdays
 
 urlpatterns = [
     path('current_user/', VerifyUserToken.as_view(), name='current_user'),
@@ -24,4 +25,5 @@ urlpatterns = [
     path('sub_shift_history/', GetOldSubShiftApi.as_view(), name='old_sub_shift'),
     path('promo_code/', PromoCodeApis.as_view(
         {'get': 'list', 'post': 'create', 'put': 'update', 'delete': 'destroy'}), name='promo_code'),
+    path('weekdays/', select_weekdays, name='select_weekdays'),
 ]

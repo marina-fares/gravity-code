@@ -1,0 +1,43 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const calendarInput = document.getElementById("calendarFilter");
+            calendarInput.addEventListener("change", function () {
+                const selectedDate = this.value;
+                const url = new URL(window.location.href);
+                url.searchParams.set("start_time__date", selectedDate);
+                window.location.href = url.href;
+            });
+        });
+    </script>
+
+    <div style="display: flex; gap: 20px;">
+        <!-- Calendar -->
+        <div>
+            <h3>Select a Date:</h3>
+            <input type="date" id="calendarFilter" name="calendarFilter"
+                   value="{{ request.GET.start_time__date|default_if_none:'' }}">
+        </div>
+
+        <!-- Django Admin List -->
+        <div style="flex-grow: 1;">
+            {{ block.super }}
+        </div>
+    </div>
+{% endblock %}
+
+{% block object-tools %}
+  {{ block.super }}
+  <ul class="object-tools">
+    <li>
+      <a href="{% url 'admin:create_custom_session' %}" class="addlink">Add custom Schedule</a>
+    </li>
+    <li>
+      <a href="{% url 'admin:create_default_session' %}" class="addlink">Add or update the default Schedule</a>
+    </li>
+  </ul>
+{% endblock %}
+
