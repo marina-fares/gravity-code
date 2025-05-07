@@ -39,7 +39,7 @@ export default function EndShift() {
 	};
 
 	
-	if (!sub_shift_details) {
+	if (!(shift_details)?.current_shift_id) {
 		return <div>Loading your shift... If you haven't started your shift yet, kindly do so.</div>;
 	}
 

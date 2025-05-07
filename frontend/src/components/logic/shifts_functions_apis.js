@@ -11,10 +11,11 @@ async function get_sub_shift() {
 	return shift_details;
 }
 
+
 function set_shift(payload) {
-	return app_post('shift/', payload).then((response) => {
-		return response;
-	});
+	return app_post('shift/', {
+		payload
+	})
 }
 
 function set_sub_shift(payload) {
