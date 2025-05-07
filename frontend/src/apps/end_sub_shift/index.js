@@ -1,144 +1,118 @@
-import { Button, buttonClasses, Grid, InputLabel, TextField } from '@mui/material';
-import React, { Fragment, useEffect, useState } from 'react';
-
-import Card from 'react-bootstrap/Card';
-import Input from '@mui/material/Input';
-import { get_catalog, get_shift, set_shift_fun } from './shifts_functions';
+import React, { useEffect, useRef, useState } from 'react';
+import { Button, Grid, InputLabel, Input, Alert, FormControl } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import Card from 'react-bootstrap/Card';
 import InvoicePrint from '../../components/ui/InvoicePrint';
-import { end_shift, get_sub_shift, set_sub_shift_fun, split_shift } from '../start_shift/shifts_functions';
-import ReactToPrint from 'react-to-print';
-import { app_post } from '../../components/logic/app';
-// import { useEffect } from 'react';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import { FormControl, FormLabel } from '@mui/material';
-import {CircularProgress} from '@mui/material'
-import { app_api_get } from '../../components/logic/apis';
-import { app_get } from '../../components/logic/app';
+import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis';
+import { split_shift } from '../../components/logic/shifts_functions';
 
+export default function EndShift() {
+	const [shift_details, set_shift_details] = useState(null);
+	const [sub_shift_details, set_sub_shift_details] = useState(null);
+	const [passwordValid, setPasswordValid] = useState(false);
+	const [showAlert, setShowAlert] = useState(false);
+	const [actualCash, setActualCash] = useState(0);
+	const [actualVisa, setActualVisa] = useState(0);
 
-export default function EndSubShit() {
-	let [updated_shift, set_updated_shift] = useState(null);
-	const [sub_shift, set_sub_shift] = useState();
-	let print_ref = React.createRef();
-	let navigate = useNavigate();
-	let [alert, set_alert] = React.useState(false)
-	let [check_password, set_check_password] = React.useState(false)
-	const [hide, set_hide] = useState(false);
-
-		const [calculated_cash, set_calculated_cash] = React.useState(0);
-		const [calculated_visa, set_calculated_visa] = React.useState(0);
-		// const [updated_shift, set_updated_shift] = React.useState(JSON.parse(get_localstorage('shift')));
-		
-
+	const printRef = useRef();
+	const navigate = useNavigate();
 
 	useEffect(() => {
-		get_shift().then((x) => {
-			(x.current_shift_id === null)?set_hide(true): set_hide(false)
-			set_updated_shift(x);
-		});
-		get_sub_shift().then((x) =>{
-			set_sub_shift(x)
-		})
-		app_get("current_group/")
-		console.log(app_get("current_group/"))
+		const fetchData = async () => {
+			const shiftData = await get_shift();
+			set_shift_details(shiftData);
+
+			const subShiftData = await get_sub_shift();
+			set_sub_shift_details(subShiftData);
+		};
+		fetchData();
 	}, []);
 
+	const handleSubmit = (e) => {
+		e.preventDefault();
+		if (shift_details?.endshift_page_password === e.target.password.value) {
+			setShowAlert(false);
+			setPasswordValid(true);
+		} else {
+			setShowAlert(true);
+		}
+	};
 
-	useEffect(() => {
-		if(sub_shift)
-		{
-			sub_shift.actual_cash = parseInt(calculated_cash)
-			sub_shift.actual_visa = parseInt(calculated_visa)
-			console.log("invoice print")
-			console.log(sub_shift)
-			set_shift_fun(set_updated_shift)
-		}
-	}, [calculated_cash, calculated_visa]);
+	
+	if (!sub_shift_details) {
+		return <div>Loading your shift... If you haven't started your shift yet, kindly do so.</div>;
+	}
 
-	const handleSubmit = (event) => {
-		event.preventDefault(); // Prevent page refresh
-		if (updated_shift.endshift_page_password === event.target.password.value)
-		{
-			set_alert(false)
-			set_check_password(true)
-		}
-		else{
-			set_alert(true)
-		}
+	if (!passwordValid) {
+		return (
+			<FormControl component="form" onSubmit={handleSubmit} className="m-5">
+				{showAlert && <Alert severity="error">Incorrect password</Alert>}
+				<InputLabel htmlFor="password">Enter Password</InputLabel>
+				<Input id="password" type="password" />
+				<Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
+					Submit
+				</Button>
+			</FormControl>
+		);
 	}
 
 	return (
 		<>
-		{alert && <Alert severity="error">The Entered password is not Correct</Alert>}
-		{updated_shift && !hide? 
-		<> 
-				{!check_password? 
-					<FormControl component='form' onSubmit={handleSubmit} className="m-5">
-						<InputLabel htmlFor="my-input">Add your Password</InputLabel>
-						<Input id="password" aria-describedby="my-helper-text" type="password" />
-						<Button type='submit' fullWidth variant='contained' sx={{ mt: 3, mb: 2 }}>
-							Submit
-						</Button>
-					</FormControl>
-						:
-					<div>
-					{ sub_shift && updated_shift &&
-						<Card style={{ marginTop: 100 }}>
-						<Card.Body>
-							<Card.Title>Sub Shift {updated_shift.sub_shift_round}</Card.Title>
-							<div>
-								<label style={{ margin: '10px' }} className=' d-flex flex-column justify-content-end w-25'>Actual In Drawer Cash</label>
+			<Card style={{ marginTop: 100 }}>
+				<Card.Body>
+					<Card.Title>Sub Shift {shift_details.sub_shift_round}</Card.Title>
+					<div className='d-flex flex-row'>
+						<div className='d-flex flex-column w-50'>
+							<InvoicePrint sub_shift={sub_shift_details} shift={shift_details} calculated_cash={actualCash} calculated_visa={actualVisa} />
+						</div>
+						<div className='d-flex flex-column align-items-center w-50'>
+							<div className='d-flex flex-column align-items-center  w-75 p-3'>
+								<label style={{ margin: '10px' }} className='d-flex flex-column w-100'>Actual Cash in Drawer</label>
 								<Input
-									className='form-control d-flex flex-column justify-content-end w-25'
-									defaultValue={1}
-									onChange={(e) => set_calculated_cash(e.target.value)}
-									type='number'
-									name='cash'
-									label='cash'
-									value={calculated_cash}
-									// step='0'
+									className='form-control d-flex flex-column w-100'
+									type="number"
+									value={actualCash}
+									onChange={(e) => setActualCash(e.target.value)}
 								/>
-								<label style={{ margin: '10px' }} className=' d-flex flex-column justify-content-end w-25'>Actual In Drawer Visa</label>
+
+								<label style={{ margin: '10px' }} className='d-flex flex-column w-100'>Actual Visa in Drawer</label>
 								<Input
-									className='form-control d-flex flex-column justify-content-end w-25'
-									defaultValue={1}
-									onChange={(e) => set_calculated_visa(e.target.value)}
-									type='mumber'
-									name='visa'
-									label='Visa'
-									value={calculated_visa}
-									// step='0'
+									className='form-control d-flex flex-column w-100'
+									type="number"
+									value={actualVisa}
+									onChange={(e) => setActualVisa(e.target.value)}
 								/>
 							</div>
-							<InvoicePrint shift={updated_shift} sub_shift={sub_shift} calculated_cash={calculated_cash} calculated_visa={calculated_visa} />
-							{/* <InvoicePrint shift={updated_shift} sub_shift={sub_shift}/> */}
-
-							<Grid container spacing={2} style={{ justifyContent: 'center' }} ref={print_ref}>
-								<Card style={{ marginTop: 50, marginLeft: 100 }}>
-									<Card.Title style={{ marginLeft: 20, marginTop: 20, marginRight:100 }}> Shift Cash </Card.Title>
+							<div className=' d-flex flex-row justify-content-center w-100'>
+								<Card className="m-3">
+									<Card.Title className="m-3">Shift Cash</Card.Title>
 									<Card.Body>
-										<h3>{sub_shift.start_shift_cash + sub_shift.shift_money_cash - sub_shift.refund_cash} LE.</h3>
-									</Card.Body>
-									
-								</Card>
-								<Card style={{ marginTop: 50, marginLeft: 100 }}>
-									<Card.Title style={{ marginLeft: 20, marginTop: 20, marginRight:100 }}> Shift Visa </Card.Title>
-									<Card.Body>
-										<h3>{sub_shift.shift_money_visa} LE.</h3>
-									</Card.Body>
-								</Card>
-								<Card style={{ marginTop: 50, marginLeft: 100 }}>
-									<Card.Title style={{ marginLeft: 20, marginTop: 20, marginRight:100 }}> Waffarha Codes </Card.Title>
-									<Card.Body>
-										<p>Note: {JSON.stringify(sub_shift.note)}</p>
+										<h3>{sub_shift_details.start_shift_cash + sub_shift_details.shift_money_cash - sub_shift_details.refund_cash} LE</h3>
 									</Card.Body>
 								</Card>
 
-								<Grid item xs={12} md={12} style={{ marginTop: 50 }}>
-				
-									<Button variant="contained" className='p-2 m-2' onClick={() => {
+								<Card className="m-3">
+									<Card.Title className="m-3">Shift Visa</Card.Title>
+									<Card.Body>
+										<h3>{sub_shift_details.shift_money_visa} LE</h3>
+									</Card.Body>
+								</Card>
+
+								<Card className="m-3">
+									<Card.Title className="m-3">Waffarha Codes</Card.Title>
+									<Card.Body>
+										<p>Note: {JSON.stringify(sub_shift_details.note)}</p>
+									</Card.Body>
+								</Card>
+							</div>
+						</div>
+					</div>
+
+					<Grid container spacing={2} justifyContent="center" ref={printRef}>
+
+						<Grid item xs={12} style={{ marginTop: 50 }}>
+
+						<Button variant="contained" className='p-2 m-2' onClick={() => {
 										// <InvoicePrint shift={updated_shift} sub_shift={sub_shift}/>
 										// end_shift(updated_shift, sub_shift);
 										
@@ -147,20 +121,15 @@ export default function EndSubShit() {
 										End Shift Page
 									</Button>
 									<Button variant="contained" className='p-2 m-2' onClick={() => {
-										split_shift(updated_shift, sub_shift);
+										split_shift(shift_details, sub_shift_details);
 									
 									}}>
 										Split Shift
 									</Button>
-								</Grid>
-							</Grid>
-						</Card.Body>
-					</Card>}
-					</div>
-				}
-		</> :
-			<div>Loading Your shift..., If you haven't started your shift yet, kindly do so.</div>
-		}
+						</Grid>
+					</Grid>
+				</Card.Body>
+			</Card>
 		</>
 	);
 }
