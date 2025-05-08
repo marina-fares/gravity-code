@@ -1,8 +1,7 @@
-import { app_get, app_post } from './app.js';
-import { get_localstorage, set_localstorage } from './localstorage.js';
-import { get_user_and_jwt } from './users.js';
+import { app_post } from './app.js';
+import { set_localstorage } from './localstorage.js';
 import { app_api_get, app_api_post } from './apis';
-import { get_shift, get_sub_shift, set_shift, set_sub_shift } from './shifts_functions_apis.js';
+import { set_shift, set_sub_shift } from './shifts_functions_apis.js';
 
 async function end_shift(shift, sub_shift) {
 	let date = new Date().toISOString();
@@ -107,7 +106,6 @@ async function get_catalog() {
 			let item_name = ""
 			let item_id = ""
 			let item = {}
-			let total_Items = {}
 
 			catalog["objects"].forEach((obj, ind)=>{
 				item = {}
