@@ -101,23 +101,21 @@ export default function EndShift() {
 							<InvoicePrint shift={shift_details} calculated_cash={actualCash} calculated_visa={actualVisa} />
 						</div>
 						<div className='d-flex flex-column align-items-center w-50'>
-							<div className='d-flex flex-column align-items-center  w-75 p-3'>
-								<label style={{ margin: '10px' }} className='d-flex flex-column w-100'>Actual Cash in Drawer</label>
-								<Input
-									className='form-control d-flex flex-column w-100'
-									type="number"
-									value={actualCash}
-									onChange={(e) => setActualCash(e.target.value)}
-								/>
+							<label style={{ margin: '10px' }} className='d-flex flex-column w-50'>Actual Cash in Drawer</label>
+							<Input
+								className='form-control d-flex flex-column w-50'
+								type="number"
+								value={actualCash}
+								onChange={(e) => setActualCash(e.target.value)}
+							/>
 
-								<label style={{ margin: '10px' }} className='d-flex flex-column w-100'>Actual Visa in Drawer</label>
-								<Input
-									className='form-control d-flex flex-column w-100'
-									type="number"
-									value={actualVisa}
-									onChange={(e) => setActualVisa(e.target.value)}
-								/>
-							</div>
+							<label style={{ margin: '10px' }} className='d-flex flex-column w-50'>Actual Visa in Drawer</label>
+							<Input
+								className='form-control d-flex flex-column w-50'
+								type="number"
+								value={actualVisa}
+								onChange={(e) => setActualVisa(e.target.value)}
+							/>
 							<div className=' d-flex flex-row justify-content-center w-100'>
 								<Card className="m-3">
 									<Card.Title className="m-3">Shift Cash</Card.Title>
@@ -126,20 +124,19 @@ export default function EndShift() {
 									</Card.Body>
 								</Card>
 
-								<Card className="m-3">
+								<Card className="m-3 ">
 									<Card.Title className="m-3">Shift Visa</Card.Title>
 									<Card.Body>
 										<h3>{shift_details.shift_money_visa} LE</h3>
 									</Card.Body>
 								</Card>
-
-								<Card className="m-3">
-									<Card.Title className="m-3">Waffarha Codes</Card.Title>
-									<Card.Body>
-										<p>Note: {JSON.stringify(shift_details.note)}</p>
-									</Card.Body>
-								</Card>
 							</div>
+							<Card className="m-3 w-75">
+								<Card.Title className="m-3">Waffarha Codes</Card.Title>
+								<Card.Body>
+									<p>Note: {JSON.stringify(shift_details.note)}</p>
+								</Card.Body>
+							</Card>
 						</div>
 					</div>
 
