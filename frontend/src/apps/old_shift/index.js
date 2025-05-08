@@ -45,7 +45,7 @@ export default function OldShift(){
                 />
             </LocalizationProvider>
         </div>
-{}
+
         {all_shifts.length > 0  ? 
         (all_shifts?.filter((item) => {
         const itemDate = new Date(item.date);

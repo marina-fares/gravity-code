@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useLocation } from 'react-router-dom';
 import Card from 'react-bootstrap/Card';
 import Paper from '@mui/material/Paper';
@@ -8,7 +7,8 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { InvoicePrint } from './invocie';
+import InvoicePrint from '../../components/ui/InvoicePrint';
+
 
 export default function OneOldShift() {
     const { state } = useLocation();
@@ -25,7 +25,7 @@ export default function OneOldShift() {
         <Card.Body className="container">
             <h4>{profile?.username}</h4>
 
-            <InvoicePrint shift={state} />
+            <InvoicePrint shift={state.json_data} />
 
             {Object.keys(notes).length > 0 && (
                 <Card.Text>
