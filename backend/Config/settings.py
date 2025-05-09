@@ -37,7 +37,7 @@ if PLATFORM == 'DEVELOPMENT':
 
 elif PLATFORM == 'PRODUCTION':
     DEBUG = True
-    ALLOWED_HOSTS = ['fobook.gravitycode.me']
+    ALLOWED_HOSTS = ['fo.gravitycode.me']
 
 # Application definition
 
@@ -68,15 +68,14 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
 ]
 CORS_ALLOWED_ORIGINS = [
-    'http://frontend.gravity.com:3001',
-    # 'http://44.201.165.150:3000'
+    'https://fo.gravitycode.me',
     'http://44.201.165.150:5000',
     'https://fobook.gravitycode.me',
     'http://localhost:3001'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://fobook.gravitycode.me',
+    'https://fo.gravitycode.me',
     'http://localhost:3001'
 ]
 
