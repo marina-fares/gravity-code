@@ -24,11 +24,15 @@ RUN pip uninstall -y pipenv setuptools virtualenv
 RUN pip install --upgrade pip
 RUN pip install pipenv --upgrade
 RUN pip install python-dotenv
+RUN pip install django-admin-rangefilter
 
 # Copy Pipfile and Pipfile.lock, then install dependencies using pipenv
 COPY Pipfile.lock /usr/src/app/
 COPY Pipfile /usr/src/app/
 RUN pipenv install --deploy --ignore-pipfile
+
+#RUN pip install django-admin-rangefilter
+
 COPY .env /usr/src/app/.env
 
 # Add entrypoint script
