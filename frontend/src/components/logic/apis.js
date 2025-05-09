@@ -2,7 +2,7 @@
 import { get_jwt } from './users'
 import { safeJson } from './utils' // Importing the safeJson function
 
-let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
+let APP_BASE_URL = 'https://fo.gravitycode.me/api/'
 
 function app_api_post(url, data) {
     let headers = {

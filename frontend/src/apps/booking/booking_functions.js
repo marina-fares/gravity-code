@@ -16,7 +16,7 @@ import delete_hold from './delete_hold'
 import {useWaitForDOMRef} from '@restart/ui';
 import { app_get } from '../../components/logic/app';
 
-let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
+let APP_BASE_URL = 'https://fo.gravitycode.me/api/'
 
 // console.log(get_localstorage('shift'))
 

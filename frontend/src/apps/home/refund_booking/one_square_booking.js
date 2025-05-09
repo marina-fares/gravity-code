@@ -37,7 +37,7 @@ import Backdrop from '@mui/material/Backdrop';
 import { Row, Col } from 'react-bootstrap';
 import ResponsiveDialog from './alert'
 
-let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
+let APP_BASE_URL = 'https://fo.gravitycode.me/api/'
 
 
 
