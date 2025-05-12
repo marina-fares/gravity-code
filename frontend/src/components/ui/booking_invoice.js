@@ -1,9 +1,8 @@
 import React, { useRef } from 'react';
-import ReactToPrint, { PrintContextConsumer } from 'react-to-print';
-import { Row, Col, Button } from 'react-bootstrap';
-import { get_user_and_jwt } from '../../../components/logic/users';
-import TextField from '@mui/material/TextField';
-import { useState } from 'react';
+import ReactToPrint from 'react-to-print';
+import { Row, Col } from 'react-bootstrap';
+import { get_user_and_jwt } from '../logic/users';
+
 import { Input } from '@mui/material';
 const PaperRow = ({ right, right_bold, left, left_bold }) => {
 	if (right_bold) {
@@ -49,42 +48,46 @@ const PageHeader = ({ title }) => {
 };
 
 const Invoice = React.forwardRef(({shift, note}, ref) => {
-console.log("shifttttttttttt")
-console.log(get_user_and_jwt().user)
 
-const today = new Date()
+
+const today = (shift.dateTime)? new Date(shift.dateTime) : new Date()
 	return <div ref={ref} style={{ width: '80mm' }}>
 	<PageHeader title={shift.branch_name} />
 	
-		<PaperRow right={`${shift.location_name}`} left={`${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`} />
-		<PaperRow right={`${shift.city}`} left={`${today.getHours() % 12 || 12}:${today.getMinutes()} ${(today.getHours()>= 12)? 'PM' : 'AM'}`} />
-		<PaperRow right={`User`} left={get_user_and_jwt().user.username} />
-		<PaperRow right='' left="" />
-		{/* <PaperRow right='12315' /> */}
+		<PaperRow key={`${shift.location_name} - ${today.toLocaleString('default', { month: 'long' })}`  } right={`${shift.location_name}`} left={`${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`} />
+		<PaperRow key={shift.city} right={`${shift.city}`} left={`${today.getHours() % 12 || 12}:${today.getMinutes()} ${(today.getHours()>= 12)? 'PM' : 'AM'}`} />
+		<PaperRow key={'user'} right={`User`} left={get_user_and_jwt().user.username} />
+
 		<hr style={{ margin: '10px' }} />
-		<PaperRow right={ ` Receipt: ${shift.square_receipt_number}`} />
-		{ shift.promocode && <PaperRow right={ ` Discount: ${shift.promocode.description}`} />
+		<PaperRow key={shift.square_receipt_number} right={ ` Receipt: ${shift.square_receipt_number}`} />
+		{ shift.discount && <PaperRow key={shift.discount} right={ ` Discount: ${shift.discount}`} />
 }		<hr style={{ margin: '10px' }} />
 		
 		{shift.options &&
+		shift.options.map((res) => {
+			if (Number(res.quantity) > 0) {
+			return (
+				<PaperRow
+				key={`${res.id}-${res.name}`}
+				right={res.name}
+				right_bold={true}
+				left={`${res.quantity}  *   ${res.base_price_money.amount / 100}`}
+				/>
+			);
+			}
+			return null; // ensure a value is always returned
+		})}
 
-		shift.options.map((res)=>{ if(res.quantity !== '0')
-			return <PaperRow right={res.name} right_bold={true} left={`${res.quantity}  *   ${res.total_money.amount/100}  `} />
-		    
-		})
-		
-		}
 		
 		<hr style={{ margin: '10px' }} />
-		<PaperRow right='Total' right_bold={true} left={`E£${(shift.total_price)}.00`} left_bold={true} />
+		<PaperRow key={shift.total_price} right='Total' right_bold={true} left={`E£${(shift.total_price)}.00`} left_bold={true} />
 		
 		{(shift.first_paid !== "") && 
-		<PaperRow right={`${shift.first_paid_method == "CASH"? "Cash" : "creditcard"}`} right_bold={true} left={`E£${shift.first_paid}.00`} left_bold={true} />
-		// <PaperRow right='Change' right_bold={true} left={shift.first_paid} left_bold={true} />
+		<PaperRow key={shift.first_paid_method} right={`${shift.first_paid_method === "CASH"? "Cash" : "creditcard"}`} right_bold={true} left={`E£${shift.first_paid}.00`} left_bold={true} />
 		}
 
 
-<PaperRow right='Change' right_bold={true} left={`E£0.00`} left_bold={true} />
+<PaperRow key='123' right='Change' right_bold={true} left={`E£0.00`} left_bold={true} />
 		{ note &&
 		<FullPageRow text={`${note}`}  />
 		}		
@@ -99,7 +102,6 @@ export const InvoicePrint = ({shift}) => {
 	const componentRef = useRef();
 	const [note, set_note] = React.useState();
 	
-	console.log(shift)
 	return (
 		<div className='container border-0'>
 

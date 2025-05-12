@@ -7,15 +7,15 @@ import { get_user_and_jwt } from './components/logic/users';
 import Home from './apps/home';
 import Login from './apps/login';
 import Booking from './apps/booking';
-import OneOldBooking from './apps/home/refund_booking/one_old_booking';
+import OneOldBooking from './apps/refund_booking/one_old_booking';
 import StartShift from './apps/start_shift';
 import EndShit from './apps/end_shift';
 import Inventory from './apps/Enventory'; // Typo exists but keeping as per your code
 import Options from './apps/Options';
-import OldBookings from './apps/home/refund_booking';
+import OldBookings from './apps/refund_booking';
 import OldShift from './apps/old_shift';
 import OneOldShift from './apps/old_shift/one_shift';
-import SquareBook from './apps/home/refund_booking/one_square_booking';
+import SquareBook from './apps/refund_booking/one_square_booking';
 import EndSubShit from './apps/end_sub_shift';
 
 function App() {
