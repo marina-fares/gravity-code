@@ -14,7 +14,6 @@ export default function MaterialUIPickers() {
   
 
   let inputHandler = (e) => {
-    //convert input text to lower case
     var lowerCase = e.target.value;
     setInputText(lowerCase);
   };

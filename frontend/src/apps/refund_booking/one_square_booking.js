@@ -55,7 +55,7 @@ export default function SquareBook() {
     {
         setOpen(false)
         set_alert(true)
-        set_message("Done")
+        set_message("The booking has been successfully refunded.")
     }
     }, [success])
 
@@ -85,7 +85,6 @@ function get_order_from_square(){
     ).then((response) => {
         if(response.order)
         {
-            console.log(response.order.created_at)
             let date = new Date(response.order.created_at)
             let date2 = date.getDate()+'/' + (date.getMonth()+1) + '/' + date.getFullYear();
             set_date(date2)
@@ -98,7 +97,8 @@ function get_order_from_square(){
             
         }
         else{
-            console.log("errrrrrrrrrrrrror")
+            set_alert(true)
+            set_message(response.errors[0].detail)
         }
     })
 }
@@ -166,12 +166,13 @@ async function update_inventory(){
     let options_new = []
     for(let i in shiftDetails.options2)
     {
+
         if(Object.keys(shiftDetails.options2[i])[0] !== payment.receipt_number )
         {
-            options_new.push(Object.keys(shiftDetails.options2[i]))
+            options_new.push(shiftDetails.options2[i])
         }
     }
-    shiftDetails.options2 = []
+    shiftDetails.options2 = options_new
     
     await set_shift(shiftDetails)
     await set_sub_shift(subShiftDetails)

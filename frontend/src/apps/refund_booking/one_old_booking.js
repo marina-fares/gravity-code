@@ -91,7 +91,7 @@ export default function MyApp() {
             if(response.canceled)
             {
                 set_alert(true)
-                set_message("This Booking is already Canceled")
+                set_message("The booking has been successfully refunded.")
             }
             else{
                 //set_booking(response)
@@ -306,7 +306,7 @@ return (
                 
                     {booking.line_items &&
                     booking.line_items.map((res)=>
-                    {   console.log(res) 
+                    {   
                         return (Number(res.quantity) > 0 &&
                     <PaperRow key={res.name} right={res.name} right_bold={true} left={`${res.quantity} * ${res.base_price_money.amount/100}`} />
                     )})
