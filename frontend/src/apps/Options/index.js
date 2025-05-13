@@ -309,7 +309,7 @@ export default function Options() {
 		(shiftDetails && shiftDetails.current_shift_id )? 
 
 		<Grid container spacing={2} className="p-4 justify-content-center">
-			<LoadingFun loadingFlag={loadingFlag} />
+			<LoadingFun open={loadingFlag} />
 			<AlertFun loadingFlag_alert={alert} set_loadingFlag_alert={setAlert} message={message} />
 			{ order && payment && bookingsuccess &&
 			<div className='justify-content-center' style={{ width: '100mm' }}>

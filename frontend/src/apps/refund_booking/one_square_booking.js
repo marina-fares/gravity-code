@@ -34,14 +34,15 @@ export default function SquareBook() {
 
 
     useEffect(() => {
-        get_order_from_square()
-        get_shift().then((data) => {
-            setShiftDetails(data);
-        });
+        const fetchData = async () => {
+            const shiftData = await get_shift();
+            setShiftDetails(shiftData);
 
-        get_sub_shift().then((data) => {
-            setSubShiftDetails(data);
-        });
+            const subShiftData = await get_sub_shift();
+            setSubShiftDetails(subShiftData);
+        };
+        fetchData();
+        get_order_from_square()
     }, [])
 
     useEffect(()=>{
@@ -279,9 +280,20 @@ return (
                 
                 {booking.line_items &&
 
-                booking.line_items.map((res)=>(
-                    <PaperRow key={res.name} right={res.name} right_bold={true} left={`${res.quantity} * ${res.base_price_money.amount/100}`} />
-                ))
+                booking.line_items.map((res) => {
+                if (res.quantity > 0) {
+                    return (
+                    <PaperRow 
+                        key={res.name} 
+                        right={res.name} 
+                        right_bold={true} 
+                        left={`${res.quantity} * ${res.base_price_money.amount / 100}`} 
+                    />
+                    );
+                }
+                return null;
+                })
+
                 }
                 
                 <hr style={{ margin: '10px' }} />
