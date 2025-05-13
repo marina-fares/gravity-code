@@ -13,11 +13,11 @@ export default function LoadingFun({ open, message = "Loading, please wait..." }
         flexDirection: 'column', 
         gap: 2 
       }}
-      open={open}
+      open={open || false}
     >
       <CircularProgress color="inherit" />
       <Typography variant="h6" component="div">
-        {message}
+        {message || "Loading..."}
       </Typography>
     </Backdrop>
   );

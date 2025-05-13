@@ -50,52 +50,51 @@ const PageHeader = ({ title }) => {
 const Invoice = React.forwardRef(({shift, note}, ref) => {
 
 
-const today = (shift.dateTime)? new Date(shift.dateTime) : new Date()
-	return <div ref={ref} style={{ width: '80mm' }}>
-	<PageHeader title={shift.branch_name} />
+const today = new Date(shift?.dateTime || '') 
 	
-		<PaperRow key={`${shift.location_name} - ${today.toLocaleString('default', { month: 'long' })}`  } right={`${shift.location_name}`} left={`${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`} />
-		<PaperRow key={shift.city} right={`${shift.city}`} left={`${today.getHours() % 12 || 12}:${today.getMinutes()} ${(today.getHours()>= 12)? 'PM' : 'AM'}`} />
-		<PaperRow key={'user'} right={`User`} left={get_user_and_jwt().user.username} />
-
-		<hr style={{ margin: '10px' }} />
-		<PaperRow key={shift.square_receipt_number} right={ ` Receipt: ${shift.square_receipt_number}`} />
-		{ shift.discount && <PaperRow key={shift.discount} right={ ` Discount: ${shift.discount}`} />
-}		<hr style={{ margin: '10px' }} />
+	return shift && <div ref={ref} style={{ width: '80mm' }}>
+				<PageHeader title={shift.branch_name} />
 		
-		{shift.options &&
-		shift.options.map((res) => {
-			if (Number(res.quantity) > 0) {
-			return (
-				<PaperRow
-				key={`${res.id}-${res.name}`}
-				right={res.name}
-				right_bold={true}
-				left={`${res.quantity}  *   ${res.base_price_money.amount / 100}`}
-				/>
-			);
-			}
-			return null; // ensure a value is always returned
-		})}
+				<PaperRow key={`${shift.location_name} - ${today.toLocaleString('default', { month: 'long' })}`  } right={`${shift.location_name}`} left={`${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`} />
+				<PaperRow key={shift.city} right={`${shift.city}`} left={`${today.getHours() % 12 || 12}:${today.getMinutes()} ${(today.getHours()>= 12)? 'PM' : 'AM'}`} />
+				<PaperRow key={'user'} right={`User`} left={get_user_and_jwt().user.username} />
 
+				<hr style={{ margin: '10px' }} />
+				<PaperRow key={shift.square_receipt_number} right={ ` Receipt: ${shift.square_receipt_number}`} />
+				{shift.discount && <PaperRow key={shift.discount} right={ ` Discount: ${shift.discount}`} />}
+				<hr style={{ margin: '10px' }} />
+				
+				{shift.options &&
+				shift.options.map((res) => {
+					if (Number(res.quantity) > 0) {
+					return (
+						<PaperRow
+						key={`${res.id}-${res.name}`}
+						right={res.name}
+						right_bold={true}
+						left={`${res.quantity}  *   ${res.base_price_money.amount / 100}`}
+						/>
+					);
+					}
+					return null; // ensure a value is always returned
+				})}
+
+				
+				<hr style={{ margin: '10px' }} />
+				<PaperRow key={shift.total_price} right='Total' right_bold={true} left={`E£${(shift.total_price)}.00`} left_bold={true} />
+				
+				{(shift.first_paid !== "") && 
+				<PaperRow key={shift.first_paid_method} right={`${shift.first_paid_method === "CASH"? "Cash" : "creditcard"}`} right_bold={true} left={`E£${shift.first_paid}.00`} left_bold={true} />
+				}
+				<PaperRow key='123' right='Change' right_bold={true} left={`E£0.00`} left_bold={true} />
+				{ note &&
+				<FullPageRow text={`${note}`}  />
+				}		
+				<FullPageRow text='Series Fun!' bold={true} />
+				<FullPageRow text='Including 14% Tax' bold={true} />
+				<FullPageRow text='No Refund' bold={true} styles={{ marginTop: '10px' }} />
+			</div>;
 		
-		<hr style={{ margin: '10px' }} />
-		<PaperRow key={shift.total_price} right='Total' right_bold={true} left={`E£${(shift.total_price)}.00`} left_bold={true} />
-		
-		{(shift.first_paid !== "") && 
-		<PaperRow key={shift.first_paid_method} right={`${shift.first_paid_method === "CASH"? "Cash" : "creditcard"}`} right_bold={true} left={`E£${shift.first_paid}.00`} left_bold={true} />
-		}
-
-
-<PaperRow key='123' right='Change' right_bold={true} left={`E£0.00`} left_bold={true} />
-		{ note &&
-		<FullPageRow text={`${note}`}  />
-		}		
-		<FullPageRow text='Series Fun!' bold={true} />
-		<FullPageRow text='Including 14% Tax' bold={true} />
-		<FullPageRow text='No Refund' bold={true} styles={{ marginTop: '10px' }} />
-	</div>;
-	
 });
 
 export const InvoicePrint = ({shift}) => {

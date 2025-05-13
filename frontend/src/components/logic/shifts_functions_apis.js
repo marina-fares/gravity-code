@@ -11,6 +11,11 @@ async function get_sub_shift() {
 	return shift_details;
 }
 
+async function get_current_group() {
+	const current_group = await app_get('current_group/', {});
+	return current_group;
+}
+
 
 function set_shift(payload) {
 	return app_post('shift/', {
@@ -36,4 +41,4 @@ async function get_catalog() {
 }
 
 
-export { get_shift, get_sub_shift, set_shift, set_sub_shift, get_catalog };
+export { get_shift, get_sub_shift, set_shift, set_sub_shift, get_catalog, get_current_group };
