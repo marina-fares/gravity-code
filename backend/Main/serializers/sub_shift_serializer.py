@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models_sub_shift import SubShift, SubShiftHistory
+from ..models.models_sub_shift import SubShift, SubShiftHistory
 from .user_serializer import UserProfileSerializer
 
 class SubShiftSerializer(serializers.ModelSerializer):

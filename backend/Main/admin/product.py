@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ..models_sessions import Product
+from ..models.models_sessions import Product
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 

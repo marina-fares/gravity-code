@@ -1,6 +1,6 @@
 from rest_framework import permissions, generics
 from rest_framework.response import Response
-from .. import models_sub_shift, models
+from ..models import models_sub_shift, models
 from Main.serializers.sub_shift_serializer import SubShiftSerializer, SubShiftHistorySerializer
 from datetime import datetime
 

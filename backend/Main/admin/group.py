@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ..models import Profile, ProfileHistory
+from ..models.models import Profile, ProfileHistory
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin
 

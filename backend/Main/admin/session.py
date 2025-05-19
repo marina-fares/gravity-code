@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ..models_sessions import Session, Product, Booking, Schedule
+from ..models.models_sessions import Session, Product, Booking, Schedule
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin
 from django import forms

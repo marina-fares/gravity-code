@@ -1,4 +1,4 @@
-from ..models_sessions import Session, Product, Booking
+from ..models.models_sessions import Session, Product, Booking
 from datetime import datetime, date, time, timedelta
 from django.utils import timezone
 

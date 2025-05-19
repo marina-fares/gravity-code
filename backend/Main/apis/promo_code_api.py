@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from ..serializers.promo_code_serializer import promo_code_serializer
-from ..models import PromoCode
+from ..models.models import PromoCode
 from django.contrib import admin
 
 

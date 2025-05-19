@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import Profile, ProfileHistory
+from ..models.models import Profile, ProfileHistory
 from .user_serializer import UserProfileSerializer
 
 class ProfileSerializer(serializers.ModelSerializer):

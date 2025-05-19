@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ..models import PromoCode
+from ..models.models import PromoCode
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 
