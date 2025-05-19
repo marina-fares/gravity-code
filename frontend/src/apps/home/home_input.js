@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useEffect } from 'react';
 import Card from 'react-bootstrap/Card';
 import get_sessions from '../home/avaliable_slotes/index'
-import OldBookings from './refund_booking';
+import OldBookings from '../refund_booking';
 import { useNavigate } from 'react-router-dom';
 import { set_localstorage } from '../../components/logic/localstorage';
 

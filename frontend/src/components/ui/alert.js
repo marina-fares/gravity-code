@@ -15,7 +15,7 @@ export default function AlertFun({ open_alert, set_open_alert, message }) {
   return (
     <Dialog
       fullScreen={fullScreen}
-      open={open_alert}
+      open={open_alert || false}
       aria-labelledby="responsive-dialog-title"
       onClose={() => set_open_alert(false)} // Optional: close when clicking outside
     >
@@ -24,11 +24,11 @@ export default function AlertFun({ open_alert, set_open_alert, message }) {
       </DialogTitle>
 
       <DialogContent>
-        {message && 
-          <DialogContentText>
-            {message}
+         
+          <DialogContentText key={message}>
+             {typeof message === 'string' ? message : 'An Error Occured'}
           </DialogContentText>
-        }
+        
       </DialogContent>
 
       <DialogActions>  

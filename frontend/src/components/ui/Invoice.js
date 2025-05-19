@@ -36,12 +36,13 @@ const PageHeader = ({ title }) => (
 const Invoice = forwardRef(({ shift, sub_shift, calculated_cash, calculated_visa }, ref) => {
   const user = get_user_and_jwt().user;
 
-  const source = sub_shift || shift;
+  const source = sub_shift?sub_shift : shift;
   const startDate = new Date(source?.start_time);
   const endDate = new Date();
+  calculated_cash = calculated_cash?calculated_cash:source.actual_cash
+  calculated_visa = calculated_visa?calculated_visa:source.actual_visa
 
-  const totalInOut = source.shift_money_cash - source.refund_cash;
-  const expectedDrawer = source.start_shift_cash + totalInOut;
+  const expectedDrawer = source.start_shift_cash + source.shift_money_cash - source.refund_cash;
   const differenceCash = calculated_cash - expectedDrawer;
 
   const expectedVisa = source.shift_money_visa - source.refund_visa;

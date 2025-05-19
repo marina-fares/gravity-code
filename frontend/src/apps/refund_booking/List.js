@@ -1,13 +1,11 @@
-import { React, useState } from 'react'
-import { get_localstorage } from '../../../components/logic/localstorage'
+import { useState } from 'react'
 import { useEffect } from 'react'
-import { app_api_get } from '../../../components/logic/apis'
-import { get_user_and_jwt } from '../../../components/logic/users'
+import { app_api_get } from '../../components/logic/apis'
+import { get_user_and_jwt } from '../../components/logic/users'
 import { useNavigate } from 'react-router-dom'
-import { Avatar, Grid, IconButton, ListItem, ListItemAvatar, ListItemText, List as Mulist, CardContent, Typography, CardActions, Button, CardHeader } from '@mui/material';
-import { get_shift } from '../../Enventory/shifts_functions'
+import { IconButton,  List as Mulist, Button} from '@mui/material';
+import { get_shift } from '../Enventory/shifts_functions'
 
-import { TextField } from '@mui/material';
 
 export default function List(props) {
 
@@ -29,7 +27,6 @@ export default function List(props) {
       if(props.start_time)
       {
 
-        console.log("start time ")
 
   
         let startTime = new Date(props.start_time)
@@ -64,7 +61,6 @@ export default function List(props) {
       navigate(`/square_booking/${e.target.value}`)
     }
 
-    console.log(options_bookings)
   const filteredData =(options_bookings.length > 0 )? (options_bookings.filter(entry => Object.keys(entry).some(val => typeof val === "string" && val.includes(props.input)))):[];
 
 
@@ -75,10 +71,8 @@ export default function List(props) {
     }
     //return the item which contains the user input
     else {
-      console.log("props.input")
-      // console.log(props.input)
+
             try{
-            console.log(el.source)
             return el.source.includes(props.input)
             }catch{
                 return el.bookingNumber.includes(props.input)

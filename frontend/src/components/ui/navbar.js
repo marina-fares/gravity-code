@@ -11,18 +11,14 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
-import AdbIcon from '@mui/icons-material/Adb';
 import theme from '../theme';
 import { ThemeProvider } from '@mui/material';
 import logout from '../logic/logout'
-import { Navigate, useNavigate } from "react-router-dom";
-import { end_shift } from '../../apps/start_shift/shifts_functions';
+import { useNavigate } from "react-router-dom";
 import logo from '../../gravity.png'
 import { get_user_and_jwt } from '../logic/users';
 import { get_shift } from '../../apps/start_shift/shifts_functions';
-import { get_localstorage } from '../logic/localstorage';
 import { useEffect } from 'react';
-import Alert from '@mui/material/Alert';
 
 
 const pages = ['Available Sessions', 'Options', 'Inventory', 'Old Shift'];
