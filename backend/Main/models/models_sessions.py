@@ -18,17 +18,26 @@ class Product(models.Model):
     This class is used to create a model for the promo codes.
     """
     name = models.CharField(max_length=30, unique=False)
+    nick_name = models.CharField("Nick Name", max_length=30, unique=False, blank=True, null=True)
     duration = models.DurationField(default=timedelta(hours=0, minutes=0, seconds=0))
     min_num = models.IntegerField(default=0, null=True, blank=True, unique=False)
     max_num = models.IntegerField(default=0, null=True, blank=True, unique=False)
     price = models.FloatField()
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
+
     
     def clean(self):
         """Ensure duration is in whole hours only (00 minutes, 00 seconds)."""
         total_seconds = self.duration.total_seconds()
+        input_max_num = self.max_num
+        
         if total_seconds % 3600 != 0:
             raise ValidationError("Duration must be in whole hours (e.g., 1:00:00, 2:00:00).")
+        
+        if input_max_num <= 0:
+            raise ValidationError("The Max number should be more than 0, as this is the session capacity")
+
+
 
     
     def __str__(self):
