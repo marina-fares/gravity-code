@@ -81,8 +81,7 @@ export default function SquareBook() {
 useEffect(() => {
     get_shift().then((data) => {
         set_shift(data);
-        console.log("shift ",data)
-        console.log(data.options2)
+
     });
     get_order_from_square()
 
@@ -158,7 +157,6 @@ app_api_get('square/', {
             let zoho_id = response.payment.note.split('+')[1].split(' ')[2]
             set_zoho_sales_receipt_id(zoho_id)
             set_totalprice(response.payment.amount_money.amount/100)
-            console.log("square_payment", response.payment.amount_money.amount/100)
             set_totalprice_method(response.payment.source_type)
             set_receipt_number(response.payment.receipt_number)
         }
@@ -206,12 +204,10 @@ async function update_inventory(){
 
     if(total_price_method === "CASH")
         {
-            console.log("cash refunded")
             shift.refund_cash += total_price
             sub_shift.refund_cash += total_price
         }
         else{
-            console.log("visa refunded ")
             shift.refund_visa += total_price
             sub_shift.refund_visa += total_price
         }
@@ -220,10 +216,8 @@ async function update_inventory(){
     let options_new = []
     for(let i in shift.options2)
     {
-        console.log(Object.keys(shift.options2[i])[0])
         if(Object.keys(shift.options2[i])[0] !== receipt_number )
         {
-            // console.log(i)
             options_new.push(Object.keys(shift.options2[i]))
         }
     }

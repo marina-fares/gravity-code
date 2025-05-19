@@ -80,11 +80,9 @@ export default function MyApp() {
 
 
 useEffect(() => {
-    console.log("get booking details")
     get_booking_from_bookeo()
     get_shift().then((data) => {
         set_shift(data);
-        console.log("shift ",data)
     });
 
     get_sub_shift().then((data) => {
@@ -137,10 +135,8 @@ function get_booking_from_bookeo(){
         "url": `/bookings/${booking_id}`,
         "payload": { },
         }).then((response) => { 
-        // console.log("booking", response)
         if(response.canceled)
         {
-            // console.log("yesssssssssssssssss")
             set_alert(true)
             set_message("This Booking is already Canceled")
         }
@@ -153,7 +149,6 @@ function get_booking_from_bookeo(){
         set_date (date2)
 
         var time = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()
-        console.log(time)
         set_time(time)
 
 
@@ -203,7 +198,6 @@ function delete_booking(){
         "payload":{},
     })
     .then(response => {    
-    console.log(response)
     delete_booking_2()
     
     })
@@ -215,10 +209,7 @@ function delete_booking_2(){
         "url": `/bookings/${booking_id}`,
         "payload":{},
     })
-    .then(response => {    
-    console.log(response)
-    
-    })
+
 
     delete_booking_from_square()
 
@@ -285,17 +276,14 @@ async function update_inventory(){
 
     if(total_price_method === "CASH")
     {
-        console.log("cash refunded")
         shift.refund_cash += total_price
         sub_shift.refund_cash += total_price
     }
     else{
-        console.log("visa refunded ")
         shift.refund_visa += total_price
         sub_shift.refund_visa += total_price
     }
 
-    console.log(shift)
     
     await set_shift_fun(shift)
     await set_sub_shift_fun(sub_shift)
@@ -338,7 +326,6 @@ app_api_get('square/', {
 function check_pass_word(){
 handleToggle()
 let val = document.getElementById("outlined-basic").value
-console.log(val)
 if(val !== shift.password)
 {
     set_alert(true)

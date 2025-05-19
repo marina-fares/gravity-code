@@ -8,16 +8,13 @@ export default function AvailableSlots({date, session_type}){
 
   
   let [available_sessions, set_available_sessions] = useState([]);
-  let[current_session_type, set_current_session_type] = useState('');
+  let [current_session_type, set_current_session_type] = useState('');
 
-  console.log("new", date, session_type)
 
   useEffect(
     ()=>{
-      console.log(date, session_type)
       if((session_type !== current_session_type) ){
         set_available_slots(date, session_type)
-        console.log("yessssssssssssssss")
       }
       else{
         // 
@@ -27,7 +24,6 @@ export default function AvailableSlots({date, session_type}){
   )
 
   function set_available_slots(date, session_type ){
-    console.log(date, session_type)
    if(date && session_type){
 
    
@@ -47,7 +43,6 @@ export default function AvailableSlots({date, session_type}){
   })
   .then(response => {
   set_available_sessions(response.data || [])
-  console.log("sessions", response)
   })
    }
   }

@@ -23,7 +23,6 @@ export default function Home({shift}){
         x.then((y)=> {
             (y.current_shift_id === null)?set_hide(true): set_hide(false)
            set_shift_data(y)
-           console.log("shift data", y)
         })
 
     }, []);

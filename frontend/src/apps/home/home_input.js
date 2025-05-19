@@ -16,24 +16,19 @@ export default function HomeInput({ date, set_date, set_session_type }) {
 	let [selectet_session_type, set_selected_sessions_type] = useState('');
 	const navigate = useNavigate();
 
-	console.log("new")
 	
 	var today = new Date();
 	var today = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
 
 	useEffect(() => {
-		console.log("one")
-		console.log("two")
-		console.log(today)
+
 		set_date(today || '');
 		app_api_get('bookeo/', {
 			request_type: 'get',
 			url: '/settings/products',
 			payload: {},
 		}).then((response) => {
-			console.log("-----------------", response.data)
 			set_sessions_type(response.data );
-			console.log(response.data[0])
 			set_selected_sessions_type(response.data[0])
 			set_session_type(response.data[0])
 		});
@@ -50,13 +45,10 @@ export default function HomeInput({ date, set_date, set_session_type }) {
 	}
 
 	function get_available_sessions_type(e) {
-		// console.log("get sessions",e.target.value)
-		// console.log("yes")
+
 		let session_index = e.target.value
-		// console.log("session key", session_index)
 		set_session_type(sessions_type[session_index] );
 		set_selected_sessions_type(sessions_type[session_index].name  )
-		// console.log(sessions_type[session_index].name)
 		get_sessions()
 	}
 

@@ -13,8 +13,7 @@ export default function List({ data, session_type }) {
 
 	async function card_click_handle(eventId, startTime){
 		set_localstorage('booking_session_object', JSON.stringify(session_type) )
-		console.log('hey hey ana el card', session_type)
-		console.log(startTime)
+
 		await extract_three_sessions(session_type, startTime)
 		navigate(`/book/${eventId}`)
 	}	
@@ -27,9 +26,7 @@ export default function List({ data, session_type }) {
 		let endTime = new Date(startTime)
 		endTime.setHours(endTime.getHours() + 6)
 		endTime = endTime.toISOString()
-		console.log(endTime);
-		console.log("the list page")
-		//  console.log(date, session_type, startTime, endTime) 
+ 
 		app_api_get('bookeo/', {
 		  "request_type": "get",
 		  "url": "/availability/slots",
