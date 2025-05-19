@@ -66,7 +66,7 @@ export default function MyApp() {
         {
             navigate('/')
         }
-    }, [alert])
+    }, [alert, navigate, success])
 
     useEffect(()=>{
         if(bookeoBooking){
@@ -178,28 +178,8 @@ export default function MyApp() {
         );
     };
 
-    const FullPageRow = ({ text, bold, styles }) => {
-        if (bold) {
-            text = <b>{text}</b>;
-        }
-    
-        return (
-            <Row style={{ ...styles, margin: '0 0 0px 0' }}>
-                <Col xs={12} style={{ textAlign: 'center' }}>
-                    {text}
-                </Col>
-            </Row>
-        );
-    };
-    const PageHeader = ({ title }) => {
-        return (
-            <Row style={{ margin: '10px 0 0px 0' }}>
-                <Col xs={12} style={{ textAlign: 'left' }}>
-                    <h6 style={{ margin: '0 0 0px 0' }}>{title}</h6>
-                </Col>
-            </Row>
-        );
-    };
+
+
     
 
 async function update_inventory(){
@@ -310,12 +290,13 @@ return (
                         return (Number(res.quantity) > 0 &&
                     <PaperRow key={res.name} right={res.name} right_bold={true} left={`${res.quantity} * ${res.base_price_money.amount/100}`} />
                     )})
+
                     }
                 
                     <hr style={{ margin: '10px' }} />
                     <PaperRow right='Total Price' right_bold={true} left={`  ${payment.amount_money.amount/100}`} left_bold={true} />
                     
-                    <PaperRow right={`Total Paid: ${payment.source_type == "CASH"? "Cash" : "creditcard"} `} right_bold={true} left={payment.amount_money.amount/100} left_bold={true} />
+                    <PaperRow right={`Total Paid: ${payment.source_type === "CASH"? "Cash" : "creditcard"} `} right_bold={true} left={payment.amount_money.amount/100} left_bold={true} />
                 
 
                 

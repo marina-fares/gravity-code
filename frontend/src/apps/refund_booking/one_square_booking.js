@@ -22,7 +22,6 @@ export default function SquareBook() {
     let { square_order_id } = useParams();
     let [shiftDetails, setShiftDetails] = useState()
     let [subShiftDetails, setSubShiftDetails] = useState()
-    let [payment_ids, set_payment_ids] = useState()
     let [open, setOpen] = useState(false)
     let [alert, set_alert] = useState(false)
     let [message, set_message] = useState()
@@ -49,7 +48,7 @@ export default function SquareBook() {
         if((booking)?.tenders[0].payment_id){
             get_payment_from_square()
         }
-    },[payment_ids])
+    },[booking])
 
     useEffect(()=>{
     if(success)
@@ -65,7 +64,7 @@ export default function SquareBook() {
         {
             navigate('/')
         }
-    },[alert])
+    },[alert, success, navigate])
 
     useEffect(()=>{
     if(deleted_from_square)
@@ -92,7 +91,6 @@ function get_order_from_square(){
             let time = (date.getHours() % 12 || 12) + ':' + date.getMinutes() +' ' + ((date.getHours()>= 12)? 'PM' : 'AM')
             set_time(time)
 
-            set_payment_ids(response.order.tenders[0].payment_id)
             setBooking(response.order)
             
             
@@ -114,7 +112,6 @@ app_api_get('square/', {
     .then(response => {    
         if(response.payment)
         {
-            let zoho_id = response.payment.note.split('+')[1].split(' ')[2]
             setPayment(response.payment)
         }
 
@@ -181,29 +178,23 @@ async function update_inventory(){
 
 }
 
-function delete_booking_from_zoho(){
+async function delete_booking_from_zoho(){
     if(payment.note.split('+')[1].split(' ')[2])
     {
-        app_api_get('zoho/', {
+      await  app_api_get('zoho/', {
             "request_type": "delete",
             "url": `/salesreceipts/${payment.note.split('+')[1].split(' ')[2]}`,
             "payload":{},
         })
-        .then(response => {    
-        delete_booking_from_square()
+       await delete_booking_from_square()
         
-        
-        })
     }
     else{
-        delete_booking_from_square()
+        await delete_booking_from_square()
     }
-
-
 }
 
 function delete_booking_from_square(){
-    // retrive order to get the payment IDs
 app_api_get('square/', {
     "request_type": "post",
     "url": `/refunds`,
@@ -299,7 +290,7 @@ return (
                 <hr style={{ margin: '10px' }} />
                 <PaperRow right='Total Price' right_bold={true} left={`  ${payment.amount_money.amount/100}`} left_bold={true} />
                 
-                <PaperRow right={`Total Paid: ${payment.source_type == "CASH"? "Cash" : "creditcard"} `} right_bold={true} left={payment.amount_money.amount/100} left_bold={true} />
+                <PaperRow right={`Total Paid: ${payment.source_type === "CASH"? "Cash" : "creditcard"} `} right_bold={true} left={payment.amount_money.amount/100} left_bold={true} />
             
 
             
