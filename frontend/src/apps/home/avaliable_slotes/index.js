@@ -7,13 +7,13 @@ import{ useEffect } from 'react';
 export default function AvailableSlots({date, session_type}){
 
   
-  let [available_sessions, set_available_sessions] = useState([]);
-  let [current_session_type, set_current_session_type] = useState('');
+  let [availableSessions, setAvailableSessions] = useState([]);
+  let [selectedProduct, setSelectedProduct] = useState('');
 
 
   useEffect(
     ()=>{
-      if((session_type !== current_session_type) ){
+      if((session_type !== selectedProduct) ){
         set_available_slots(date, session_type)
       }
       else{
@@ -27,7 +27,7 @@ export default function AvailableSlots({date, session_type}){
    if(date && session_type){
 
    
-    set_current_session_type(session_type.name )
+    setSelectedProduct(session_type.name )
  
     const startTime = (new Date(date).toISOString())
     
@@ -42,7 +42,7 @@ export default function AvailableSlots({date, session_type}){
     "payload": { "startTime": startTime , "endTime" : endTime,productId: session_type.productId},
   })
   .then(response => {
-  set_available_sessions(response.data || [])
+  setAvailableSessions(response.data || [])
   })
    }
   }
@@ -54,6 +54,6 @@ export default function AvailableSlots({date, session_type}){
 
 
   return (
-    <List data= {available_sessions} session_type={session_type} className='m-5' />
+    <List data= {availableSessions} session_type={session_type} className='m-5' />
   )
 }

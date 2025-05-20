@@ -23,14 +23,12 @@ export default function HomeInput({ date, set_date, set_session_type }) {
 	useEffect(() => {
 
 		set_date(today || '');
-		app_api_get('bookeo/', {
+		app_api_get('product/', {
 			request_type: 'get',
-			url: '/settings/products',
 			payload: {},
 		}).then((response) => {
-			set_sessions_type(response.data );
-			set_selected_sessions_type(response.data[0])
-			set_session_type(response.data[0])
+			console.log("----------------------------30")
+			console.log(response)
 		});
 	}, []);
 
@@ -38,7 +36,6 @@ export default function HomeInput({ date, set_date, set_session_type }) {
 
 	function refund(){
 
-		// eslint-disable-next-line no-lone-blocks
 		set_localstorage('date', date )
 		set_localstorage('session_type', selectet_session_type )
 		navigate('/oldbookings')

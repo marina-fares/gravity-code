@@ -1,5 +1,4 @@
 import { remove_user_and_jwt } from "./users";
-import history from './history'
 
 
 function Logout(){

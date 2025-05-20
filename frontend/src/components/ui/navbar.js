@@ -27,9 +27,9 @@ const settings = ['End Shift', 'Logout'];
 const NavBar = () => {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
-  let [shift, set_shift] = React.useState();
-  let [alert, set_alert] = React.useState(false)
-  let [check_password, set_check_password] = React.useState(false)
+  let [, set_shift] = React.useState();
+  let [, set_alert] = React.useState(false)
+  let [check_password, ] = React.useState(false)
 
   useEffect(() => {
     get_shift_data()

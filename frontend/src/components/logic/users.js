@@ -57,7 +57,7 @@ function login(username, password) {
 
 
 function get_and_store_user(){
-    let data =  app_api_put('current_user/', {}).then(data => {
+    app_api_put('current_user/', {}).then(data => {
 
         set_user(data)
     })
