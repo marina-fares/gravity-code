@@ -86,7 +86,7 @@ export default function EndShift() {
 								<Card className="m-3">
 									<Card.Title className="m-3">Shift Cash</Card.Title>
 									<Card.Body>
-										<h3>{sub_shift_details.start_shift_cash + sub_shift_details.shift_money_cash - sub_shift_details.refund_cash} LE</h3>
+										<h3>{ sub_shift_details.shift_money_cash - sub_shift_details.refund_cash} LE</h3>
 									</Card.Body>
 								</Card>
 

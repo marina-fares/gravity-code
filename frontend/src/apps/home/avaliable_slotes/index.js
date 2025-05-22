@@ -2,49 +2,30 @@ import List from './list';
 import { app_api_get } from '../../../components/logic/apis';
 import { Fragment, useState } from 'react';
 import{ useEffect } from 'react';
+import { get_available_sessions } from '../../../components/logic/sessions_apis';
 
-
-export default function AvailableSlots({date, session_type}){
+export default function AvailableSlots({date, allProducts, selectedProduct, setSelectedProduct}){
 
   
   let [availableSessions, setAvailableSessions] = useState([]);
-  let [selectedProduct, setSelectedProduct] = useState('');
 
 
   useEffect(
     ()=>{
-      if((session_type !== selectedProduct) ){
-        set_available_slots(date, session_type)
-      }
-      else{
-        // 
+      console.log("----------------15", date, selectedProduct)
+      if((date && selectedProduct) ){
+        set_available_slots(date, selectedProduct)
       }
     }
-    ,[date,session_type]
+    ,[date,selectedProduct]
   )
 
-  function set_available_slots(date, session_type ){
-   if(date && session_type){
-
-   
-    setSelectedProduct(session_type.name )
+async  function set_available_slots(date, selectedProduct ){
  
-    const startTime = (new Date(date).toISOString())
-    
-    const tomorrow =  new Date(date)
-    tomorrow.setHours(24)
+    const payload = { "date": date , "product" : selectedProduct.id}
 
-    const endTime = (tomorrow.toISOString())
- 
-  app_api_get('bookeo/', {
-    "request_type": "get",
-    "url": "/availability/slots",
-    "payload": { "startTime": startTime , "endTime" : endTime,productId: session_type.productId},
-  })
-  .then(response => {
-  setAvailableSessions(response.data || [])
-  })
-   }
+    const data = await get_available_sessions(payload);
+    setAvailableSessions(data)
   }
   
     
@@ -54,6 +35,6 @@ export default function AvailableSlots({date, session_type}){
 
 
   return (
-    <List data= {availableSessions} session_type={session_type} className='m-5' />
+    <List date={date} availableSessions={availableSessions} selectedProduct={selectedProduct} className='m-5' />
   )
 }

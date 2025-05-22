@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY')
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000
+
 # SECURITY WARNING: don't run with debug turned on in production!
 
 PLATFORM = os.getenv('PLATFORM')
@@ -36,8 +36,8 @@ if PLATFORM == 'DEVELOPMENT':
     ALLOWED_HOSTS = ['*']
 
 elif PLATFORM == 'PRODUCTION':
-    DEBUG = True
-    ALLOWED_HOSTS = ['fo.gravitycode.me']
+    DEBUG = False
+    ALLOWED_HOSTS = ['fobook.gravitycode.me']
 
 # Application definition
 
@@ -68,14 +68,15 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
 ]
 CORS_ALLOWED_ORIGINS = [
-    'https://fo.gravitycode.me',
+    'http://frontend.gravity.com:3001',
+    # 'http://44.201.165.150:3000'
     'http://44.201.165.150:5000',
     'https://fobook.gravitycode.me',
     'http://localhost:3001'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://fo.gravitycode.me',
+    'https://fobook.gravitycode.me',
     'http://localhost:3001'
 ]
 
@@ -85,7 +86,7 @@ ROOT_URLCONF = 'Config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -185,7 +186,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/django_static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
@@ -208,4 +209,3 @@ ZOHO_DOMAIN_URL = os.environ.get('ZOHO_DOMAIN_URL')
 ZOHO_REFRESH_TOKEN = os.environ.get('ZOHO_REFRESH_TOKEN')
 ZOHO_CLIENT_ID = os.environ.get('ZOHO_CLIENT_ID')
 ZOHO_CLIENT_SECRET = os.environ.get('ZOHO_CLIENT_SECRET')
-

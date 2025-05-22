@@ -1,6 +1,6 @@
 import { get_jwt } from './users'
 
-let APP_BASE_URL = 'https://fo.gravitycode.me/api/'
+let APP_BASE_URL = 'http://localhost:5000/api/'
 
 
 function app_post(url, data){
@@ -19,7 +19,7 @@ function app_post(url, data){
     .then(response => response.json())
 }
 
-function app_get(url, params){
+function app_get(url, params = {}){
     let headers = {
         'Content-Type': 'application/json'
     }
@@ -27,10 +27,13 @@ function app_get(url, params){
     if(token){
         headers['Authorization'] = `Bearer ${token}`
     }
-    return fetch(APP_BASE_URL + url, {
+
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = APP_BASE_URL + url + (queryString ? `?${queryString}` : '');
+
+    return fetch(fullUrl, {
         'method': 'get',
         headers,
-        params: params
     })
     .then(response => response.json())
 }

@@ -1,4 +1,5 @@
-FROM python:3.9-slim
+FROM python:3.9
+
 
 ENV PYTHONUNBUFFERED=1
 ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
@@ -35,7 +36,6 @@ COPY .env /usr/src/app/.env
 COPY entrypoint.sh /usr/bin/
 RUN chmod +x /usr/bin/entrypoint.sh
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/entrypoint.sh"]
 
 EXPOSE 5000
-

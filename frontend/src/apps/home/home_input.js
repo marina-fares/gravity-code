@@ -1,35 +1,23 @@
-import { Button, Container, FormControl, InputLabel, MenuItem } from '@mui/material';
+import { Button, FormControl, InputLabel, MenuItem } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import Select from '@mui/material/Select';
 import { Stack } from '@mui/system';
-import { app_api_get } from '../../components/logic/apis';
 import { useState } from 'react';
 import { useEffect } from 'react';
-import Card from 'react-bootstrap/Card';
 import get_sessions from '../home/avaliable_slotes/index'
-import OldBookings from '../refund_booking';
+import OldBookingsFun from '../refund_booking';
 import { useNavigate } from 'react-router-dom';
 import { set_localstorage } from '../../components/logic/localstorage';
 
-export default function HomeInput({ date, set_date, set_session_type }) {
-	let [sessions_type, set_sessions_type] = useState([0]);
-	let [selectet_session_type, set_selected_sessions_type] = useState('');
+export default function HomeInput({ date, setDate, allProducts, selectedProduct, setSelectedProduct }) {
 	const navigate = useNavigate();
+	const [selectedProductId, setSelectedProductId] = useState();
 
-	
 	var today = new Date();
 	var today = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
 
 	useEffect(() => {
-
-		set_date(today || '');
-		app_api_get('product/', {
-			request_type: 'get',
-			payload: {},
-		}).then((response) => {
-			console.log("----------------------------30")
-			console.log(response)
-		});
+		setDate(today || '');
 	}, []);
 
 
@@ -37,16 +25,16 @@ export default function HomeInput({ date, set_date, set_session_type }) {
 	function refund(){
 
 		set_localstorage('date', date )
-		set_localstorage('session_type', selectet_session_type )
+		set_localstorage('session_type', selectedProduct )
 		navigate('/oldbookings')
 	}
 
-	function get_available_sessions_type(e) {
+	function get_selected_product(e) {
 
-		let session_index = e.target.value
-		set_session_type(sessions_type[session_index] );
-		set_selected_sessions_type(sessions_type[session_index].name  )
-		get_sessions()
+		const selectedProductId = e.target.value;
+		const productDetails = allProducts.find(item => item.id === selectedProductId);
+		setSelectedProductId(productDetails.id)
+		setSelectedProduct(productDetails)
 	}
 
 	return (
@@ -56,7 +44,7 @@ export default function HomeInput({ date, set_date, set_session_type }) {
 				label='Selected Date'
 				type='date'
 				onChange={(e) => {
-					set_date(e.target.value || '');
+					setDate(e.target.value || '');
 				}}
 				defaultValue={today}
 				sx={{ width: 220 }}
@@ -68,15 +56,22 @@ export default function HomeInput({ date, set_date, set_session_type }) {
 			<br></br>
 			<FormControl>
 				<InputLabel id='demo-multiple-name-label'>Session Type</InputLabel>
-
-				<Select  defaultValue={sessions_type[0]} labelId='demo-multiple-name-label' label="Session Type" onChange={get_available_sessions_type} sx={{ width: 220 }} default="yes">
-
-					{sessions_type.map((type,i) => (
-						<MenuItem key={i} value={i}>
-							{type.name}
-						</MenuItem>
-					))}
+				<Select
+				value={selectedProductId ?? allProducts?.[0]?.id ?? ""}
+				labelId='demo-multiple-name-label'
+				label="Session Type"
+				onChange={get_selected_product}
+				sx={{ width: 220 }}
+				>
+				{allProducts?.map((item) => (
+					<MenuItem key={item} value={item.id}>
+					{item.nick_name}
+					</MenuItem>
+				))}
 				</Select>
+
+
+
 				<Button onClick={refund}>
 					Refund
 				</Button>

@@ -12,7 +12,8 @@ from .apis.users import UsersGroups
 from .views import select_weekdays
 from .apis.session_api import SessionApi
 from .apis.product_api import ProductApi
-from .apis.booking_api import BookingApi
+from .apis.booking_api import BookingApi, OneBookingApi
+from .apis.customer_api import CustomerApi
 
 urlpatterns = [
     path('current_user/', VerifyUserToken.as_view(), name='current_user'),
@@ -31,6 +32,9 @@ urlpatterns = [
     path('weekdays/', select_weekdays, name='select_weekdays'),
     path('products/', ProductApi.as_view(), name='products'),
     path('sessions/', SessionApi.as_view(), name='sessions'),
-    path('bookings/', BookingApi.as_view(), name='bookings'),
+    path('session/<int:session_id>/', SessionApi.as_view(), name='session'),
+    path('bookings/<int:session_id>/', BookingApi.as_view(), name='bookings'),
+    path('booking/<int:booking_id>/', OneBookingApi.as_view(), name='bookings'),
+    path('customers/', CustomerApi.as_view(), name='customers'),
 
 ]

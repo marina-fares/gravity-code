@@ -30,6 +30,8 @@ export default function EndShift() {
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
+		console.log(e.target.password.value)
+		console.log(shift_details.endshift_page_password)
 		if (shift_details?.endshift_page_password === e.target.password.value) {
 			setShowAlert(false);
 			setPasswordValid(true);

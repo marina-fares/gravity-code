@@ -123,6 +123,7 @@ async function get_catalog() {
 		let category_ids = {}
 		// catalog = {cat_name: cat_id} 
 		let category_items = {}
+		let squareItems = {}
 		
 		// catalog = {cat_name: {item_name: item_id}} 
 		
@@ -143,6 +144,22 @@ async function get_catalog() {
 			let total_Items = {}
 
 			catalog["objects"].forEach((obj, ind)=>{
+				item = {}
+				if(obj["type"] === "ITEM"){
+				item_name = obj["item_data"]["name"]
+				item_id = obj["item_data"]["variations"][0]["id"]
+			
+				item[item_name] = item_id 
+				let cat_obj = obj["item_data"]["categories"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
+				let old_cat = category_items[cat_obj] 
+				// let old_cat = category_items[obj["item_data"]["category_id"]] 
+				console.log("------------------156")
+				console.log(obj["item_data"])
+				squareItems[cat_obj] =  Object.assign({}, old_cat, item);
+					
+				}})
+
+							catalog["objects"].forEach((obj, ind)=>{
 				item = {}
 				if(obj["type"] === "ITEM"){
 				item_name = obj["item_data"]["name"]

@@ -16,9 +16,8 @@ services:
           - "app.gravity.com"
     volumes:
       - ./backend:/usr/src/app
+      - ./backend/django-static:/usr/src/app/django-static 
       - backend-pips-dir:/usr/local/lib/python3.9/site-packages:delegated
-    depends_on:
-      - db
     ports:
       - 5000:5000
     environment:
@@ -28,30 +27,9 @@ services:
       HISTFILE: /usr/src/app/src/logs/.bash_history.log
 
 
-  db:
-    image: "postgres:13.7-alpine"
-    hostname: "db"
-    domainname: "gravity.com"
-    container_name: "db"
-    restart: "always"
-    networks:
-      gravity_default:
-        aliases:
-          - "db.gravity.com"
-    volumes:
-      - db-data:/var/lib/postgresql/data
-      - db-logs:/var/log/postgresql
-    ports:
-      - 8001:5432
-    environment:
-      VIRTUAL_HOST: "db.gravity.com"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
 
     
 volumes:
-  db-data:
-  db-logs:
   backend-pips-dir:
 
 networks:

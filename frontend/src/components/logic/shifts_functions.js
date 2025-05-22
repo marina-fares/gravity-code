@@ -91,38 +91,52 @@ async function get_catalog() {
 		// catalog = {cat_name: cat_id} 
 		let category_items = {}
 		
-		// catalog = {cat_name: {item_name: item_id}} 
+
+		catalog["objects"].forEach((obj, ind)=>{
+		if(obj["type"] === "CATEGORY"){
+			category_ids[obj.category_data.name] = obj.id  
+			category_items[obj.id] = {}
+		}
+		})
+
+			
+		let item_name = ""
+		let item_id = ""
+		let item = {}
+
+		catalog["objects"].forEach((obj, ind)=>{
+			item = {}
+			if(obj["type"] === "ITEM"){
+			item_name = obj["item_data"]["name"]
+			item_id = obj["item_data"]["variations"][0]["id"]
 		
 
-		// let catalog_ids = {}
-			catalog["objects"].forEach((obj, ind)=>{
-			if(obj["type"] === "CATEGORY"){
-				category_ids[obj.category_data.name] = obj.id  
-				category_items[obj.id] = {}
-			}
-			})
+			item[item_name] = item_id 
+			let cat_obj = obj["item_data"]["categories"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
+			let old_cat = category_items[cat_obj] 
+			category_items[cat_obj] =  Object.assign({}, old_cat, item);
+				
+		}})
 
-			
-			let item_name = ""
-			let item_id = ""
-			let item = {}
+		let squareItems = {}
+		catalog["objects"].forEach((obj, ind)=>{
+			item = {}
+			if(obj["type"] === "ITEM"){
+			item_name = obj["item_data"]["name"]
+			item_id = obj["item_data"]["variations"][0]["id"]
+		
 
-			catalog["objects"].forEach((obj, ind)=>{
-				item = {}
-				if(obj["type"] === "ITEM"){
-				item_name = obj["item_data"]["name"]
-				item_id = obj["item_data"]["variations"][0]["id"]
-			
-
-				item[item_name] = item_id 
-				let cat_obj = obj["item_data"]["categories"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
-				let old_cat = category_items[cat_obj] 
-				category_items[cat_obj] =  Object.assign({}, old_cat, item);
-					
-				}})
+			item[item_name] = item_id 
+			let cat_obj = obj["item_data"]["categories"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
+			let old_cat = category_items[cat_obj] 
+			let cat_name = Object.keys(category_ids).find(key => category_ids[key] === cat_obj);
+			squareItems[cat_name] =  Object.assign({}, old_cat, item);
+				
+		}})
 		
 		set_localstorage("category_ids",JSON.stringify(category_ids))
 		set_localstorage("category_items",JSON.stringify(category_items))
+		set_localstorage("squareItems",JSON.stringify(squareItems))
 		
 		return response;
 	});

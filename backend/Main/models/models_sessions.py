@@ -86,10 +86,11 @@ class Booking(models.Model):
         ("pending", "Pending"),
         ("done", "Done"),
         ("refunded", "Refunded"),
+        ("hold", "Hold")
     ]
 
     session = models.ForeignKey(Session, on_delete=models.PROTECT, null=True, blank=True)
-    customer = models.CharField(null=True, blank=True, max_length=100)
+    booking_customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True, blank=True, max_length=100)
     options = ArrayField(
         models.CharField(max_length=100),  # Define the type of each element
         blank=True, 
@@ -99,6 +100,7 @@ class Booking(models.Model):
     number_of_players = models.IntegerField(null=True, default=True)
     type_of_players = models.CharField(null=True, blank=True, max_length=20)
     creation_agent = models.CharField(null = True, blank=True, max_length=100)
+    created_at = models.DateTimeField(null=True, blank=True, default=timezone.now)
     square_receipt_number = models.CharField(null = True, blank=True, max_length=20)
     square_order_id = models.CharField(null = True, blank=True, max_length= 20)
     zoho_sales_receipt_id = models.CharField(null = True, blank=True, max_length= 20)
@@ -131,8 +133,12 @@ class Booking(models.Model):
 
     def __str__(self):
         return str(self.id) + ' - ' + str(self.session)
-    
 
+
+class Customer(models.Model):
+    identifier = models.CharField(max_length=30, unique=False)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, null=True)
+    all_bookings = models.ManyToManyField(Booking, blank=True)
 
     
 

@@ -17,14 +17,13 @@ class ProductApi(generics.GenericAPIView):
         """
         current_user = self.request.user
         if current_user.is_superuser:
-            all_products = Product.objects.all()
-            serializer = ProductSerializer(all_products).data
+            products = Product.objects.all()
         else:
             current_user_groups = current_user.groups.all()
             current_user_group_names = [group.name for group in current_user_groups]
-            group_products = Product.objects.filter(group__name__in=current_user_group_names)
-            serializer = ProductSerializer(group_products).data
-        return Response(serializer)
+            products = Product.objects.filter(group__name__in=current_user_group_names)
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
 
 
 

@@ -15,8 +15,8 @@ import Backdropfun from './loading'
 import delete_hold from './delete_hold'
 import {useWaitForDOMRef} from '@restart/ui';
 import { app_get } from '../../components/logic/app';
-
-let APP_BASE_URL = 'https://fo.gravitycode.me/api/'
+import LoadingFun from '../../components/ui/loading';
+import AlertFun from '../../components/ui/alert';
 
 // console.log(get_localstorage('shift'))
 
@@ -32,7 +32,7 @@ export default function BookingAPI(data) {
             "source_id": ""
     }
     )
-    let booking_session_object = JSON.parse(get_localstorage('booking_session_object'));
+    let productType = JSON.parse(get_localstorage('productType'));
     
 
     let [bookbutton, set_bookbutton] = useState(false)
@@ -46,59 +46,11 @@ export default function BookingAPI(data) {
     let [options_zoho_items_updated_flag, set_options_zoho_items_updated_flag] = useState(false)
     let [booking_time, set_booking_time] = useState()
     let [options_zoho_items_updated, set_options_zoho_items_updated] = useState([])
+    let [ open, setOpen ] = useState(false)
+    let [ alert, setAlert ] = useState(false)
+    let [message, setMessage ] = useState('')
 
 
-// in the start of the page, without condition
-// get three sessions API
-// get the user's group details
-useEffect(() => {
-    let startTime = new Date()
-    let endTime = new Date(startTime)
-    endTime.setDate(startTime.getDate() + 31)
-    app_api_get('bookeo/', {
-        "request_type": "get",
-        "url": "/availability/slots",
-        "payload": { "startTime": startTime , "endTime" : endTime,productId: booking_session_object.productId},
-        }).then(response => {
-        for (let i=0  ; i< Object.keys(response.data).length ; i++ )
-        {
-            if(response.data[i].eventId == data.current_eventid)
-            {
-                for (let j = i+1 ; j< Object.keys(response.data).length ; j++)
-                {
-                    set_three_sessions(three_sessions => (
-                        [
-                            ...three_sessions, response.data[j]
-                        ]  
-                            ))         
-                }
-                break
-            }
-            
-        }
-    })
-            
-    // get the user's group details
-    let current_group_data = app_get('current_group/')
-    current_group_data.then((x) =>{
-        console.log("current_group")
-        console.log(x)
-        console.log(x.cash_threshold_amount)
-        console.log(x.visa_threshold_amount)
-        set_current_group(x)
-    })
-}, []);
-
-
-// on any change in the booking page
-useEffect(()=>{
-    if(!data.bookingsuccess){
-        console.log("options")
-        console.log(data.options)
-        data.set_arr_options_fun()
-    }
-
-},[data.options, data.numbers, data.category_of_session, data.promocode, data.promotrue])
 
 // condition 1
 // start with the first function
@@ -113,7 +65,7 @@ useEffect(()=>{
 useEffect(()=>{
     if(options_zoho_items_updated_flag)
     {
-        create_order_api()
+        create_payment_api()
     }
 },[options_zoho_items_updated_flag])
 // condition 2
@@ -131,8 +83,8 @@ useEffect(() => {
 // if the square create payment api is done
 // go to phase 4
 useEffect(()=>{
-    if(!data.bookingsuccess && data.square_receipt_number && data.square_order_id)  {
-        if (data.firstPaid_method === "cash")
+    if(!data.bookingsuccess && data.paymentDetails)  {
+        if (data.paymentDetails.source_type === "cash")
         {
             pay_order_api()
         }
@@ -142,7 +94,7 @@ useEffect(()=>{
         }
         
     }
-},[data.square_receipt_number])
+},[data.paymentDetails])
 
 
 useEffect(()=>{
@@ -193,22 +145,20 @@ useEffect(()=>{
 //phase 1 
 // check the customer name and money 
 // go to phase 2
-function Book(){
-    data.handleToggle()
-    if(!data.customer.firstName || !data.customer.lastName)
-    {
-        let date = new Date()
-        date.setMonth(date.getMonth() + 1 )
-        data.set_customer({"firstName": date.getFullYear() + "/" + date.getMonth() + "/" + date.getDate(),
-                        "lastName": date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()})
-    }
-    if(data.firstPaid === '' || data.firstPaid_method === ''){
-        data.set_alert(true)
-        data.set_message("Please enter a valid payment")
-    }
+async function Book(){
+    setOpen(true)
+    // if(!data.customer.firstName || !data.customer.lastName)
+    // {
+    //     let date = new Date()
+    //     date.setMonth(date.getMonth() + 1 )
+    //     data.set_customer({"firstName": date.getFullYear() + "/" + date.getMonth() + "/" + date.getDate(),
+    //                     "lastName": date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()})
+    // }
+    // if(data.firstPaid === '' || data.firstPaid_method === ''){
+    //     data.setAlert(true)
+    //     data.setMessage("Please enter a valid payment")
+    // }
     data.options_zoho_items.forEach((item, index) => {
-        console.log("----------------210")
-        console.log(item)
         if (item.rate != 0)
         {
             
@@ -225,11 +175,7 @@ function Book(){
         }
       });
    
-    // create_order_api()
-    console.log("---------------217")
-    console.log(options_zoho_items_updated)
     set_options_zoho_items_updated_flag(true)
-
 }
 
 // phase 2
@@ -256,8 +202,8 @@ function create_order_api(){
         set_booking_time(response.order.created_at)
     }
     else{
-        data.set_alert(true)
-        data.set_message(response.errors[0].detail)
+        data.setAlert(true)
+        data.setMessage(response.errors[0].detail)
     }
 })
 }
@@ -266,34 +212,31 @@ function create_order_api(){
 // create payment at square
 // go to condition 3
 function create_payment_api(){
-    data.set_booking_bookeo(false)
     app_api_get('square/', {
         "request_type": "post",
         "url": "/payments",
         "payload": {...payment_for_square_api, 
-            "order_id": data.square_order_id,
-            "note": `Customer Name : ${data.customer.firstName} ${data.customer.lastName} Booking owner: ${get_user_and_jwt().user.username}`,
-            "source_id" : (data.firstPaid_method === "cash")?"CASH": "EXTERNAL", 
-            "amount" : data.firstPaid*100 ,
+            "order_id": data.orderDetails.id,
+            "note": `Booking owner: ${get_user_and_jwt().user.username}`,
+            "source_id" : (data.paymentMethod === "cash")?"CASH": "EXTERNAL", 
+            "amount" : data.paid*100 ,
             "amount_money": {
-                "amount": data.firstPaid *100,
+                "amount": data.paid *100,
                 "currency": "EGP"
                 },
-            "autocomplete": (data.firstPaid_method === "cash")?false: true, 
-            "team_member_id": data.updated_shift.square_team_member_id,
-            "customer_id": data.updated_shift.customer_id,
-            "location_id": data.updated_shift.square_location_id
+            "autocomplete": (data.paymentMethod === "cash")?false : true, 
+            "team_member_id": data.shiftDetails.square_team_member_id,
+            "customer_id": data.shiftDetails.customer_id,
+            "location_id": data.shiftDetails.square_location_id
             }
     }).then(response => {
     // if the api succed
     if(!response.errors){
-        data.set_payment_ids(response.payment.id)
-        data.set_square_receipt_number( response.payment.receipt_number)
+        data.setpaymentDetails(response.payment)
     }
     else{
-        data.set_payment_ids()
-        data.set_alert(true)
-        data.set_message(response.errors[0].detail)
+        setAlert(true)
+        setMessage(response.errors[0].detail)
     }   
     })
 
@@ -306,9 +249,9 @@ function pay_order_api(){
  
 app_api_get('square/', {
     "request_type": "post",
-    "url": `/orders/${data.square_order_id}/pay`,
+    "url": `/orders/${data.orderDetails.id}/pay`,
     "payload": {
-        "payment_ids": [data.payment_ids]
+        "payment_ids": [data.paymentDetails.id]
     } }
 ).then(response => {
     
@@ -317,9 +260,8 @@ app_api_get('square/', {
         set_order_paid(true)
     }
     else{
-        data.set_payment_ids()
-        data.set_alert(true)
-        data.set_message(response.errors[0].detail)
+        data.setAlert(true)
+        data.setMessage(response.errors[0].detail)
     }
         })
 
@@ -332,53 +274,53 @@ function bookeo_api(){
 
     set_bookbutton(true)
     // add only one payment
-    app_api_get('bookeo/', {
-            "request_type": "post",
-            "url": "/bookings",
-            "payload": {
-                "eventId": (data.create_order_flag && three_sessions )?three_sessions[0].eventId:data.event_id,
-                "customer": data.customer,
-                "participants": {
-                    "numbers": data.numbers,
-                },
-                "productId": booking_session_object.productId,
-                "options":data.arr_options,
-                "promotionCodeInput": ((data.promocode)?(data.promocode.duration > 1)?"":data.promocode.code : ""),
+    // app_api_get('bookeo/', {
+    //         "request_type": "post",
+    //         "url": "/bookings",
+    //         "payload": {
+    //             "eventId": (data.create_order_flag && three_sessions )?three_sessions[0].eventId:data.event_id,
+    //             "customer": data.customer,
+    //             "participants": {
+    //                 "numbers": data.numbers,
+    //             },
+    //             "productId": productType.productId,
+    //             "options":data.arr_options,
+    //             "promotionCodeInput": ((data.promocode)?(data.promocode.duration > 1)?"":data.promocode.code : ""),
                 
-                "source": data.square_receipt_number,
-                "initialPayments": (data.totalprice === "0")?[]:[{
-                    "reason": "Initial deposit1",
-                    "comment": data.square_receipt_number,
-                    "description": "Prepaid package MemberShip 1",
-                    "amount": {
-                    "amount": data.firstPaid.toString(),
-                    "currency": "EGP"
-                    },
-                    "paymentMethod": (data.firstPaid_method == "cash")?"cash":"creditCard"}],     
-                "externalRef": (data.note)?((data.note.length > 64)? data.note.slice('',54): data.note):'',
-                "creationAgent": get_user_and_jwt().user.username,
-                "sourceIp": data.square_order_id + '+' + get_user_and_jwt().user.username + '+' + zoho_sales_receipt_id
-            }
-        }).then(response => {
-                if(response.httpStatus){
-                data.set_alert(true)
-                data.set_message(response.message)
-                }
-                else{
-                    if(data.promocode )
-                    {
-                        if(data.promocode.duration <= 1)
-                        {
-                            data.set_bookingsuccess(true)
-                            console.log("the booking is created ")
-                        }
-                    }
-                    else{
-                        data.set_bookingsuccess(true)
-                        console.log("the booking is created ")
-                    }
-                }
-        })
+    //             "source": data.square_receipt_number,
+    //             "initialPayments": (data.totalprice === "0")?[]:[{
+    //                 "reason": "Initial deposit1",
+    //                 "comment": data.square_receipt_number,
+    //                 "description": "Prepaid package MemberShip 1",
+    //                 "amount": {
+    //                 "amount": data.firstPaid.toString(),
+    //                 "currency": "EGP"
+    //                 },
+    //                 "paymentMethod": (data.firstPaid_method == "cash")?"cash":"creditCard"}],     
+    //             "externalRef": (data.note)?((data.note.length > 64)? data.note.slice('',54): data.note):'',
+    //             "creationAgent": get_user_and_jwt().user.username,
+    //             "sourceIp": data.square_order_id + '+' + get_user_and_jwt().user.username + '+' + zoho_sales_receipt_id
+    //         }
+    //     }).then(response => {
+    //             if(response.httpStatus){
+    //             data.setAlert(true)
+    //             data.setMessage(response.message)
+    //             }
+    //             else{
+    //                 if(data.promocode )
+    //                 {
+    //                     if(data.promocode.duration <= 1)
+    //                     {
+    //                         data.set_bookingsuccess(true)
+    //                         console.log("the booking is created ")
+    //                     }
+    //                 }
+    //                 else{
+    //                     data.set_bookingsuccess(true)
+    //                     console.log("the booking is created ")
+    //                 }
+    //             }
+    //     })
 if(data.promocode){
     for(let j=1; j < (data.promocode.duration ); j++ )
     {
@@ -386,32 +328,32 @@ if(three_sessions === undefined){
 }
 else{
         if(three_sessions[j-1]){
-        app_api_get('bookeo/', {
-            "request_type": "post",
-            "url": "/bookings",
-            "payload": {
-                // add the event ID of the next session
-                "eventId": three_sessions[j-1].eventId, 
-                "customer": data.customer,
-                "participants": {
-                    "numbers": data.numbers,
-                },
-                "productId": booking_session_object.productId,
-                // promocode 100% off
-                "promotionCodeInput": data.promocode.code,
-                "promotionName": "GC 10%",
-                "externalRef": (data.note)?((data.note.length > 64)? data.note.slice('',54): data.note):'',
+    //     app_api_get('bookeo/', {
+    //         "request_type": "post",
+    //         "url": "/bookings",
+    //         "payload": {
+    //             // add the event ID of the next session
+    //             "eventId": three_sessions[j-1].eventId, 
+    //             "customer": data.customer,
+    //             "participants": {
+    //                 "numbers": data.numbers,
+    //             },
+    //             "productId": productType.productId,
+    //             // promocode 100% off
+    //             "promotionCodeInput": data.promocode.code,
+    //             "promotionName": "GC 10%",
+    //             "externalRef": (data.note)?((data.note.length > 64)? data.note.slice('',54): data.note):'',
                 
-                "source": data.square_receipt_number ,
-                "sourceIp": data.square_order_id + '+' + get_user_and_jwt().user.username,
-            }
-        }).then(response => {
-            console.log("bookeo res", response)
-        if(j === data.promocode.duration - 1 )
-        {
-            data.set_bookingsuccess(true)
-        }
-    })
+    //             "source": data.square_receipt_number ,
+    //             "sourceIp": data.square_order_id + '+' + get_user_and_jwt().user.username,
+    //         }
+    //     }).then(response => {
+    //         console.log("bookeo res", response)
+    //     if(j === data.promocode.duration - 1 )
+    //     {
+    //         data.set_bookingsuccess(true)
+    //     }
+    // })
     }
     }
     }
@@ -464,8 +406,8 @@ function create_sales_receipt(){
             
         }
         else{
-            data.set_alert(true)
-            data.set_message(response.message)
+            data.setAlert(true)
+            data.setMessage(response.message)
         }
 
     })
@@ -513,7 +455,7 @@ async function update_inventory(){
 
     if(data.sub_shift.shift_money_cash >= current_group.cash_threshold_amount || data.sub_shift.shift_money_visa >= current_group.visa_threshold_amount)
     {
-        data.set_alert_threshold_amount(true)
+        data.setAlert_threshold_amount(true)
     }
     
     set_enventory_updated(true)
@@ -524,8 +466,11 @@ async function update_inventory(){
 
 
 return(
+    <>
+    <LoadingFun open={open} />
+    <AlertFun open_alert={alert} set_open_alert={setAlert} message={message}/>
     <Button onClick={Book} variant="outlined" disable={bookbutton.toString()} className="w-50">Book</Button>
-                        
+    </>                  
 )
 
 }

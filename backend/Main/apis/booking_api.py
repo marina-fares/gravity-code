@@ -11,7 +11,7 @@ class BookingApi(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = BookingSerializer
 
-    def get(self, request):
+    def get(self, request, session_id):
         """
         This method is used to make a request to the Square API.
         """
@@ -20,11 +20,42 @@ class BookingApi(generics.GenericAPIView):
             all_products = Booking.objects.all()
             serializer = BookingSerializer(all_products).data
         else:
-            current_user_groups = current_user.groups.all()
-            current_user_group_names = [group.name for group in current_user_groups]
-            group_products = Booking.objects.filter(group__name__in=current_user_group_names)
-            serializer = BookingSerializer(group_products).data
+            sessionBookings = Booking.objects.filter(session=session_id)
+            serializer = BookingSerializer(sessionBookings, many=True).data
         return Response(serializer)
 
+    def post(self, request):
+        """
+        This method is used to make a request to the Square API.
+        """
+        current_user = self.request.user
+        data = request.data.get('payload', {})
+
+        print("--------------------55", data)
+        sessionBookings = Booking.objects.create(data)
+        serializer = BookingSerializer(sessionBookings).data
+        return Response(serializer)
+
+
+class OneBookingApi(generics.GenericAPIView):
+    """
+    This class is used to make a request to the Square API.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BookingSerializer
+
+    def get(self, request, booking_id):
+        """
+        This method is used to make a request to the Square API.
+        """
+        current_user = self.request.user
+        if current_user.is_superuser:
+            all_products = Booking.objects.all()
+            serializer = BookingSerializer(all_products).data
+        else:
+            sessionBookings = Booking.objects.get(id=booking_id)
+            serializer = BookingSerializer(sessionBookings).data
+        return Response(serializer)
+    
 
 
