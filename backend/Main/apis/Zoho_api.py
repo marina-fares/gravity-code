@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from ..serializers.user_serializer import UserProfileSerializer, GroupSerializer
 from ..serializers.ZohoApiSerializers import ZohoApiSerializers
 from ..interfaces.zoho_interface import ZohoApiInterface
-
+from rest_framework import status
+import requests
 
 class ZohoAPI(generics.GenericAPIView):
     """
@@ -18,14 +19,30 @@ class ZohoAPI(generics.GenericAPIView):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        # current_user = request.user
-        user_data = UserProfileSerializer(request.user).data
         
-        print("''''''''''''''''''''''''''''''the current group", user_data)
+        user_data = UserProfileSerializer(request.user).data
         zoho_interface = ZohoApiInterface()
-        zoho_response = zoho_interface.make_zoho_request(user_data['group_name'], 
-            **serializer.validated_data)
+
         try:
+            zoho_response = zoho_interface.make_zoho_request(
+                user_data['group_name'],
+                **serializer.validated_data
+            )
             return Response(zoho_response.json(), status=zoho_response.status_code)
+
+        except requests.exceptions.ConnectionError:
+            return Response(
+                {"error": "No internet connection or Zoho API is unreachable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except ValueError:
+            # JSON decoding error
+            return Response(
+                {"error": "Invalid response from Zoho API."},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
         except Exception as e:
-            return Response(zoho_response.text, status=zoho_response.status_code)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
