@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from ..models.models import Profile, ProfileHistory
-from .user_serializer import UserProfileSerializer
+from .user_serializer import UserProfileSerializer, GroupSerializer
 
 class ProfileSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer(read_only=True)
