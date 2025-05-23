@@ -1,6 +1,4 @@
 import List from './list';
-import { app_api_get } from '../../../components/logic/apis';
-import { Fragment, useState } from 'react';
 import{ useEffect } from 'react';
 import { get_available_sessions } from '../../../components/logic/sessions_apis';
 
@@ -12,7 +10,6 @@ export default function AvailableSlots({date, allProducts, selectedProduct, setS
 
   useEffect(
     ()=>{
-      console.log("----------------15", date, selectedProduct)
       if((date && selectedProduct) ){
         set_available_slots(date, selectedProduct)
       }
