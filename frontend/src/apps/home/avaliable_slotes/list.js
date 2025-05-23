@@ -1,43 +1,20 @@
 import {  List as Mulist } from '@mui/material';
 import { Button } from '@mui/material';
-import { Container, Box } from '@mui/system';
 import { Fragment } from 'react';
 import Card from 'react-bootstrap/Card';
 import { useNavigate } from 'react-router-dom';
-import { app_api_get } from '../../../components/logic/apis';
 import { set_localstorage } from '../../../components/logic/localstorage';
 
 export default function List({ date, availableSessions, selectedProduct }) {
 	const navigate = useNavigate();
 
 	async function list_old_bookings(session_id){
-		// set_localstorage('productType', JSON.stringify(selectedProduct) )
 
-		// await extract_three_sessions(availableSessions, startTime)
-		// navigate(`/book/${eventId}`)
 		set_localstorage('date', date )
 		set_localstorage('session_type', selectedProduct )
 		navigate(`/oldbookings/${session_id}`)
 	}	
 
-	function extract_three_sessions(availableSessions, startTime){
-		
-		startTime = new Date(startTime)
-		startTime.setHours(startTime.getHours() + 1)
-
-		let endTime = new Date(startTime)
-		endTime.setHours(endTime.getHours() + 6)
-		endTime = endTime.toISOString()
- 
-		app_api_get('bookeo/', {
-		  "request_type": "get",
-		  "url": "/availability/slots",
-		  "payload": { "startTime": startTime , "endTime" : endTime,productId: availableSessions.productId},
-		}).then(response => {
-
-			set_localstorage('three_sessions', JSON.stringify(response))
-		})
-	}
 
 	return (
 		<Fragment>

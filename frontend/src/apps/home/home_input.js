@@ -4,8 +4,6 @@ import Select from '@mui/material/Select';
 import { Stack } from '@mui/system';
 import { useState } from 'react';
 import { useEffect } from 'react';
-import get_sessions from '../home/avaliable_slotes/index'
-import OldBookingsFun from '../refund_booking';
 import { useNavigate } from 'react-router-dom';
 import { set_localstorage } from '../../components/logic/localstorage';
 
@@ -14,11 +12,14 @@ export default function HomeInput({ date, setDate, allProducts, selectedProduct,
 	const [selectedProductId, setSelectedProductId] = useState();
 
 	var today = new Date();
-	var today = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+	var todayDate = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
 
 	useEffect(() => {
-		setDate(today || '');
-	}, []);
+		if(setDate && todayDate)
+		{
+		setDate(todayDate || '');
+		}
+	}, [setDate, todayDate]);
 
 
 
