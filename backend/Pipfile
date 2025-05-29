@@ -15,7 +15,7 @@ psycopg2-binary = "*"
 drf-yasg = "*"
 djangorestframework-simplejwt = "*"
 django-cors-headers = "*"
-
+django-admin-rangefilter = "*"
 
 [requires]
 python_version = "3.9"

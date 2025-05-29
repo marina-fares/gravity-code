@@ -76,6 +76,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+        'https://fo.gravitycode.me',
     'https://fobook.gravitycode.me',
     'http://localhost:3001'
 ]
