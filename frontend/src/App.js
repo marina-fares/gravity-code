@@ -7,17 +7,20 @@ import { get_user_and_jwt } from './components/logic/users';
 import Home from './apps/home';
 import Login from './apps/login';
 import Booking from './apps/booking';
-import OneOldBooking from './apps/old_bookings/one_old_booking';
+import OneOldBooking from './apps/session_bookings_history/one_old_booking';
 import StartShift from './apps/start_shift';
 import EndShit from './apps/end_shift';
 import Inventory from './apps/Enventory'; // Typo exists but keeping as per your code
 import Options from './apps/Options';
-import OldBookingsFun from './apps/refund_booking';
 import OldShift from './apps/old_shift';
 import OneOldShift from './apps/old_shift/one_shift';
-import SquareBook from './apps/refund_booking/one_square_booking';
 import EndSubShit from './apps/end_sub_shift';
-import OldBookings from './apps/old_bookings'
+import OldBookings from './apps/session_bookings_history'
+import { delete_hold_booking } from './components/logic/booking_functions';
+import BlockSeats from './apps/block_seats';
+import KeyPad from './apps/keypad';
+import BookingsHistory from './apps/all_bookings_history';
+
 function App() {
 	const [user, set_user] = useState(get_user_and_jwt().user);
 	const navigate = useNavigate();
@@ -33,6 +36,37 @@ function App() {
 		window.addEventListener('storage', storageListener);
 		return () => window.removeEventListener('storage', storageListener);
 	}, []);
+
+
+
+	useEffect(() => {
+	const handleBookingCleanup = () => {
+		const bookingId = localStorage.getItem('bookingId');
+		if (bookingId && bookingId !== 'undefined') {
+		delete_hold_booking({ bookingId });
+		localStorage.removeItem('bookingId');
+		}
+	};
+
+	// Handle initial load (refresh)
+	handleBookingCleanup();
+
+	// Handle back/forward navigation
+	const handlePopState = () => {
+		handleBookingCleanup();
+	};
+
+	window.addEventListener('popstate', handlePopState);
+
+	return () => {
+		window.removeEventListener('popstate', handlePopState);
+	};
+	}, []);
+
+
+
+
+
 
 	useEffect(() => {
 		if (!user) {
@@ -54,11 +88,13 @@ function App() {
 								<Route path="/inventory" element={<Inventory />} />
 								<Route path="/options" element={<Options />} />
 								<Route path="/home" element={<Home />} />
-								<Route path="/oldbookingsfun" element={<OldBookingsFun />} />
 								<Route path="/oldbookings/:session_id" element={<OldBookings />} />
 								<Route path="/book/:session_id" element={<Booking />} />
-								<Route path="/booking/:booking_id" element={<OneOldBooking />} />
-								<Route path="/square_booking/:square_order_id" element={<SquareBook />} />
+								<Route path="/booking/:session_id/:booking_id" element={<OneOldBooking />} />
+								<Route path="/block_seats/:session_id" element={<BlockSeats />} />
+								<Route path="/keypad" element={<KeyPad />} />
+								<Route path="/bookings_history" element={<BookingsHistory />} />
+								
 							</>
 						)}
 						{user ? (

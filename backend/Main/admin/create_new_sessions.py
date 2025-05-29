@@ -18,17 +18,14 @@ def delete_session(product, start_time, day):
 
 def create_session(product, start_date, end_date, start_time, weekdays):
     sessions = []
-    print("------------------21")
-    print(start_date)
-    print(end_date)
+
     combined = datetime.combine(datetime.today(), start_time)
     end_time = (combined + product.duration).time()
 
     
     current_date = start_date
     while current_date <= end_date:
-        print("-----------------30")
-        print(current_date)
+
         start_session_dt = timezone.make_aware(datetime.combine(current_date,start_time))
         end_session_dt = timezone.make_aware(datetime.combine(current_date, end_time))
 

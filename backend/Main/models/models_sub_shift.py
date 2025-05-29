@@ -73,10 +73,6 @@ def create_sub_shift(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def save_sub_shift(sender, instance, **kwargs):
-    print("instanceeeeeeeeeeeeeeeee")
-    print(instance)
-    print(SubShift.objects.filter(user=instance).first())
-
     if(SubShift.objects.filter(user = instance)):
         instance.subshift.save()
     else:

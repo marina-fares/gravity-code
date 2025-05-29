@@ -75,7 +75,7 @@ async function get_zoho_items(){
 		response.items.forEach((item)=>{
 			zoho_items[item.description.split('_')[1]] = [item.item_id, item.rate]
 		})
-		set_localstorage("zoho_items", JSON.stringify(zoho_items))
+		set_localstorage("zohoItems", JSON.stringify(zoho_items))
 	})
 }
 async function get_catalog() {

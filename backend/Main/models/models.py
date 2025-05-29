@@ -101,8 +101,7 @@ class Profile(models.Model):
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
-    print(sender)
-    print("----------------------------------")
+
     
     if created:
         Profile.objects.create(user=instance)
@@ -137,7 +136,6 @@ def create_square_profile(sender, instance, created, **kwargs):
             instance.profile.square_team_member_id = response.json()[
                 'team_member']['id']
             instance.profile.save()
-            print(response)
 
 @admin.register(Profile)
 class StandaloneProfileAdmin(admin.ModelAdmin):

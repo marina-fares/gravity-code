@@ -1,8 +1,8 @@
 import List from './list';
-import{ useEffect } from 'react';
-import { get_available_sessions } from '../../../components/logic/sessions_apis';
+import{ useEffect, useState } from 'react';
+import { get_available_sessions } from '../../../components/logic/booking_functions';
 
-export default function AvailableSlots({date, allProducts, selectedProduct, setSelectedProduct}){
+export default function AvailableSlots({date, allProducts, selectedProduct, setSelectedProduct, add_block_seats}){
 
   
   let [availableSessions, setAvailableSessions] = useState([]);
@@ -32,6 +32,6 @@ async  function set_available_slots(date, selectedProduct ){
 
 
   return (
-    <List date={date} availableSessions={availableSessions} selectedProduct={selectedProduct} className='m-5' />
+    <List date={date} availableSessions={availableSessions} selectedProduct={selectedProduct} add_block_seats={add_block_seats} className='m-5' />
   )
 }

@@ -17,7 +17,7 @@ class GroupFilter(admin.SimpleListFilter):
 
 class ProfileHistoryAdmin(admin.ModelAdmin):
     list_filter = (GroupFilter, )
-    search_fields = ('profile__username',)
+    search_fields = ('profile__username','date')
     def get_queryset(self, request):
         current_user = request.user
         if current_user.is_superuser:

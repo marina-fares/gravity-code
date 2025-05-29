@@ -18,9 +18,7 @@ class GetSubShiftApi(generics.GenericAPIView):
         """
         This method is used to make a request to the Square API.
         """
-        print("get sub shift api")
         subshift = request.user.subshift
-        print(subshift)
         serializer = SubShiftSerializer(subshift).data
         #permission.update(serializer)
         return Response(serializer)
@@ -30,11 +28,7 @@ class GetSubShiftApi(generics.GenericAPIView):
         """
         This method is used to make a request to the Shift API.
         """
-        print("11111111111111111111111111111111111sub shift data")
 
-        print(request.data)
-        print((request.data['payload']['end_time']))
-        print("----------------------------------------------")
         
        # if((request.data['payload']['end_time']) is None):
         #    pass
@@ -62,15 +56,10 @@ class GetOldSubShiftApi(generics.GenericAPIView):
         """
         This method is used to make a request to the Shift API.
         """
-        print("11111111111111111111111111111111111shift")
 
-        print(request.data['payload'])
-        print((request.data['payload']['shift_money_cash']))
-        print("---------------------------------------------- post old shift")
         if (request.data['payload']['end_time']) is None :
             pass
         else:
-            print("yes")
             current_user = models.User.objects.get(username=(request.user))
             shift =  models.Profile.objects.filter(user = request.user)
             
@@ -90,10 +79,7 @@ class GetOldSubShiftApi(generics.GenericAPIView):
         """
         This method is used to make a request to the Square API.
         """
-        print("user permissionssssssssssssssssss")
-       # print(user.get_user_permissions())
         current_user = request.user
-        #print(current_user.get_user_permissions())
         if current_user.is_superuser:
             shifts = models_sub_shift.SubShiftHistory.objects.all()
         elif request.user.has_perm('Main.view_gravityuser'):

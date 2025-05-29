@@ -52,13 +52,12 @@ class Session(models.Model):
     start_time = models.DateTimeField(null=True, blank=True, unique=False)
     end_time = models.DateTimeField(null=True, blank=True, unique=False)
     available_seats = models.IntegerField(null=True, blank=True, unique=False)
+    block_seats = models.IntegerField(null=True, blank=True, unique=False, default=0)
     weekday = models.CharField(max_length=10, null=True, blank=True) 
 
     def delete(self, *args, **kwargs):
         # Check if any ModelB instances are referencing this object
-        print("--------------------------49")
         if Booking.objects.filter(session=self).exists():
-            print("----------------yes")
             raise ValidationError("Cannot delete this object because it is referenced by ModelB.")
 
     def __str__(self):
@@ -91,34 +90,29 @@ class Booking(models.Model):
 
     session = models.ForeignKey(Session, on_delete=models.PROTECT, null=True, blank=True)
     booking_customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True, blank=True, max_length=100)
-    options = ArrayField(
-        models.CharField(max_length=100),  # Define the type of each element
-        blank=True, 
-        default=list  # Default value as an empty list
-    )
-    payment = models.JSONField(default=dict)
+    options = models.JSONField(default=list, blank=True, null=True)
+    payment = models.JSONField(default=dict, blank=True, null=True)
     number_of_players = models.IntegerField(null=True, default=True)
     type_of_players = models.CharField(null=True, blank=True, max_length=20)
     creation_agent = models.CharField(null = True, blank=True, max_length=100)
     created_at = models.DateTimeField(null=True, blank=True, default=timezone.now)
     square_receipt_number = models.CharField(null = True, blank=True, max_length=20)
-    square_order_id = models.CharField(null = True, blank=True, max_length= 20)
-    zoho_sales_receipt_id = models.CharField(null = True, blank=True, max_length= 20)
-    zoho_sales_receipt_num = models.CharField(null = True, blank=True, max_length= 20)
+    square_order_id = models.CharField(null = True, blank=True, max_length= 100)
+    square_payment_id = models.CharField(null = True, blank=True, max_length= 100)
+    zoho_sales_receipt_id = models.CharField(null = True, blank=True, max_length= 100)
+    zoho_sales_receipt_num = models.CharField(null = True, blank=True, max_length= 50)
     note = models.CharField(null = True, blank=True, max_length=100)
     status = models.CharField(null = True, blank=True, choices=STATUS_CHOICES, max_length=100)
 
     def save(self, commit=True, *args, **kwargs):
         if self.pk:  # Only for existing instances (not new ones)
             old_instance = self.__class__.objects.get(pk=self.pk)
-            booking_session = Session.objects.get(id=old_instance.session.id)
-            print("---------------------------------94",self._meta.fields)
-            old_value = old_instance.number_of_players
-            new_value = self.number_of_players
-            print(old_value, new_value, "-----------values------")
-            if old_value != new_value:
-                booking_session.available_seats = booking_session.available_seats + old_value - new_value
-                booking_session.save()
+            # update the number of players in the session
+            current_session = Session.objects.get(id=old_instance.session.id)
+            product = Product.objects.get(id=current_session.product.id)
+            all_bookkings_num = sum(Booking.objects.filter(session__id=old_instance.session.id).values_list('number_of_players', flat=True))
+            current_session.available_seats = product.max_num - all_bookkings_num
+            current_session.save()
 
         else:
             session_new = self.session 
@@ -132,13 +126,16 @@ class Booking(models.Model):
 
 
     def __str__(self):
-        return str(self.id) + ' - ' + str(self.session)
+        return str(self.id) + ' - ' + str(self.session) + ' - ' + str(self.number_of_players) + ' - ' + self.status
 
 
 class Customer(models.Model):
     identifier = models.CharField(max_length=30, unique=False)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, null=True)
-    all_bookings = models.ManyToManyField(Booking, blank=True)
+    # all_bookings = models.Many(Booking, blank=True, null=True)
+
+    def __str__(self):
+        return self.identifier
 
     
 

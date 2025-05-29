@@ -1,14 +1,11 @@
-import { Button, FormControl, InputLabel, MenuItem } from '@mui/material';
+import { FormControl, InputLabel, MenuItem } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import Select from '@mui/material/Select';
 import { Stack } from '@mui/system';
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { set_localstorage } from '../../components/logic/localstorage';
 
 export default function HomeInput({ date, setDate, allProducts, selectedProduct, setSelectedProduct }) {
-	const navigate = useNavigate();
 	const [selectedProductId, setSelectedProductId] = useState();
 
 	var today = new Date();
@@ -22,16 +19,14 @@ export default function HomeInput({ date, setDate, allProducts, selectedProduct,
 	}, [setDate, todayDate]);
 
 
+	// function refund(){
 
-	function refund(){
-
-		set_localstorage('date', date )
-		set_localstorage('session_type', selectedProduct )
-		navigate('/oldbookings')
-	}
+	// 	set_localstorage('date', date )
+	// 	set_localstorage('session_type', selectedProduct )
+	// 	navigate('/oldbookings')
+	// }
 
 	function get_selected_product(e) {
-
 		const selectedProductId = e.target.value;
 		const productDetails = allProducts.find(item => item.id === selectedProductId);
 		setSelectedProductId(productDetails.id)
@@ -47,7 +42,7 @@ export default function HomeInput({ date, setDate, allProducts, selectedProduct,
 				onChange={(e) => {
 					setDate(e.target.value || '');
 				}}
-				defaultValue={today}
+				value={date}
 				sx={{ width: 220 }}
 				InputLabelProps={{
 					shrink: true,
@@ -65,7 +60,7 @@ export default function HomeInput({ date, setDate, allProducts, selectedProduct,
 				sx={{ width: 220 }}
 				>
 				{allProducts?.map((item) => (
-					<MenuItem key={item} value={item.id}>
+					<MenuItem key={item.id} value={item.id}>
 					{item.nick_name}
 					</MenuItem>
 				))}
@@ -73,9 +68,6 @@ export default function HomeInput({ date, setDate, allProducts, selectedProduct,
 
 
 
-				<Button onClick={refund}>
-					Refund
-				</Button>
 			</FormControl>
 		</Stack>
 	);

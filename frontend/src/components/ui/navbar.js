@@ -17,11 +17,11 @@ import logout from '../logic/logout'
 import { useNavigate } from "react-router-dom";
 import logo from '../../gravity.png'
 import { get_user_and_jwt } from '../logic/users';
-import { get_shift } from '../../apps/start_shift/shifts_functions';
+import { get_shift } from '../logic/shifts_functions_apis';
 import { useEffect } from 'react';
 
 
-const pages = ['Available Sessions', 'Options', 'Inventory', 'Old Shift'];
+const pages = ['Available Sessions', 'Options', 'Inventory', 'Shifts History', 'Bookings History', 'KeyPad'];
 const settings = ['End Shift', 'Logout'];
 
 const NavBar = () => {
@@ -56,6 +56,10 @@ const NavBar = () => {
 
   const handleCloseNavMenu = (e) => {
 
+        if(e.currentTarget.id === "Bookings History")
+        {
+          navigate('/bookings_history')
+        }
         if(e.currentTarget.id === "Available Sessions")
         {
           navigate('/home')
@@ -68,9 +72,13 @@ const NavBar = () => {
         {
           navigate('/options')
         }
-        if(e.currentTarget.id === "Old Shift")
+        if(e.currentTarget.id === "Shifts History")
         {
           navigate('/old_shift')
+        }
+        if(e.currentTarget.id === "KeyPad")
+        {
+          navigate('/keypad')
         }
     
       setAnchorElNav(null);

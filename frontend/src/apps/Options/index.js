@@ -28,7 +28,7 @@ export default function Options() {
     let [squareLineItems, setSquareLineItems] = useState([])
 	let [bookingsuccess, set_bookingsuccess] = useState(false);
 	let [zohoItems, setZohoItems] = useState();
-	let [zohoAllItems, ] = useState(JSON.parse(get_localstorage('zoho_items')))
+	let [zohoAllItems, ] = useState(JSON.parse(get_localstorage('zohoItems')))
     let [payment_for_square_api] = useState(
         {
             "amount_money": {

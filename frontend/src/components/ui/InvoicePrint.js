@@ -5,7 +5,6 @@ import { Typography } from '@mui/material';
 
 const InvoicePrint = ({ shift , sub_shift, calculated_cash, calculated_visa }) => {
     const componentRef = useRef();
-    console.log(shift);
     return (
         <div>
             <div className ="d-flex justify-content-center w-100">

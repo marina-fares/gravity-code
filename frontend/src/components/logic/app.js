@@ -38,4 +38,23 @@ function app_get(url, params = {}){
     .then(response => response.json())
 }
 
-export { app_post, app_get }
+function app_delete(url, params = {}){
+    let headers = {
+        'Content-Type': 'application/json'
+    }
+    let token = get_jwt()
+    if(token){
+        headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = APP_BASE_URL + url + (queryString ? `?${queryString}` : '');
+
+    return fetch(fullUrl, {
+        'method': 'delete',
+        headers,
+    })
+    .then(response => response.json())
+}
+
+export { app_post, app_get, app_delete }

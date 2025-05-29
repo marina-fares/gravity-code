@@ -85,9 +85,7 @@ class DefaultSessionAdminForm(forms.ModelForm):
             except_hours_flag = data.get("except_hours_flag")
             start_time_str = data.get("start_time_input")
             end_time_str = data.get("end_time_input")
-            print("-------------------88")
-            print(start_time_str)
-            print(end_time_str)
+
             if except_hours_flag and start_time_str and end_time_str:
                 try:
                     start_hour = int(start_time_str.split(":")[0])
@@ -107,7 +105,6 @@ class DefaultSessionAdminForm(forms.ModelForm):
         end_time = cleaned_data.get("end_time_input")
         except_hours_flag = cleaned_data.get("except_hours_flag")
         except_hours = cleaned_data.get("except_hours")
-        # print(start_date.weekday)
         
         # Ensure minutes and seconds are zero for start time
         if start_time and (start_time.minute != 0 or start_time.second != 0):
@@ -158,14 +155,8 @@ class DefaultSessionAdminForm(forms.ModelForm):
             days_label.append(dict(WEEKDAYS).get(day))
 
         if except_hour_flag and not except_hours_input:
-            print("Except hour flag is on but no hours selected.")
             return None  # don't save anything
         
-        if except_hour_flag and except_hours_input:
-            print("-----------------------143", except_hours_input)
-
-        print("-----------------------30", product, start_time_input, end_time_input, except_hour_flag)
-        print(days_label)
         # replace the except hour str with time
 
 
@@ -180,15 +171,13 @@ class DefaultSessionAdminForm(forms.ModelForm):
             
             if created:
                 for i in range(start_time_input.hour, end_time_input.hour + 1):
-                    print("-----------185", i)
-                    print(except_hours_input)
+
                     if str(i) not in except_hours_input:
                         created_sessions = create_session(product, start_date, end_date, datetime.time(i,0), day_input)
             
             else:
                 default_start_time = obj.start_time
                 default_end_time = obj.end_time
-                print("Schedule already existed:", obj)
 
                 default_time_list = []
                 input_time_list = []
@@ -203,11 +192,9 @@ class DefaultSessionAdminForm(forms.ModelForm):
                 for i in default_time_list:
                     if i not in input_time_list:
                         delete_session(product, i, day_input)
-                print("-----------------208", input_time_list)
                 for i in input_time_list:
                     if i not in default_time_list:
                         created_sessions = create_session(product, start_date, end_date, i, day_input)
-                        print("-------------new sessions", i)
 
                 
                 Schedule.objects.filter(weekday=str(day_input), product=product).update(start_time=start_time_input, end_time=end_time_input, except_hours=except_hours_input)
@@ -271,9 +258,7 @@ class CustomSessionAdminForm(forms.ModelForm):
             except_hours_flag = data.get("except_hours_flag")
             start_time_str = data.get("start_time_input")
             end_time_str = data.get("end_time_input")
-            print("-------------------88")
-            print(start_time_str)
-            print(end_time_str)
+
             if except_hours_flag and start_time_str and end_time_str:
                 try:
                     start_hour = int(start_time_str.split(":")[0])
@@ -308,10 +293,7 @@ class CustomSessionAdminForm(forms.ModelForm):
         #     raise ValidationError("The Start Date should be today or after today")
         
         if except_hours_flag and start_time and end_time:
-            print("---------------------311")
-            print(except_hours_flag)
-            print(start_time)
-            print(end_time)
+
             hour_choices = [(str(h), f"{h}:00") for h in range(start_time.hour, end_time.hour + 1)]
             self.fields['except_hours'].choices = hour_choices
 
@@ -351,20 +333,15 @@ class CustomSessionAdminForm(forms.ModelForm):
             days_label.append(dict(WEEKDAYS).get(day))
 
         if except_hour_flag and not except_hours_input:
-            print("Except hour flag is on but no hours selected.")
             return None  # don't save anything
         
 
-        print("-----------------------30", product, start_time_input, end_time_input, except_hour_flag, weekdays)
-        print(days_label)
         # replace the except hour str with time
 
 
         for day_input in days_label:
             try:
-                print("-------------361")
-                print(day_input)
-                print(product)
+
                 obj = Schedule.objects.get(weekday=str(day_input), product=product)
 
                 created = False
@@ -376,7 +353,6 @@ class CustomSessionAdminForm(forms.ModelForm):
             if not created:
                 default_start_time = obj.start_time
                 default_end_time = obj.end_time
-                print("Schedule already existed:", obj)
 
                 default_time_list = []
                 input_time_list = []
@@ -391,11 +367,9 @@ class CustomSessionAdminForm(forms.ModelForm):
                 for i in default_time_list:
                     if i not in input_time_list:
                         delete_session(product, i, day_input)
-                print("-----------------208", input_time_list)
                 for i in input_time_list:
                     if i not in default_time_list:
                         created_sessions = create_session(product, start_date, end_date, i, day_input)
-                        print("-------------new sessions", i)
 
                 
                 Schedule.objects.filter(weekday=str(day_input), product=product).update(start_time=start_time_input, end_time=end_time_input, except_hours=except_hours_input)
@@ -486,7 +460,6 @@ class SessionAdmin(admin.ModelAdmin):
 
     def create_custom_session(self, request):
         # Redirect to the default add page with a custom form
-        print("this is custom session --------------")
         request.session['form_type'] = 'custom'  # Set a session variable to indicate a custom form
         return redirect(f"{reverse('admin:Main_session_add')}?form_type=custom")
 
@@ -504,7 +477,6 @@ class SessionAdmin(admin.ModelAdmin):
         else:
             # Add form for new objects
             form_type = request.session.get('form_type')
-            print("Form type from session:", form_type)
             
             if form_type == 'custom':
                 kwargs['form'] = CustomSessionAdminForm

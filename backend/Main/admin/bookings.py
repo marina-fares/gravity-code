@@ -7,6 +7,7 @@ from django.contrib.auth.admin import UserAdmin
 
 class BookingAdmin(admin.ModelAdmin):
     search_fields = ('id',)
+    exclude = ['square_order_id', 'square_payment_id', 'zoho_sales_receipt_id']
     def get_queryset(self, request):
         current_user = request.user
         if current_user.is_superuser:
@@ -18,13 +19,8 @@ class BookingAdmin(admin.ModelAdmin):
             return Booking.objects.filter(session__product__groups__name__in=current_user_group_names)
         
     def delete_queryset(self, request, queryset):
-        print('==========================delete_queryset==========================')
-        print(queryset)
         for i in queryset:
-            print(i)
-            print(i.session)
             session1 = Session.objects.filter(id = i.session.id)[0]
-            print(session1)
             session1.available_seats += i.number_of_players
             session1.save()
 

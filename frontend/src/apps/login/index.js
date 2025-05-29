@@ -1,4 +1,3 @@
-import React from 'react';
 import { Avatar, Button, CssBaseline, TextField, Typography, Container, Box } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { ThemeProvider } from '@mui/material/styles';
@@ -24,8 +23,7 @@ const handleSubmit = async (event) => {
     set_loading(true);
 
     try {
-        const user = await login(data.get('email'), data.get('password'));
-        console.log('Logged in user:', user);
+        await login(data.get('email'), data.get('password'));
         navigate('/')
 
     } catch (err) {

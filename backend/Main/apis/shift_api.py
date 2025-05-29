@@ -71,15 +71,10 @@ class GetOldShiftApi(generics.GenericAPIView):
         """
         This method is used to make a request to the Shift API.
         """
-        #print("11111111111111111111111111111111111shift")
 
-        #print(request.data['payload'])
-        #print((request.data['payload']['end_time']))
-        #print("---------------------------------------------- post old shift")
         if (request.data['payload']['end_time']) is None :
             pass
         else:
-            print("yes")
             current_user = User.objects.get(username=(request.user))
             history = ProfileHistory.objects.create(
             date=datetime.now(), profile=current_user, json_data=request.data['payload'])
@@ -96,10 +91,8 @@ class GetOldShiftApi(generics.GenericAPIView):
         """
         This method is used to make a request to the Square API.
         """
-        #print("user permissionssssssssssssssssss")
-       # print(user.get_user_permissions())
+
         current_user = request.user
-        #print(current_user.get_user_permissions())
         if current_user.is_superuser:
             shifts = ProfileHistory.objects.all()
         elif request.user.has_perm('Main.view_gravityuser'):

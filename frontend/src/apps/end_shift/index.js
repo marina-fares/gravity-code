@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Grid, InputLabel, Input, Alert, FormControl } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import Card from 'react-bootstrap/Card';
 import InvoicePrint from '../../components/ui/InvoicePrint';
 import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis';
@@ -15,7 +14,6 @@ export default function EndShift() {
 	const [actualVisa, setActualVisa] = useState(0);
 
 	const printRef = useRef();
-	const navigate = useNavigate();
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -30,8 +28,7 @@ export default function EndShift() {
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		console.log(e.target.password.value)
-		console.log(shift_details.endshift_page_password)
+
 		if (shift_details?.endshift_page_password === e.target.password.value) {
 			setShowAlert(false);
 			setPasswordValid(true);

@@ -4,13 +4,13 @@ import AvailableSlots from './avaliable_slotes';
 import HomeInput from './home_input';
 import { useEffect } from 'react';
 import {get_shift} from '../../components/logic/shifts_functions_apis';
-import { get_product } from '../../components/logic/sessions_apis';
+import { get_product } from '../../components/logic/booking_functions';
 
 import LoadingFun from '../../components/ui/loading';
 
 export default function Home({shift}){
 
-    let [date, setDate] = useState();
+    let [date, setDate] = useState(new Date());
     let [allProducts , setAllProducts] = useState([]);
     let [selectedProduct, setSelectedProduct] = useState();
     const [ShiftDetails, SetShiftDetails] = useState();
