@@ -63,6 +63,7 @@ class BookingApi(generics.GenericAPIView):
                 # Booking does not exist, creating it..."
                 if data.get('id'):
                     data.pop('id', None)
+                data['options']= None
                 session_booking = Booking.objects.create(**data)
                 created = True
 
