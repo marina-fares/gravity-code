@@ -460,13 +460,14 @@ function create_sales_receipt(){
         if (response.code == 0)
         {
             set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id)
-            set_zoho_sales_receipt_flag(true)
+            // set_zoho_sales_receipt_flag(true)
             
         }
-        else{
-            data.set_alert(true)
-            data.set_message(response.message)
-        }
+        // else{
+        //     data.set_alert(true)
+        //     data.set_message(response.message)
+        // }
+            set_zoho_sales_receipt_flag(true)
 
     })
 }
