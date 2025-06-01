@@ -1,6 +1,7 @@
 
 import { useNavigate } from 'react-router-dom'
-import {  List as Mulist, Button} from '@mui/material';
+import {  List as Mulist} from '@mui/material';
+import {ListItem, ListItemText, Box} from '@mui/material';
 
 
 
@@ -17,19 +18,51 @@ export default function List({ bookings}) {
     return (
       <div>
         {bookings && 
-          <Mulist className='flex-column'>
-            {bookings.map((item) => (
-              <Button
-                key={item.id}
-                value={item.id}
-                  onClick={() => openbooking(item)}
-                sx={{ textTransform: "none" }}
-              >
-                {item.id} - {item.status} - {item.number_of_players}
-              </Button>
-            ))
-            }
-          </Mulist>
+            <Mulist className="flex-column ">
+            {bookings.map((item) => {
+                const dateObj = new Date(item.created_at);
+                const dateOnly = dateObj.toISOString().split('T')[0];
+                const timeOnly = dateObj.toISOString().split('T')[1].split('.')[0];
+
+                return (
+<ListItem
+  key={item.id}
+  alignItems="flex-start"
+  className="w-100 border mb-2 rounded"
+  onClick={() => openbooking(item)}
+>
+<ListItemText
+  disableTypography
+  className="m-0 p-0"
+  primary={
+    <Box className="list-group-item list-group-item-secondary rounded p-2 d-flex justify-content-between align-items-center">
+      <span>{`${dateOnly} ${timeOnly}`}</span>
+      <span>{item.type_of_players}</span>
+    </Box>
+  }
+  secondary={
+    <div className="d-flex flex-column p-2">
+      {item.options.map((option, index) =>
+        option.name !== item.type_of_players ? (
+          <span key={index}>
+            <strong>{option.name}: {option.quantity}</strong>
+          </span>
+        ) : null
+      )}
+
+      <span><strong>Number Of Players:</strong> {item.number_of_players}</span>
+      {item.payment.promoCode && (
+        <span><strong>PromoCode:</strong> {item.payment.promoCode}</span>
+      )}
+      <span><strong>Total Price:</strong> {item.payment.amount}</span>
+    </div>
+  }
+/>
+
+</ListItem>
+                );
+            })}
+            </Mulist>
         }
 
 
