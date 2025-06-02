@@ -7,7 +7,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis'
 import LoadingFun from '../../components/ui/loading';
 import AlertFun from '../../components/ui/alert';
-import { get_promo_codes, get_session_details, get_all_customers } from './functions_apis';
+import { get_promo_codes, get_session_details, get_all_customers, delete_booking_on_error } from './functions_apis';
 import { get_total_price, create_payment_api, create_sales_receipt, add_to_inventory, create_hold_booking, create_customer, create_booking, delete_hold_booking } from '../../components/logic/booking_functions';
 import { InvoicePrint } from '../../components/ui/booking_invoice';
 
@@ -43,6 +43,7 @@ export default function Booking() {
     let [ orderDetails, setOrderDetails ] = useState()
     let [ paymentDetails, setPaymentDetails ] = useState()
     let [ bookingDetails, setBookingDetails ] = useState()
+    let [ salesReceiptDetails, setSalesReceiptDetails] = useState()
 
 
 // get the shift, sub_shift data and promoCodes
@@ -101,12 +102,17 @@ useEffect(() => {
                 result = await create_booking({ sessionsDetails, bookingDetails, round });
             }
 
-            if (result) {
-                setBookingSuccess(true);
-            }
-            else{
+            if (result.error) {
+                let paymentData = paymentDetails
+                let zohoReceiptID = salesReceiptDetails.id
+                console.log("---------------108", salesReceiptDetails)
+                delete_booking_error({paymentData, zohoReceiptID})
                 setAlert(true)
                 setAlertMessage(result.error)
+                
+            }
+            else{
+                setBookingSuccess(true);
             }
         }
     };
@@ -237,26 +243,52 @@ async function hold_booking(){
     setIsLoading(false)
 }
 
+// this function will be used to delete the booking if an error is occured
+async function delete_booking_error({paymentData, zohoReceiptID}){
+    
+    delete_booking_on_error({paymentData, shiftDetails, zohoReceiptID})
+    let bookingId = get_localstorage('bookingId')
+    if(bookingId)
+    {
+        delete_hold_booking({bookingId})
+    }
+}
+
 async function Book(){
     setIsLoading(true)
     
+    // create the payment in square
     let result = await create_payment_api({shiftDetails, orderDetails, paymentMethod, setAlert, setAlertMessage})
-    if (result?.error) {
-        return; // exit early if there's an error
+    if (result.error) {
+        setAlert(true);
+        setAlertMessage(result.error)
+        return; 
     }
-    let paymentData = await result
+    if (result.errors) {
+        setAlert(true);
+        setAlertMessage(`${result.errors[0].detail} - ${result.errors[0].field}`)
+        return; 
+    }
+    let paymentData = await result.payment
     setPaymentDetails(paymentData)
 
-    let result2 = await create_sales_receipt({shiftDetails, orderDetails, paymentData, selectedZohoItems, setAlert, setAlertMessage})
-        if (!result2) {
-        return; // exit early if there's an error
+    // create sales receipt in zoho
+    let result2 = await create_sales_receipt({shiftDetails, orderDetails, paymentData, selectedZohoItems})
+    if (result2.code !== 0)
+    {
+        delete_booking_error({paymentData})
+        setAlert(true)
+        setAlertMessage(result2.message)
+        return;
     }
     let salesReceiptData = await result2
+    console.log(salesReceiptData)
+    setSalesReceiptDetails(salesReceiptData)
 
     const options = orderDetails.line_items
     await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note})
 
-    let bookingId = bookingDetails.id
+    // let bookingId = bookingDetails.id
     let customerData = await create_customer({customerName})
     if(customerData.error){
         setAlert(true)

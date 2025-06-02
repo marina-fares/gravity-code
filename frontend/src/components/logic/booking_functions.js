@@ -31,7 +31,7 @@ async function get_total_price({shiftDetails, promoCode, selectedSquareItems}){
     }
 }
 
-async function create_payment_api({shiftDetails, orderDetails, paymentMethod, setAlert, setAlertMessage}){
+async function create_payment_api({shiftDetails, orderDetails, paymentMethod}){
     let  data = { 
         "order_id": orderDetails.id,
         "note": `Booking owner: ${shiftDetails.user.username}`,
@@ -58,24 +58,18 @@ async function create_payment_api({shiftDetails, orderDetails, paymentMethod, se
             data.autocomplete = true
         }
 
-    const response = await app_api_get('square/', {
-    "request_type": "post",
-    "url": "/payments",
-    "payload": data
-    })
+        const response = await app_api_get('square/', {
+        "request_type": "post",
+        "url": "/payments",
+        "payload": data
+        })
     
-    if(!response.errors){
-        return response.payment
-    }
-    else{
-        setAlert(true)
-        setAlertMessage(`${response.errors[0].detail} , ${response.errors[0].field}`)
-    }   
+    return response  
     
 }
 
 
-async function create_sales_receipt({ shiftDetails, orderDetails, paymentData, selectedZohoItems, setAlert, setAlertMessage}){
+async function create_sales_receipt({ shiftDetails, orderDetails, paymentData, selectedZohoItems}){
     const today = new Date(orderDetails.created_at);
     let response = await app_api_get('zoho/', {
         "request_type": "post",
@@ -112,14 +106,7 @@ async function create_sales_receipt({ shiftDetails, orderDetails, paymentData, s
                 }
         
     })
-    if (response.code === 0)
-    {
-        return response
-    }
-    else{
-        setAlert(true)
-        setAlertMessage(response.message)
-    }
+    return response;
 
 }
 
@@ -168,9 +155,9 @@ async function create_booking({sessionsDetails, bookingDetails, round})
     if (round > 0){
         delete bookingDetails.id
     }
-   await app_post(`bookings/${sessionsDetails[round].id}/`, bookingDetails)
+    const response = await app_post(`bookings/${sessionsDetails[round].id}/`, bookingDetails)
     
-    return true
+    return response
 }
 
 async function create_hold_booking({bookingDetails, session_id, numberOfPlayers }){
