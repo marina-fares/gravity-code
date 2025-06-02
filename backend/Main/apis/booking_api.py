@@ -42,6 +42,20 @@ class BookingApi(generics.GenericAPIView):
             booking_session = get_object_or_404(Session, id=session_id)
             data['session'] = booking_session
 
+            # Update the number of players in the session
+            current_session = booking_session  # already fetched above
+            product = Product.objects.get(id=current_session.product.id)
+            all_bookings_num = sum(
+                Booking.objects.filter(session_id=session_id).exclude(status='refunded').values_list('number_of_players', flat=True)
+            )
+            new_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats - data['number_of_players']
+            old_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats 
+            print("---------------------------------", new_sessions_seats)
+            if(new_sessions_seats < 0):
+                return Response({"error": "This Session Doesn't have available Seats, Only Available " + str(old_sessions_seats) + " seat" }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            current_session.available_seats = new_sessions_seats            
+            current_session.save()
+
             # Optional: get customer
             booking_customer_id = data.get('booking_customer')
             if booking_customer_id:
@@ -68,17 +82,73 @@ class BookingApi(generics.GenericAPIView):
                 created = True
 
 
+
+
+            serializer = BookingSerializer(session_booking)
+            return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+        except ObjectDoesNotExist as e:
+            return Response({"error": "Not found: " + str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+        except ValidationError as e:
+            return Response({"error": "Validation error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except IntegrityError as e:
+            return Response({"error": "Database integrity error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except DatabaseError as e:
+            return Response({"error": "Database error: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            return Response({"error": "Unexpected error: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def put(self, request, session_id):
+        try:
+            current_user = request.user
+            data = request.data.copy()
+            print(data)
+
+            # Get session or return 404
+            booking_session = get_object_or_404(Session, id=session_id)
+            if not data['session']:
+                data['session'] = booking_session.id  # Use ID instead of model instance
+
+            booking_id = data.get('id')
+            existing_booking = Booking.objects.filter(id=booking_id).first()
+            print("booking id-----------", booking_id)
+            print("-----------existing booking", existing_booking)
+
+            if booking_id and existing_booking:
+                # Update existing booking
+                print("------------------------save")
+                booking_serializer = BookingSerializer(existing_booking, data=data, partial=True)
+                if booking_serializer.is_valid():
+                    booking_instance = booking_serializer.save()
+                
+
+
             # Update the number of players in the session
             current_session = booking_session  # already fetched above
             product = Product.objects.get(id=current_session.product.id)
             all_bookings_num = sum(
                 Booking.objects.filter(session_id=session_id).exclude(status='refunded').values_list('number_of_players', flat=True)
             )
-            current_session.available_seats = product.max_num - all_bookings_num - current_session.block_seats
+            current_session.available_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats
             current_session.save()
 
-            serializer = BookingSerializer(session_booking)
-            return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+            if data['session'] and data['session'] != session_id:
+                current_session = get_object_or_404(Session, id=data['session'])
+                if current_session:
+                    product = Product.objects.get(id=current_session.product.id)
+                    all_bookings_num = sum(
+                        Booking.objects.filter(session_id=session_id).exclude(status='refunded').values_list('number_of_players', flat=True)
+                    )
+                    current_session.available_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats
+                    current_session.save()
+
+            serializer = BookingSerializer(booking_instance)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except ObjectDoesNotExist as e:
             return Response({"error": "Not found: " + str(e)}, status=status.HTTP_404_NOT_FOUND)
@@ -129,6 +199,21 @@ class OneBookingApi(generics.GenericAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    def put(self, request, booking_id):
+        """
+        update an old booking using the given booking_id as a reference if needed.
+        """
+        data = request.data.copy()
+        data["id"] = booking_id  # Optional: only if you want to set the ID manually
+        serializer = self.get_serializer(data=data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
     def delete(self, request, booking_id):
         """
         Delete the booking with the specified booking_id.
@@ -144,7 +229,7 @@ class OneBookingApi(generics.GenericAPIView):
             current_session = booking.session
             product = Product.objects.get(id=current_session.product.id)
             all_bookkings_num = sum(Booking.objects.filter(session__id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True))
-            current_session.available_seats = product.max_num - all_bookkings_num + booking.number_of_players - current_session.block_seats
+            current_session.available_seats = current_session.added_seats + product.max_num - all_bookkings_num + booking.number_of_players - current_session.block_seats
             current_session.save()
 
             #delete the hold 

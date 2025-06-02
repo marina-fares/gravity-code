@@ -6,7 +6,7 @@ from django.contrib.auth.admin import UserAdmin
 
 
 class BookingAdmin(admin.ModelAdmin):
-    search_fields = ('id',)
+    search_fields = ('id','session__start_time')
     exclude = ['square_order_id', 'square_payment_id', 'zoho_sales_receipt_id']
     def get_queryset(self, request):
         current_user = request.user

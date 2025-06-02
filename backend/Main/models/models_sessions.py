@@ -54,6 +54,7 @@ class Session(models.Model):
     available_seats = models.IntegerField(null=True, blank=True, unique=False)
     block_seats = models.IntegerField(null=True, blank=True, unique=False, default=0)
     weekday = models.CharField(max_length=10, null=True, blank=True) 
+    added_seats = models.IntegerField(default=0, null=True, blank=True, unique=False) 
 
     def delete(self, *args, **kwargs):
         # Check if any ModelB instances are referencing this object

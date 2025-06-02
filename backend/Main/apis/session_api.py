@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from ..models.models_sessions import Session, Product, Booking
 from Main.serializers.session_serializer import SessionSerializer
 from datetime import datetime
+from rest_framework import status
 
 class SessionApi(generics.GenericAPIView):
     """
@@ -57,11 +58,30 @@ class OneSessionApi(generics.GenericAPIView):
 
         product = Product.objects.get(id=currentSession.product.id)
         all_bookkings_num = sum(Booking.objects.filter(session__id=currentSession.id).exclude(status='refunded').values_list('number_of_players', flat=True))
-        currentSession.available_seats = product.max_num - all_bookkings_num - int(blocks)
+        currentSession.available_seats = currentSession.added_seats + product.max_num - all_bookkings_num - int(blocks)
         currentSession.save()
 
         serializer = SessionSerializer(currentSession)
         return Response(serializer.data)
+
+    def put(self, request, session_id):
+        """
+        update an old booking using the given booking_id as a reference if needed.
+        """
+        data = request.data.copy()
+
+        currentSession = Session.objects.get(id=session_id)
+
+        product = Product.objects.get(id=currentSession.product.id)
+        all_bookkings_num = sum(Booking.objects.filter(session__id=currentSession.id).exclude(status='refunded').values_list('number_of_players', flat=True))
+        currentSession.available_seats = int(data['added_seats']) + product.max_num - all_bookkings_num - int(data['block_seats'])
+        currentSession.added_seats = int(data['added_seats'])
+
+        currentSession.save()
+        
+        serializer = self.get_serializer(currentSession)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 
