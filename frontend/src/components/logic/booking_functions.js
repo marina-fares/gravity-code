@@ -1,6 +1,6 @@
 import { app_api_get, app_api_put } from "./apis"
 import { set_shift, set_sub_shift } from "./shifts_functions_apis";
-import { app_post, app_delete, app_get } from "./app";
+import { app_post, app_delete, app_get, app_put } from "./app";
 import { set_localstorage } from "./localstorage";
 
 async function get_total_price({shiftDetails, promoCode, selectedSquareItems}){
@@ -289,6 +289,11 @@ async function get_product() {
     return productsDetails;
 }
 
+async function get_session_details(session_id){
+    const sessionDetais = await app_get(`session/${session_id}/`)
+    return sessionDetais
+}
+
 async function get_available_sessions(payload) {
     const  availableSessions = await app_post('sessions/', {payload});
     return availableSessions;
@@ -315,12 +320,9 @@ async function delete_booking_from_zoho({zohoReceiptID}){
     })
 }
 
-async function update_booking_details({bookingDetails, newState, session_id})
+async function update_booking_details({bookingDetails, session_id})
 {
-    if(newState){
-        bookingDetails.status = newState
-    }
-    await app_post(`bookings/${session_id}/`, bookingDetails)
+    await app_put(`bookings/${session_id}/`, {}, bookingDetails)
     return true
 }
 
@@ -353,6 +355,7 @@ async function delete_booking_from_square({bookingDetails, shiftDetails}){
 export { 
     get_product,
     get_available_sessions,
+    get_session_details,
     get_old_bookings_for_spesific_session,
     delete_booking_from_square,
     update_booking_details,

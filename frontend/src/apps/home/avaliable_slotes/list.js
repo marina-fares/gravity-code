@@ -35,11 +35,14 @@ export default function List({ date, availableSessions, selectedProduct, add_blo
 
 									{/* Right-aligned Buttons */}
 									<div className="d-flex gap-2" style={{ minWidth: "fit-content" }}>
+										<Button size="small" variant="outlined" style={{ padding: "2px 6px", minWidth: "auto" }} onClick={(e) => {e.stopPropagation(); navigate(`/session_capacity/${item.id}`)}}>
+											Session Capacity
+										</Button>
 										<Button size="small" variant="outlined" style={{ padding: "2px 6px", minWidth: "auto" }} onClick={(e) => {e.stopPropagation(); navigate(`/block_seats/${item.id}`)}}>
-										block
+											block
 										</Button>
 										<Button size="small" variant="outlined" style={{ padding: "2px 6px", minWidth: "auto" }}   onClick={(e) => {e.stopPropagation(); navigate(`/book/${item.id}`);}}>
-										+
+											+
 										</Button>
 									</div>
 									</Card.Header>

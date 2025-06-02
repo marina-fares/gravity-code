@@ -57,4 +57,32 @@ function app_delete(url, params = {}){
     .then(response => response.json())
 }
 
-export { app_post, app_get, app_delete }
+function app_put(url, params = {}, bodyData = {}) {
+    let headers = {
+        'Content-Type': 'application/json'
+    };
+
+    let token = get_jwt();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = APP_BASE_URL + url + (queryString ? `?${queryString}` : '');
+
+    return fetch(fullUrl, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(bodyData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    });
+}
+
+
+
+export { app_post, app_get, app_delete, app_put }

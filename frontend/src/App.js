@@ -18,6 +18,7 @@ import EndSubShit from './apps/end_sub_shift';
 import OldBookings from './apps/session_bookings_history'
 import { delete_hold_booking } from './components/logic/booking_functions';
 import BlockSeats from './apps/block_seats';
+import SessionCapacity from './apps/session_capacity';
 import KeyPad from './apps/keypad';
 import BookingsHistory from './apps/all_bookings_history';
 
@@ -92,6 +93,7 @@ function App() {
 								<Route path="/book/:session_id" element={<Booking />} />
 								<Route path="/booking/:session_id/:booking_id" element={<OneOldBooking />} />
 								<Route path="/block_seats/:session_id" element={<BlockSeats />} />
+								<Route path="/session_capacity/:session_id" element={<SessionCapacity />} />
 								<Route path="/keypad" element={<KeyPad />} />
 								<Route path="/bookings_history" element={<BookingsHistory />} />
 								

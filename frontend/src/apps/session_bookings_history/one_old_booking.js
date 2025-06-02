@@ -9,13 +9,12 @@ import { Row, Col } from 'react-bootstrap';
 import { InvoicePrint } from '../../components/ui/booking_invoice'
 import LoadingFun from '../../components/ui/loading'
 import AlertFun from '../../components/ui/alert';
-import { List, TextField} from '@mui/material';
 import { 
     delete_booking_from_zoho, get_booking_details, 
     delete_booking_from_square, update_booking_details, delete_from_inventory, 
+    get_session_details, get_available_sessions
 } from '../../components/logic/booking_functions';
-import {Box} from '@mui/material';
-import { Typography } from '@mui/material';
+import { Typography, Autocomplete, Box, List, TextField } from '@mui/material';
 
 export default function OneOldBooking() {
     const navigate = useNavigate();
@@ -31,6 +30,8 @@ export default function OneOldBooking() {
     const [ note, setNote ] = useState('')
     let [ password, setPassword ] = useState('');
     let [ bookingDetails, setBookingDetails ] = useState();
+    let [ availableSessions, setAvailableSessions ] = useState();
+    let [ selectedSession, setSelectedSession ] = useState();
 
 
     
@@ -51,6 +52,13 @@ export default function OneOldBooking() {
 
             const subShiftData = await get_sub_shift()
             setSubShiftDetails(subShiftData)
+
+            const sessionDetails = await get_session_details(session_id)
+            const dateObj = new Date(bookingData.created_at);
+            const dateOnly = dateObj.toISOString().split('T')[0];
+            const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
+            const sessionsData = await get_available_sessions(payload);
+            setAvailableSessions(sessionsData)
             
         };
         fetchData()
@@ -99,8 +107,9 @@ export default function OneOldBooking() {
         const zohoReceiptID = bookingDetails.zoho_sales_receipt_id
         await delete_booking_from_zoho({zohoReceiptID})
 
-        const newState = 'refunded'
-        await update_booking_details({bookingDetails, newState, session_id})
+        // const newState = 'refunded'
+        bookingDetails.status = 'refunded'
+        await update_booking_details({bookingDetails, session_id})
 
         await delete_from_inventory({bookingDetails, shiftDetails, subShiftDetails})
         setRefundSuccess(true) 
@@ -118,6 +127,24 @@ export default function OneOldBooking() {
             setAlertMessage("Please enter a correct password");
         } else {
             delete_booking();
+        }
+    }
+
+    async function update_booking(e){
+            e.preventDefault()
+            setIsLoading(true);
+        if (!password || password !== shiftDetails.password) {
+            setIsLoading(false);
+            setAlert(true);
+            setAlertMessage("Please enter a correct password");
+        } else {
+            bookingDetails.session = selectedSession.id
+            bookingDetails.booking_customer = bookingDetails.booking_customer.id
+            const response = await update_booking_details({bookingDetails, session_id})
+            if (response){
+                setIsLoading(false);
+                navigate('/')
+            }
         }
     }
 
@@ -147,11 +174,28 @@ return (
             </div>
             <div className='col-8 border-0 '>
                 {bookingDetails && <Card>
-                    <h4 className="h4 margin-left"> Customer Name: {bookingDetails.customer}</h4>
+                    <h4 className="h4 margin-left"> Customer Name: {bookingDetails.booking_customer.identifier}</h4>
                     <h4 className="h4 margin-left" >session: {bookingDetails.type_of_players}  -  People: {bookingDetails.number_of_players}</h4>
+                    {availableSessions &&
+                    <Autocomplete
+                        disablePortal
+                        freeSolo
+                        id="Promo Code"
+                        options={availableSessions.map((session)=>  session.start_time )}
+                        className="border-0 w-100 p-2"
+                        sx={{ width: 3 }}
+                        defaultValue={availableSessions.find((session)=> session.id == session_id).start_time} 
+                        onInputChange={(event, newValue) => {
+                            let session = availableSessions.find((session)=> session.start_time === newValue)                                
+                            console.log(session)
+                            setSelectedSession(session)
+                            
+                        }}
+                        renderInput={(params) => <TextField {...params} label="Booking Session" />}
+                    />}
                     <PaperRow  right={bookingDetails.type_of_players} />
-                    <PaperRow  right={bookingDate} />
-                    <PaperRow  right={bookingTime} />
+                    {/* <PaperRow  right={bookingDate} />
+                    <PaperRow  right={bookingTime} /> */}
                     <PaperRow right={`Account Owner `} left={get_user_and_jwt().user.username} />
                     <PaperRow right='' left="" />
                     <hr style={{ margin: '10px' }} />
@@ -193,7 +237,7 @@ return (
 
                 
 
-                    <form onSubmit={(e)=>Refund(e)}>
+                    <form >
                         <TextField
                             id="outlined-basic"
                             label="Password"
@@ -205,7 +249,10 @@ return (
                             margin="normal"
                         />
                         <div className='flex-row d-flex justify-content-center'>
-                            <Button  type="submit" variant="outlined" color="primary" fullWidth>
+                            <Button  onClick={(e)=>update_booking(e)} variant="outlined" color="primary" fullWidth>
+                                Update Booking
+                            </Button>
+                            <Button  onClick={(e)=>Refund(e)} type="submit" variant="outlined" color="primary" fullWidth>
                                 Refund Booking
                             </Button>
 

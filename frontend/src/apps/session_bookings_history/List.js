@@ -25,41 +25,41 @@ export default function List({ bookings}) {
                 const timeOnly = dateObj.toISOString().split('T')[1].split('.')[0];
 
                 return (
-<ListItem
-  key={item.id}
-  alignItems="flex-start"
-  className="w-100 border mb-2 rounded"
-  onClick={() => openbooking(item)}
->
-<ListItemText
-  disableTypography
-  className="m-0 p-0"
-  primary={
-    <Box className="list-group-item list-group-item-secondary rounded p-2 d-flex justify-content-between align-items-center">
-      <span>{`${dateOnly} ${timeOnly}`}</span>
-      <span>{item.type_of_players}</span>
-    </Box>
-  }
-  secondary={
-    <div className="d-flex flex-column p-2">
-      {item.options.map((option, index) =>
-        option.name !== item.type_of_players ? (
-          <span key={index}>
-            <strong>{option.name}: {option.quantity}</strong>
-          </span>
-        ) : null
-      )}
+                    <ListItem
+                        key={item.id}
+                        alignItems="flex-start"
+                        className="w-100 border mb-2 rounded"
+                        onClick={() => openbooking(item)}
+                    >
+                    <ListItemText
+                        disableTypography
+                        className="m-0 p-0"
+                        primary={
+                        <Box className="list-group-item list-group-item-secondary rounded p-2 d-flex justify-content-between align-items-center">
+                            <span>{`${dateOnly} ${timeOnly}`}</span>
+                            <span>{item.type_of_players} {item.id}</span>
+                        </Box>
+                        }
+                        secondary={
+                        <div className="d-flex flex-column p-2">
+                            {item.options && item.options.map((option, index) =>
+                            option.name !== item.type_of_players ? (
+                                <span key={index}>
+                                <strong>{option.name}: {option.quantity}</strong>
+                                </span>
+                            ) : null
+                            )}
 
-      <span><strong>Number Of Players:</strong> {item.number_of_players}</span>
-      {item.payment.promoCode && (
-        <span><strong>PromoCode:</strong> {item.payment.promoCode}</span>
-      )}
-      <span><strong>Total Price:</strong> {item.payment.amount}</span>
-    </div>
-  }
-/>
+                            <span><strong>Number Of Players:</strong> {item.number_of_players}</span>
+                            {item.payment.promoCode && (
+                            <span><strong>PromoCode:</strong> {item.payment.promoCode}</span>
+                            )}
+                            <span><strong>Total Price:</strong> {item.payment.amount}</span>
+                        </div>
+                        }
+                    />
 
-</ListItem>
+                  </ListItem>
                 );
             })}
             </Mulist>
