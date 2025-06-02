@@ -42,20 +42,6 @@ class BookingApi(generics.GenericAPIView):
             booking_session = get_object_or_404(Session, id=session_id)
             data['session'] = booking_session
 
-            # Update the number of players in the session
-            current_session = booking_session  # already fetched above
-            product = Product.objects.get(id=current_session.product.id)
-            all_bookings_num = sum(
-                Booking.objects.filter(session_id=session_id).exclude(status='refunded').values_list('number_of_players', flat=True)
-            )
-            new_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats - data['number_of_players']
-            old_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats 
-            print("---------------------------------", new_sessions_seats)
-            if(new_sessions_seats < 0):
-                return Response({"error": "This Session Doesn't have available Seats, Only Available " + str(old_sessions_seats) + " seat" }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            current_session.available_seats = new_sessions_seats            
-            current_session.save()
-
             # Optional: get customer
             booking_customer_id = data.get('booking_customer')
             if booking_customer_id:
@@ -65,6 +51,24 @@ class BookingApi(generics.GenericAPIView):
             # Check if we're updating an existing booking or creating a new one
             booking_id = data.get('id')
             existing_booking = Booking.objects.filter(id=booking_id).first()
+
+
+            # Update the number of players in the session
+            current_session = booking_session  # already fetched above
+            product = Product.objects.get(id=current_session.product.id)
+            all_bookings_num = sum(
+                Booking.objects.filter(session_id=session_id).exclude(status='refunded').values_list('number_of_players', flat=True)
+            )
+            if booking_id and existing_booking:
+                new_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats 
+            else:
+                new_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats - data['number_of_players']
+            old_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats 
+            print("---------------------------------", new_sessions_seats)
+            if(new_sessions_seats < 0):
+                return Response({"error": "This Session Doesn't have available Seats, Only Available " + str(old_sessions_seats) + " seat" }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            current_session.available_seats = new_sessions_seats            
+            current_session.save()
 
             if booking_id and existing_booking:
                 # Booking exists, updating it...
@@ -80,8 +84,6 @@ class BookingApi(generics.GenericAPIView):
                 data['options']= None
                 session_booking = Booking.objects.create(**data)
                 created = True
-
-
 
 
             serializer = BookingSerializer(session_booking)

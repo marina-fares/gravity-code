@@ -111,9 +111,14 @@ class Booking(models.Model):
             # update the number of players in the session
             current_session = Session.objects.get(id=old_instance.session.id)
             product = Product.objects.get(id=current_session.product.id)
-            all_bookkings_num = sum(Booking.objects.filter(session__id=old_instance.session.id).values_list('number_of_players', flat=True))
-            current_session.available_seats = product.max_num - all_bookkings_num
+            all_bookings_num = sum(
+                Booking.objects.filter(session_id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True)
+            )
+            new_sessions_seats = current_session.added_seats + current_session.product.max_num - all_bookings_num - current_session.block_seats 
+            current_session.available_seats = new_sessions_seats
             current_session.save()
+
+            
 
         else:
             session_new = self.session 

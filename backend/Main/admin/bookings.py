@@ -21,8 +21,13 @@ class BookingAdmin(admin.ModelAdmin):
     def delete_queryset(self, request, queryset):
         for i in queryset:
             session1 = Session.objects.filter(id = i.session.id)[0]
-            session1.available_seats += i.number_of_players
+            all_bookings_num = sum(
+                Booking.objects.filter(session_id=session1.id).exclude(status='refunded').values_list('number_of_players', flat=True)
+            )
+            new_sessions_seats = session1.added_seats + session1.product.max_num - all_bookings_num - session1.block_seats + i.number_of_players
+            session1.available_seats = new_sessions_seats
             session1.save()
+            
 
         
         """
