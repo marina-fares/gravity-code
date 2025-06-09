@@ -22,11 +22,12 @@ class SessionApi(generics.GenericAPIView):
         return Response(serializer)
 
     def post(self, request):
-        # this return all sessions for spesific product and date
+        # this return all sessions for spesific product and date 
+        # for the get available sessions function
         date_string = request.data['payload']['date']
         selectedProduct = request.data['payload']['product']
         selectedSessionDate = datetime.strptime(date_string, "%Y-%m-%d").date()
-        allSessions = Session.objects.filter(product=selectedProduct, start_time__date=selectedSessionDate)
+        allSessions = Session.objects.filter(product=selectedProduct, start_time__date=selectedSessionDate).order_by('start_time')
         serializer = SessionSerializer(allSessions, many=True)
         return Response(serializer.data)
 
