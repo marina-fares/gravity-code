@@ -44,7 +44,7 @@ class OneSessionApi(generics.GenericAPIView):
         This method is used to make a request to the Square API.
         """
         currentSessionDetails = Session.objects.get(id=session_id)
-        allSessions = Session.objects.filter(id__gte=session_id, start_time__date=currentSessionDetails.start_time.date())
+        allSessions = Session.objects.filter(id__gte=session_id, start_time__date=currentSessionDetails.start_time.date(), product__id=currentSessionDetails.product.id )
         serializer = SessionSerializer(allSessions, many=True).data
         return Response(serializer)
 
