@@ -245,10 +245,10 @@ export default function Options() {
 					set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id)	
 				}
 			
-			// else{
-			// 	setAlert(true)
-			// 	setMessage(response.message)
-			// }
+			else{
+				setAlert(true)
+				setMessage(response.message)
+			}
 
 		})
 	}
