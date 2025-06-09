@@ -114,7 +114,10 @@ async function add_to_inventory({ shiftDetails, subShiftDetails, paymentData, op
 
     options.forEach(item => {
         console.log(item)
-        shiftDetails.inventory[item.name].sold += parseInt(item.quantity)
+        if(shiftDetails.inventory[item.name]){
+            shiftDetails.inventory[item.name].sold += parseInt(item.quantity)
+
+        }
     })
 
     if(paymentData.source_type === 'CASH')
@@ -307,9 +310,9 @@ async function delete_booking_from_zoho({zohoReceiptID}){
     })
 }
 
-async function update_booking_details({bookingDetails, session_id})
+async function update_booking_details({bookingDetails, new_session_id})
 {
-    await app_put(`bookings/${session_id}/`, {}, bookingDetails)
+    await app_put(`bookings/${new_session_id}/`, {}, bookingDetails)
     return true
 }
 

@@ -44,6 +44,16 @@ export default function Booking() {
     let [ paymentDetails, setPaymentDetails ] = useState()
     let [ bookingDetails, setBookingDetails ] = useState()
     let [ salesReceiptDetails, setSalesReceiptDetails] = useState()
+    let [ customItem, setCustomItem ] = useState(
+        {
+            "name": "",
+            "quantity": "1",
+            "base_price_money": {
+            "amount": 0,
+            "currency": "EGP"
+            }
+
+        })
 
 
 // get the shift, sub_shift data and promoCodes
@@ -79,10 +89,10 @@ useEffect(() => {
 
 
 useEffect(()=>{
-    if( numberOfPlayers && selectedCategory && allZohoItems){
+    if( numberOfPlayers && selectedCategory && allZohoItems && customItem){
         set_options_for_apis()
     }
-},[selectedOptions, numberOfPlayers, selectedCategory, promotrue, promoCode, allZohoItems])
+},[selectedOptions, numberOfPlayers, selectedCategory, promotrue, promoCode, allZohoItems, customItem, set_options_for_apis])
 
 useEffect(()=>{
     if(orderDetails){
@@ -105,7 +115,6 @@ useEffect(() => {
             if (result.error) {
                 let paymentData = paymentDetails
                 let zohoReceiptID = salesReceiptDetails.id
-                console.log("---------------108", salesReceiptDetails)
                 delete_booking_error({paymentData, zohoReceiptID})
                 setAlert(true)
                 setAlertMessage(result.error)
@@ -118,7 +127,7 @@ useEffect(() => {
     };
 
     handleBooking();
-}, [bookingDetails, sessionsDetails, promoCode]);
+}, [bookingDetails, sessionsDetails, promoCode, delete_booking_error, paymentDetails, salesReceiptDetails]);
 
 useEffect(()=>{
     if(bookingSuccess && paymentDetails)
@@ -153,6 +162,16 @@ function set_options_for_apis() {
     let zohoItemsList = [];
     let squareIdsList = [];
 
+    // add the custom Item to zoho ans square
+    if(customItem.base_price_money.amount > 0 && customItem.name !== ""){
+        squareIdsList.push(customItem)
+        zohoItemsList.push({
+            name: customItem.name,
+            quantity: 1,
+            rate: customItem.base_price_money.amount/1.14,
+            tax_id: "5118629000000088105"
+    })
+    }
 
     // Add number of players to Zoho line items
     const baseRate = allZohoItems[selectedCategory][1];
@@ -258,7 +277,7 @@ async function Book(){
     setIsLoading(true)
     
     // create the payment in square
-    let result = await create_payment_api({shiftDetails, orderDetails, paymentMethod, setAlert, setAlertMessage})
+    let result = await create_payment_api({shiftDetails, orderDetails, paymentMethod})
     if (result.error) {
         setAlert(true);
         setAlertMessage(result.error)
@@ -436,6 +455,37 @@ return (
                                         <FormControlLabel value="creditcard" control={<Radio />} label="Credit" />
                                     </RadioGroup>
                                 </FormControl>
+                                <div className="d-flex flex-row p-2">
+                                <TextField
+                                        required
+                                        id="Custom Field Name"
+                                        label= "Custom Field Name"
+                                        onChange= {(e) => {
+                                            setCustomItem(prev => ({
+                                            ...prev,
+                                            name:e.target.value}))
+                                        }}
+                                        className="from-control border-0 w-100 "
+                                        value={customItem.name}
+                                        
+                                    />
+                                <TextField
+                                        required
+                                        id="Custom Field Price"
+                                        label= "Custom Field Price"
+                                        onChange= {(e) => {
+                                            setCustomItem(prev => ({
+                                            ...prev,
+                                            base_price_money:{
+                                                "amount": e.target.value*100,
+                                                "currency": "EGP"
+                                            }}))
+                                        }}
+                                        className="from-control border-0 w-100 "
+                                        value={customItem.base_price_money.amount/100}
+                                        
+                                    />
+                                </div>
                                 <Card className="w-auto  d-flex flex-row justify-content-center border-0 p-1" >
                                     <Button   onClick={() => {hold_booking()}} variant="outlined" className="w-50">Total Price</Button>
                                     <Button onClick={Book} variant="outlined"  className="w-50">Book</Button>                        

@@ -32,6 +32,7 @@ export default function OneOldBooking() {
     let [ bookingDetails, setBookingDetails ] = useState();
     let [ availableSessions, setAvailableSessions ] = useState();
     let [ selectedSession, setSelectedSession ] = useState();
+    let [ selectedDate, setSelectedDate ] = useState()
 
 
     
@@ -40,12 +41,12 @@ export default function OneOldBooking() {
         const fetchData = async () => {
             const bookingData = await get_booking_details(booking_id);
             setBookingDetails(bookingData)
-            var date = new Date(bookingData.created_at);
-            var date2 = date.getDate()+'/' + (date.getMonth()+1) + '/' + date.getFullYear();
-            setBookingDate (date2)
+            // var date = new Date(bookingData.created_at);
+            // var date2 = date.getDate()+'/' + (date.getMonth()+1) + '/' + date.getFullYear();
+            // setBookingDate (date2)
+            // setSelectedDate(date.toISOString().split('T')[0])
 
-            var time = (date.getHours() % 12 || 12) + ':' + date.getMinutes() +' ' + ((date.getHours()>= 12)? 'PM' : 'AM')
-            setBookingTime(time)
+            
             
             const shiftData = await get_shift()
             setShiftDetails(shiftData)
@@ -54,12 +55,20 @@ export default function OneOldBooking() {
             setSubShiftDetails(subShiftData)
 
             const sessionDetails = await get_session_details(session_id)
-            const dateObj = new Date(bookingData.created_at);
+            const dateObj = new Date(sessionDetails[0].start_time);
             const dateOnly = dateObj.toISOString().split('T')[0];
             const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
             const sessionsData = await get_available_sessions(payload);
+            console.log("-------------------",sessionsData )
+            let currentSession = sessionDetails.find((session)=> session.id == session_id)
+            let date = new Date(currentSession.start_time)
+            var time = (date.getHours() % 12 || 12) + ':' + date.getMinutes() +' ' + ((date.getHours()>= 12)? 'PM' : 'AM')
+
             setAvailableSessions(sessionsData)
-            
+            setSelectedSession(currentSession)
+            setSelectedDate(date.toISOString().split('T')[0])
+            setBookingTime(time)
+
         };
         fetchData()
     }, [booking_id])
@@ -94,7 +103,16 @@ export default function OneOldBooking() {
     };
 
 
-
+    async function on_date_change(e){
+        setSelectedDate(e.target.value)
+        const sessionDetails = await get_session_details(session_id)
+        const dateObj = new Date(e.target.value);
+        const dateOnly = dateObj.toISOString().split('T')[0];
+        const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
+        const sessionsData = await get_available_sessions(payload);
+        setAvailableSessions(sessionsData)
+        setSelectedSession(sessionsData[0])
+    }
 
     async function delete_booking(){
         const response = await delete_booking_from_square({bookingDetails, shiftDetails})
@@ -140,7 +158,8 @@ export default function OneOldBooking() {
         } else {
             bookingDetails.session = selectedSession.id
             bookingDetails.booking_customer = bookingDetails.booking_customer.id
-            const response = await update_booking_details({bookingDetails, session_id})
+            let new_session_id = selectedSession.id
+            const response = await update_booking_details({bookingDetails, new_session_id})
             if (response){
                 setIsLoading(false);
                 navigate('/')
@@ -177,22 +196,54 @@ return (
                     <h4 className="h4 margin-left"> Customer Name: {bookingDetails.booking_customer.identifier}</h4>
                     <h4 className="h4 margin-left" >session: {bookingDetails.type_of_players}  -  People: {bookingDetails.number_of_players}</h4>
                     {availableSessions &&
-                    <Autocomplete
-                        disablePortal
-                        freeSolo
-                        id="Promo Code"
-                        options={availableSessions.map((session)=>  session.start_time )}
-                        className="border-0 w-100 p-2"
-                        sx={{ width: 3 }}
-                        defaultValue={availableSessions.find((session)=> session.id == session_id).start_time} 
-                        onInputChange={(event, newValue) => {
-                            let session = availableSessions.find((session)=> session.start_time === newValue)                                
-                            console.log(session)
-                            setSelectedSession(session)
-                            
+                    <div className='row'>
+                    { availableSessions && <div><TextField
+                        id='date'
+                        label='Selected Date'
+                        type='date'
+                        onChange={(e) => {
+                            on_date_change(e)
                         }}
-                        renderInput={(params) => <TextField {...params} label="Booking Session" />}
-                    />}
+                        value={selectedDate}
+                        sx={{ width: 220 }}
+                        InputLabelProps={{
+                            shrink: true,
+                        }}
+                    />
+{selectedSession && (
+  <Autocomplete
+    disablePortal
+    freeSolo
+    id="sessions"
+    options={availableSessions.map((session) => {
+      const datetime = new Date(session.start_time);
+      return `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getUTCHours()).padStart(2, '0')}:${String(datetime.getUTCMinutes()).padStart(2, '0')}`;
+    })}
+    className="border-0 w-100 p-2"
+    sx={{ width: '100%' }}
+    value={
+      selectedSession?.start_time
+        ? `${new Date(selectedSession.start_time).getFullYear()}-${String(new Date(selectedSession.start_time).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedSession.start_time).getDate()).padStart(2, '0')} ${String(new Date(selectedSession.start_time).getUTCHours()).padStart(2, '0')}:${String(new Date(selectedSession.start_time).getUTCMinutes()).padStart(2, '0')}`
+        : ''
+    }
+    onInputChange={(event, newValue) => {
+      const session = availableSessions.find((session) => {
+        const datetime = new Date(session.start_time);
+        const formatted = `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getUTCHours()).padStart(2, '0')}:${String(datetime.getUTCMinutes()).padStart(2, '0')}`;
+        return formatted === newValue;
+      });
+
+      if (session) {
+        setSelectedSession(session);
+      }
+    }}
+    renderInput={(params) => <TextField {...params} label="Booking Session" />}
+  />
+)}
+
+                    </div>}
+                    </div>
+                    }
                     <PaperRow  right={bookingDetails.type_of_players} />
                     {/* <PaperRow  right={bookingDate} />
                     <PaperRow  right={bookingTime} /> */}

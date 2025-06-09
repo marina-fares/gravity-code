@@ -42,18 +42,20 @@ export default function List({ bookings}) {
                         }
                         secondary={
                         <div className="d-flex flex-column p-2">
+                            <span><strong>Number Of Players:</strong> {item.number_of_players}</span>
                             {item.options && item.options.map((option, index) =>
                             option.name !== item.type_of_players ? (
                                 <span key={index}>
-                                <strong>{option.name}: {option.quantity}</strong>
+                                <strong>{option.name}:</strong> {option.quantity}
                                 </span>
                             ) : null
                             )}
 
-                            <span><strong>Number Of Players:</strong> {item.number_of_players}</span>
+                            
                             {item.payment.promoCode && (
                             <span><strong>PromoCode:</strong> {item.payment.promoCode}</span>
                             )}
+                            <span><strong>Receipt Number:</strong> {item.square_receipt_number}</span>
                             <span><strong>Total Price:</strong> {item.payment.amount}</span>
                         </div>
                         }
