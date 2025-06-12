@@ -38,7 +38,7 @@ const handleSubmit = async (event) => {
   return (
     <ThemeProvider theme={theme}>
         <LoadingFun open={loading} message='Sign in'/>
-        <AlertFun open_alert={alert} set_open_alert={set_alert} message={error_message} /> 
+        <AlertFun open_alert={alert} set_open_alert={set_alert} message={error_message} setLoading={set_loading} /> 
         <Container component="main" maxWidth="xs">
             <CssBaseline />
             <Box

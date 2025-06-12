@@ -1,7 +1,7 @@
 import { Button, TextField } from '@mui/material';
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { app_post, app_put } from '../components/logic/app';
+import { app_put } from '../components/logic/app';
 import { useParams } from 'react-router-dom';
 import LoadingFun from '../components/ui/loading';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,6 @@ export default function SessionCapacity(){
     let { session_id } = useParams()
     let [ isLoading, setIsLoading ] = useState()
     let [ sessionDetails, setSessionDetails ] = useState()
-    let [ sessionCapacity, setSessionCapacity ] = useState()
     let [ addedSeats, setAddedSeats ] = useState()
     let [ alert, setAlert ] = useState(false)
     let [ alertMessage, setAlertMessage ] = useState('')
@@ -23,7 +22,6 @@ export default function SessionCapacity(){
         const fetchData = (async()=>{
             const sessionData = await get_session_details(session_id)
             setSessionDetails(sessionData[0])
-            setSessionCapacity((sessionData[0].session_capacity)?sessionData[0].product.max_num : sessionData[0].session_capacity)
         })
         fetchData()
     },[session_id])

@@ -92,7 +92,7 @@ useEffect(()=>{
     if( numberOfPlayers && selectedCategory && allZohoItems && customItem){
         set_options_for_apis()
     }
-},[selectedOptions, numberOfPlayers, selectedCategory, promotrue, promoCode, allZohoItems, customItem, set_options_for_apis])
+},[selectedOptions, numberOfPlayers, selectedCategory, promotrue, promoCode, allZohoItems, customItem])
 
 useEffect(()=>{
     if(orderDetails){
@@ -102,7 +102,8 @@ useEffect(()=>{
 
 useEffect(() => {
     const handleBooking = async () => {
-        if (bookingDetails?.type_of_players) {
+
+        if (bookingDetails?.type_of_players && !bookingSuccess) {
             let result = await null
 
             const times = promoCode?.duration || 1;
@@ -127,7 +128,7 @@ useEffect(() => {
     };
 
     handleBooking();
-}, [bookingDetails, sessionsDetails, promoCode, delete_booking_error, paymentDetails, salesReceiptDetails]);
+}, [bookingDetails, sessionsDetails, promoCode, paymentDetails, salesReceiptDetails]);
 
 useEffect(()=>{
     if(bookingSuccess && paymentDetails)

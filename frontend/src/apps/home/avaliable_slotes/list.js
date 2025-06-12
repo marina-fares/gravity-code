@@ -1,10 +1,8 @@
 import {  List as Mulist } from '@mui/material';
-import { FormControl, InputLabel, Input, FormHelperText } from '@mui/material';
 import { Button } from '@mui/material';
 import { Fragment } from 'react';
 import Card from 'react-bootstrap/Card';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import { set_localstorage } from '../../../components/logic/localstorage';
 
 export default function List({ date, availableSessions, selectedProduct, add_block_seats }) {
@@ -46,7 +44,7 @@ export default function List({ date, availableSessions, selectedProduct, add_blo
 											zIndex: 0,
 											}}
 										>
-											Session Park
+											Session {item.product.nick_name}
 										</div>
 
 										{/* Spacer to push buttons down on small screens */}

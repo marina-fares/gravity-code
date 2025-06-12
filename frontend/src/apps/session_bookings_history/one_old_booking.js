@@ -18,8 +18,6 @@ import { Typography, Autocomplete, Box, List, TextField } from '@mui/material';
 
 export default function OneOldBooking() {
     const navigate = useNavigate();
-    let [ bookingDate, setBookingDate ] = useState()
-    let [ bookingTime, setBookingTime ] = useState()
     let [ alertMessage, setAlertMessage ] = useState()
     let { session_id, booking_id } = useParams();
     let [ alert, setAlert ] = useState(false)
@@ -41,12 +39,6 @@ export default function OneOldBooking() {
         const fetchData = async () => {
             const bookingData = await get_booking_details(booking_id);
             setBookingDetails(bookingData)
-            // var date = new Date(bookingData.created_at);
-            // var date2 = date.getDate()+'/' + (date.getMonth()+1) + '/' + date.getFullYear();
-            // setBookingDate (date2)
-            // setSelectedDate(date.toISOString().split('T')[0])
-
-            
             
             const shiftData = await get_shift()
             setShiftDetails(shiftData)
@@ -60,18 +52,17 @@ export default function OneOldBooking() {
             const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
             const sessionsData = await get_available_sessions(payload);
             console.log("-------------------",sessionsData )
-            let currentSession = sessionDetails.find((session)=> session.id == session_id)
+            let currentSession = sessionDetails.find((session)=> session.id === session_id)
             let date = new Date(currentSession.start_time)
-            var time = (date.getHours() % 12 || 12) + ':' + date.getMinutes() +' ' + ((date.getHours()>= 12)? 'PM' : 'AM')
+            // var time = (date.getHours() % 12 || 12) + ':' + date.getMinutes() +' ' + ((date.getHours()>= 12)? 'PM' : 'AM')
 
             setAvailableSessions(sessionsData)
             setSelectedSession(currentSession)
             setSelectedDate(date.toISOString().split('T')[0])
-            setBookingTime(time)
 
         };
         fetchData()
-    }, [booking_id])
+    }, [booking_id, session_id])
 
     useEffect(()=>{
         if(refundSuccess && !alert)
@@ -127,7 +118,8 @@ export default function OneOldBooking() {
 
         // const newState = 'refunded'
         bookingDetails.status = 'refunded'
-        await update_booking_details({bookingDetails, session_id})
+        let new_session_id = session_id
+        await update_booking_details({bookingDetails, new_session_id})
 
         await delete_from_inventory({bookingDetails, shiftDetails, subShiftDetails})
         setRefundSuccess(true) 
