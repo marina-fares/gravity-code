@@ -93,14 +93,20 @@ export default function List({ date, availableSessions, selectedProduct, add_blo
 											{datetime.getFullYear()}-
 											{String(datetime.getMonth() + 1).padStart(2, '0')}-
 											{String(datetime.getDate()).padStart(2, '0')}{" "}
-											{String(datetime.getUTCHours()).padStart(2, '0')}:
-											{String(datetime.getUTCMinutes()).padStart(2, '0')}
+											{String((datetime.getUTCHours() % 12) || 12).padStart(2, '0')}:
+											{String(datetime.getUTCMinutes()).padStart(2, '0')} {datetime.getUTCHours() >= 12 ? 'PM' : 'AM'}
 										</Card.Title>
 
-										<div className="row mb-2">
-											<div className="col-sm">
-											Slots Available: {item.available_seats}
+										<div className="column mb-2">
+											<div className="col-sm ">
+											Available Seats: {item.available_seats}
 											</div>
+											{item.block_seats >0 && <div className="col-sm">
+											Blocks: {item.block_seats}
+											</div>}
+											{item.added_seats>0 && <div className="col-sm">
+											Added Seats: {item.added_seats}
+											</div>}
 										</div>
 										</Card.Body>
 									</Card>
