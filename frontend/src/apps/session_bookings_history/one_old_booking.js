@@ -52,7 +52,7 @@ export default function OneOldBooking() {
             const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
             const sessionsData = await get_available_sessions(payload);
             console.log("-------------------",sessionsData )
-            let currentSession = sessionDetails.find((session)=> session.id === session_id)
+            let currentSession = sessionDetails.find((session)=> session.id == session_id)
             let date = new Date(currentSession.start_time)
             // var time = (date.getHours() % 12 || 12) + ':' + date.getMinutes() +' ' + ((date.getHours()>= 12)? 'PM' : 'AM')
 

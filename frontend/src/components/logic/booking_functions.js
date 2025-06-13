@@ -155,10 +155,20 @@ async function add_to_inventory({ shiftDetails, subShiftDetails, paymentData, op
 
 async function create_booking({sessionsDetails, bookingDetails, round})
 {
+    let response = null
+    // in case we have more than one hour go into this condition to book for the other hours, the hour after the first one
     if (round > 0){
         delete bookingDetails.id
+        response = await app_post(`booking/`, bookingDetails)
     }
-    const response = await app_post(`bookings/${sessionsDetails[round].id}/`, bookingDetails)
+    // use this condition to book for the first hour in case we have the booking but in hold status
+    else if(bookingDetails.id){
+        response = await app_put(`booking/${bookingDetails.id}/`,{}, bookingDetails)
+    }
+    // use this condition to book for the first hour in case we don't have the booking and will create it
+    else{
+        response = await app_post(`booking/`, bookingDetails)
+    }
     
     return response
 }
@@ -168,12 +178,18 @@ async function create_hold_booking({bookingDetails, session_id, numberOfPlayers 
         "number_of_players": numberOfPlayers,
         "created_at": new Date() ,
         "status": "hold",
+        "session": session_id
     }
-    if (bookingDetails?.id) {
-    data.id = bookingDetails.id;
+    // if (bookingDetails?.id) {
+    // data.id = bookingDetails.id;
+    // }
+    let result = null
+    if(bookingDetails?.id){
+        result = await app_post(`booking/${bookingDetails?.id}/`, data)
     }
-
-    const result = await app_post(`bookings/${session_id}/`, data)
+    else{
+        result = await app_post(`booking/`, data)    
+    }
     return result
 }
 

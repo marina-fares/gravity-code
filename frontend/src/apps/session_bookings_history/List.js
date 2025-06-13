@@ -20,9 +20,8 @@ export default function List({ bookings}) {
         {bookings && 
             <Mulist className="flex-column ">
             {bookings.map((item) => {
-                const dateObj = new Date(item.created_at);
-                const dateOnly = dateObj.toISOString().split('T')[0];
-                const timeOnly = dateObj.toISOString().split('T')[1].split('.')[0];
+                const datetime = new Date(item.created_at);
+     
 
                 return (
                     <ListItem
@@ -36,7 +35,13 @@ export default function List({ bookings}) {
                         className="m-0 p-0"
                         primary={
                         <Box className="list-group-item list-group-item-secondary rounded p-2 d-flex justify-content-between align-items-center">
-                            <span>{`${dateOnly} ${timeOnly}`}</span>
+                            <span>	
+                                {datetime.getFullYear()}-
+                                {String(datetime.getMonth() + 1).padStart(2, '0')}-
+                                {String(datetime.getDate()).padStart(2, '0')}{" "}
+                                {String((datetime.getUTCHours() % 12) || 12).padStart(2, '0')}:
+                                {String(datetime.getUTCMinutes()).padStart(2, '0')} {datetime.getUTCHours() >= 12 ? 'PM' : 'AM'}
+                          </span>
                             <span>{item.type_of_players} {item.id}</span>
                         </Box>
                         }
