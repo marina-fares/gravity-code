@@ -33,7 +33,7 @@ export default function BlockSeats(){
 
     try {
 
-        if (!blockSeats || isNaN(blockSeats) || Number(blockSeats) <= 0) {
+        if (!blockSeats || isNaN(blockSeats) ) {
         throw new Error("Invalid number of seats");
         }
 
