@@ -19,14 +19,16 @@ class BookingApi(generics.GenericAPIView):
         This method is used to get all bookings for a specific session.
         """
         search_field = request.query_params.get('tt', '')
+        current_user = request.user
 
         if session_id:
             sessionBookings = Booking.objects.filter(session=session_id, status='done')
         elif search_field:
-
+            current_user_groups = current_user.groups.all()
+            current_user_group_names = [group.name for group in current_user_groups]
             all_customers = Customer.objects.filter(identifier__icontains=search_field)
-            sessionBookings1 = Booking.objects.filter(booking_customer__in = all_customers)
-            sessionBookings2 = Booking.objects.filter(square_receipt_number__icontains = search_field)
+            sessionBookings1 = Booking.objects.filter(booking_customer__in = all_customers, session__product__group__name__in=current_user_group_names)
+            sessionBookings2 = Booking.objects.filter(square_receipt_number__icontains = search_field, session__product__group__name__in=current_user_group_names)
             sessionBookings = sessionBookings1 | sessionBookings2
         serializer = BookingSerializer(sessionBookings, many=True)
 
@@ -188,14 +190,17 @@ class OneBookingApi(generics.GenericAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK) # ✅ Fix: use .data only here
 
     
-    def post(self, request, booking_id):
+    def post(self, request, booking_id=None):
         """
         Create a new booking using the given booking_id as a reference if needed.
         """
         data = request.data.copy()
-        data["id"] = booking_id  # Optional: only if you want to set the ID manually
-        serializer = self.get_serializer(data=data)
-
+        if booking_id:
+            data["id"] = booking_id  # Optional: only if you want to set the ID manually
+            serializer = self.get_serializer(data=data)
+        # use this condition to create new hold booking
+        else:
+            serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -203,17 +208,27 @@ class OneBookingApi(generics.GenericAPIView):
     
     def put(self, request, booking_id):
         """
-        update an old booking using the given booking_id as a reference if needed.
+        Update existing booking if it exists, otherwise create a new one.
         """
         data = request.data.copy()
-        data["id"] = booking_id  # Optional: only if you want to set the ID manually
-        serializer = self.get_serializer(data=data)
+        try:
+            booking = Booking.objects.get(id=booking_id)
+            is_new = False
+        except Booking.DoesNotExist:
+            booking = None
+            is_new = True
+
+        serializer = self.get_serializer(instance=booking, data=data, partial=True)
 
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            instance = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED if is_new else status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
+
+
 
 
     def delete(self, request, booking_id):

@@ -36,6 +36,7 @@ urlpatterns = [
     path('bookings/<int:session_id>/', BookingApi.as_view(), name='bookings'),
     path('bookings/', BookingApi.as_view(), name='bookings'),
     path('booking/<int:booking_id>/', OneBookingApi.as_view(), name='bookings'),
+    path('booking/', OneBookingApi.as_view(), name='create-booking'),
     path('customers/', CustomerApi.as_view(), name='customers'),
     path('user/<int:user_id>/change-password/', admin_change_user_password, name='admin_change_user_password'),
 
