@@ -37,7 +37,7 @@ export default function Booking() {
     const [subShiftDetails, setSubShiftDetails] = useState();
     let [ allCustomers, setAllCustomers ] = useState()
     let [ customerName, setCustomerName ] = useState(
-    date.getFullYear() + "/" + date.getMonth() + "/" + date.getDate() + ' ' +
+    date.getFullYear() + "/" + (Number(date.getMonth())+1) + "/" + date.getDate() + ' ' +
     date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()
     )
     let [ orderDetails, setOrderDetails ] = useState()
