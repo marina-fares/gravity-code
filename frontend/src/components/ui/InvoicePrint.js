@@ -3,7 +3,7 @@ import ReactToPrint from 'react-to-print';
 import { useRef } from 'react';
 import { Typography } from '@mui/material';
 
-const InvoicePrint = ({ shift , sub_shift, calculated_cash, calculated_visa }) => {
+const InvoicePrint = ({ shift , sub_shift, calculated_cash, calculated_visa, profile }) => {
     const componentRef = useRef();
     return (
         <div>
@@ -15,7 +15,7 @@ const InvoicePrint = ({ shift , sub_shift, calculated_cash, calculated_visa }) =
                 :
                 (<>Full Shift</>)
                 }</Typography>
-                    <Invoice ref={componentRef} shift={shift} sub_shift={sub_shift} calculated_cash={calculated_cash} calculated_visa={calculated_visa} className ="d-flex justify-content-start"/>
+                    <Invoice ref={componentRef} shift={shift} sub_shift={sub_shift} calculated_cash={calculated_cash} calculated_visa={calculated_visa} profile={profile} className ="d-flex justify-content-start"/>
                     <ReactToPrint
                         trigger={() => (
                             <button style={{ margin: '10px' }} className='btn btn-outline-dark'>

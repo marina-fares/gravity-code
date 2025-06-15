@@ -8,10 +8,8 @@ async function end_shift(shift, sub_shift) {
 	shift.end_time = date
 	sub_shift.end_time = date
 
-	await app_post('old_shift/', {"payload": shift})
-	await app_post('sub_shift_history/', {"payload": sub_shift})
 
-	await app_api_post('square/', {
+	const response = await app_api_post('square/', {
 		request_type: 'put',
 		url: `/labor/shifts/${shift.current_shift_id}`,
 		payload: {
@@ -30,7 +28,15 @@ async function end_shift(shift, sub_shift) {
 			},
 		},
 	}).then((res) => {
-		// debugger;
+		if(res.errors){
+			return res.errors
+		}
+	}
+	);
+	
+	if(!response){
+		await app_post('old_shift/', {"payload": shift})
+		await app_post('sub_shift_history/', {"payload": sub_shift})
 		shift.end_time = null;
 		shift.start_time = null;
 		shift.current_shift_id = null;
@@ -58,11 +64,9 @@ async function end_shift(shift, sub_shift) {
 		sub_shift.note = {}
 		set_shift(shift);
 		set_sub_shift(sub_shift)
-
-		
 	}
-);
-	window.location.replace("/");
+
+	return response
 }
 
 async function get_zoho_items(){
@@ -144,6 +148,8 @@ async function get_catalog() {
 
 async function split_shift(shift, sub_shift) {
 
+	console.log("-----------------------------151")
+	console.log(sub_shift)
 	let date = new Date().toISOString();
 
 	sub_shift.end_time = date
@@ -162,7 +168,7 @@ async function split_shift(shift, sub_shift) {
 	sub_shift.note = {}
 
 	await set_sub_shift(sub_shift)
-	window.location.replace("/");
+	// window.location.replace("/");
 
 }
 
