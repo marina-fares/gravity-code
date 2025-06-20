@@ -132,7 +132,7 @@ class Booking(models.Model):
 
 
     def __str__(self):
-        return str(self.id) + ' - ' + str(self.session) + ' - ' + str(self.number_of_players) + ' - ' + self.status
+        return str(self.id) + ' - ' + str(self.session) + ' - ' + str(self.number_of_players) 
 
 
 class Customer(models.Model):

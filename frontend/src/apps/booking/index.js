@@ -308,7 +308,7 @@ async function Book(){
     const options = orderDetails.line_items
     await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note})
 
-    // let bookingId = bookingDetails.id
+    // create the customer
     let customerData = await create_customer({customerName})
     if(customerData.error){
         setAlert(true)

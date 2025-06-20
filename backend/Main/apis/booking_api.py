@@ -213,6 +213,7 @@ class OneBookingApi(generics.GenericAPIView):
         data = request.data.copy()
         try:
             booking = Booking.objects.get(id=booking_id)
+            customer = Customer.objects.get(id=data['booking_customer'])
             is_new = False
         except Booking.DoesNotExist:
             booking = None
@@ -222,6 +223,8 @@ class OneBookingApi(generics.GenericAPIView):
 
         if serializer.is_valid():
             instance = serializer.save()
+            instance.booking_customer = customer  # You can assign it here if needed
+            instance.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED if is_new else status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
