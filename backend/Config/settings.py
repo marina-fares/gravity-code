@@ -51,10 +51,16 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'drf_yasg',
     "corsheaders",
+    'django_crontab',
 
     'rest_framework',
     'Main',
 ]
+
+CRONJOBS = [
+    ('0 2 * * *', 'django.core.management.call_command', ['run_midnight_task']),
+]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
