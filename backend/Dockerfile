@@ -5,6 +5,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install system dependencies
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    cron \
     gettext \
     libpq-dev \
     postgresql-client \
@@ -30,6 +31,7 @@ RUN pip install django-admin-rangefilter
 COPY Pipfile.lock /usr/src/app/
 COPY Pipfile /usr/src/app/
 RUN pipenv install --deploy --ignore-pipfile
+RUN pip install django-crontab
 
 #RUN pip install django-admin-rangefilter
 
