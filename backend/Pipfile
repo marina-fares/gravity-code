@@ -16,6 +16,7 @@ drf-yasg = "*"
 djangorestframework-simplejwt = "*"
 django-cors-headers = "*"
 django-admin-rangefilter = "*"
+django-crontab = "*"  
 
 [requires]
 python_version = "3.9"
