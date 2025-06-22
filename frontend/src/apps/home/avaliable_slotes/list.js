@@ -90,11 +90,11 @@ export default function List({ date, availableSessions, selectedProduct, add_blo
 
 										<Card.Body className="container">
 										<Card.Title>
-											{datetime.getFullYear()}-
-											{String(datetime.getMonth() + 1).padStart(2, '0')}-
-											{String(datetime.getDate()).padStart(2, '0')}{" "}
-											{String((datetime.getUTCHours() % 12) || 12).padStart(2, '0')}:
-											{String(datetime.getUTCMinutes()).padStart(2, '0')} {datetime.getUTCHours() >= 12 ? 'PM' : 'AM'}
+										{datetime.getUTCFullYear()}-
+										{String(datetime.getUTCMonth() + 1).padStart(2, '0')}-
+										{String(datetime.getUTCDate()).padStart(2, '0')}{" "}
+										{String((datetime.getUTCHours() % 12) || 12).padStart(2, '0')}:
+										{String(datetime.getUTCMinutes()).padStart(2, '0')} {datetime.getUTCHours() >= 12 ? 'PM' : 'AM'}
 										</Card.Title>
 
 										<div className="column mb-2">
