@@ -248,13 +248,11 @@ class OneBookingApi(generics.GenericAPIView):
             # update the number of players in the session
             current_session = booking.session
             product = Product.objects.get(id=current_session.product.id)
-            all_bookkings_num = sum(Booking.objects.filter(session__id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True))
-            current_session.available_seats = current_session.added_seats + product.max_num - all_bookkings_num + booking.number_of_players - current_session.block_seats
+            all_bookings_num = sum(Booking.objects.filter(session__id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True))
+            current_session.available_seats = current_session.added_seats + product.max_num - all_bookings_num + booking.number_of_players - current_session.block_seats
             current_session.save()
-
             #delete the hold 
             booking.delete()
-        return Response({"message": "Booking deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-    
+        return Response({"message": "Booking deleted successfully."}, status=status.HTTP_200_OK)    
 
 
