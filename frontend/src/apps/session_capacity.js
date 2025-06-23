@@ -13,15 +13,17 @@ export default function SessionCapacity(){
     const navigate = useNavigate();
     let { session_id } = useParams()
     let [ isLoading, setIsLoading ] = useState()
-    let [ sessionDetails, setSessionDetails ] = useState()
-    let [ addedSeats, setAddedSeats ] = useState()
+    let [ currentsessionDetails, setCurrentSessionDetails ] = useState()
+    let [ addedSeats, setAddedSeats ] = useState(0)
     let [ alert, setAlert ] = useState(false)
     let [ alertMessage, setAlertMessage ] = useState('')
    
     useEffect(()=>{
         const fetchData = (async()=>{
             const sessionData = await get_session_details(session_id)
-            setSessionDetails(sessionData[0])
+            const currentSessionData = sessionData.find((session)=> session.id == session_id)
+            setCurrentSessionDetails(currentSessionData)
+            setAddedSeats(currentSessionData.addedSeats)
         })
         fetchData()
     },[session_id])
@@ -32,14 +34,15 @@ export default function SessionCapacity(){
 
     try {
 
-        // if (!addedSeats || isNaN(addedSeats) || Number(addedSeats) <= 0) {
-        // throw new Error("Invalid number of seats");
-        // }
+        if (!addedSeats || isNaN(addedSeats) ) {
+        throw new Error("Invalid number of seats");
+        }
 
-        // const data = { numbers: sessionCapacity };
-        sessionDetails.added_seats = await addedSeats
-        console.log(sessionDetails)
-        await app_put(`session/${session_id}/`,{}, sessionDetails);
+        const currentSession = await {
+            ...currentsessionDetails,
+            added_seats: Number(addedSeats)
+        };
+        await app_put(`session/${session_id}/`,{}, currentSession);
         navigate('/');
     } catch (error) {
 
@@ -52,15 +55,15 @@ export default function SessionCapacity(){
 
     return (
         <>
-            {sessionDetails && 
+            {currentsessionDetails && 
             <form className="p-5 m-5 flex-column d-flex justify-content-center" >
             <LoadingFun open={isLoading} />
             <AlertFun open_alert={alert} set_open_alert={setAlert} message={alertMessage} setLoading={setIsLoading} />
-            <h4>Session Capacity: {sessionDetails.product.max_num}</h4>
+            <h4>Session Capacity: {currentsessionDetails.product.max_num}</h4>
             <TextField
                 id="outlined-helperText"
                 label="Added Seats"
-                defaultValue={sessionDetails.added_seats}
+                defaultValue={currentsessionDetails.added_seats}
                 onChange={(e) => setAddedSeats(e.target.value)}
                 helperText=""
             />

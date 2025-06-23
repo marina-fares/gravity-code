@@ -4,6 +4,8 @@ from ..models.models_sessions import Session, Product, Booking
 from Main.serializers.session_serializer import SessionSerializer
 from datetime import datetime
 from rest_framework import status
+from rest_framework.exceptions import NotFound
+
 
 class SessionApi(generics.GenericAPIView):
     """
@@ -71,18 +73,25 @@ class OneSessionApi(generics.GenericAPIView):
         """
         data = request.data.copy()
 
-        currentSession = Session.objects.get(id=session_id)
+        try:
+            currentSession = Session.objects.get(id=session_id)
+        except Session.DoesNotExist:
+            raise NotFound(detail="Session not found.")
 
-        product = Product.objects.get(id=currentSession.product.id)
-        all_bookkings_num = sum(Booking.objects.filter(session__id=currentSession.id).exclude(status='refunded').values_list('number_of_players', flat=True))
-        currentSession.available_seats = int(data['added_seats']) + product.max_num - all_bookkings_num - int(data['block_seats'])
-        currentSession.added_seats = int(data['added_seats'])
-
-        currentSession.save()
+        # Update the session available seats with the provided data 
+        all_bookings_num = sum(
+            Booking.objects.filter(session_id=currentSession.id).exclude(status='refunded').values_list('number_of_players', flat=True)
+        )
+        new_sessions_seats = data['added_seats'] + currentSession.product.max_num - all_bookings_num - int(data['block_seats'])
+        data['available_seats'] = new_sessions_seats
         
-        serializer = self.get_serializer(currentSession)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # save the updated session
+        serializer = SessionSerializer(instance=currentSession, data=data, partial=True)
+        if serializer.is_valid():
+            instance = serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
