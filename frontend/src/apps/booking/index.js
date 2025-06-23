@@ -110,7 +110,7 @@ useEffect(() => {
 
             if (result.error) {
                 let paymentData = paymentDetails
-                let zohoReceiptID = salesReceiptDetails.id
+                let zohoReceiptID = salesReceiptDetails?.id
                 delete_booking_error({paymentData, zohoReceiptID})
                 setAlert(true)
                 setAlertMessage(result.error)
@@ -262,6 +262,7 @@ async function delete_booking_error({paymentData, zohoReceiptID}){
 
 async function Book(){
     setIsLoading(true)
+    let salesReceiptData = {}
     
     // create the payment in square
     let result = await create_payment_api({shiftDetails, orderDetails, paymentMethod})
@@ -279,6 +280,9 @@ async function Book(){
     setPaymentDetails(paymentData)
 
     // create sales receipt in zoho
+    if(selectedZohoItems && selectedZohoItems.length > 0){
+    
+    
     let result2 = await create_sales_receipt({shiftDetails, orderDetails, paymentData, selectedZohoItems})
     if (result2.code !== 0)
     {
@@ -287,10 +291,10 @@ async function Book(){
         setAlertMessage(result2.message)
         return;
     }
-    let salesReceiptData = await result2
+    salesReceiptData = await result2
     console.log(salesReceiptData)
     setSalesReceiptDetails(salesReceiptData)
-
+    }
     const options = orderDetails.line_items
     await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note})
 
@@ -319,8 +323,8 @@ async function Book(){
         square_receipt_number: paymentData.receipt_number,
         square_payment_id: paymentData.id,
         square_order_id: orderDetails.id,
-        zoho_sales_receipt_id: salesReceiptData.sales_receipt_details.sales_receipt_id,
-        zoho_sales_receipt_num: salesReceiptData.sales_receipt_details.receipt_number,
+        zoho_sales_receipt_id: (salesReceiptData)?salesReceiptData?.sales_receipt_details?.sales_receipt_id : null,
+        zoho_sales_receipt_num: (salesReceiptData)?salesReceiptData?.sales_receipt_details?.receipt_number : null,
         note: (note)?note: null,
         status: "done"
         }));
