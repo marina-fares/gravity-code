@@ -51,9 +51,13 @@ export default function List({ bookings}) {
                             {item.options && item.options.map((option, index) =>
                             option.name !== item.type_of_players ? (
                                 <span key={index}>
-                                <strong>{option.name}:</strong> {option.quantity}
+                                <strong>{option.name}:</strong> {option.quantity} * {option.total_money.amount/(100*option.quantity)}  
+                                
                                 </span>
                             ) : null
+                            )}
+                            { item.note &&
+                            (<span><strong>Note:</strong> {item.note}</span>
                             )}
 
                             

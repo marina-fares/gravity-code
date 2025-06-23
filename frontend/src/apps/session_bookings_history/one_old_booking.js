@@ -243,6 +243,7 @@ return (
                     <PaperRow right='' left="" />
                     <hr style={{ margin: '10px' }} />
                     <PaperRow right={ ` Receipt: ${bookingDetails.square_receipt_number}`} />
+                    {bookingDetails.note && <PaperRow right={ ` Note: ${bookingDetails.note}`} />}
                     <hr style={{ margin: '10px' }} />
                     <List
                     sx={{ width: '75%', bgcolor: 'background.paper', mx: 'auto',}}
@@ -252,7 +253,7 @@ return (
                             (bookingDetails.options).map((res)=>
                             {   
                                 return (Number(res.quantity) > 0 &&
-                                <PaperRow key={res.uid} right={res.name} left={res.quantity} />
+                                <PaperRow key={res.uid} right={res.name} left={`${res.quantity} * ${res.total_money.amount/(100*res.quantity)}`} />
                             )})
 
                         }
