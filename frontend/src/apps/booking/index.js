@@ -76,11 +76,6 @@ useEffect(() => {
         const customersData = await get_all_customers()
         setAllCustomers(customersData)
 
-        let bookingId = get_localstorage('bookingId')
-        if(bookingId)
-        {
-            delete_hold_booking({bookingId})
-        }
     }
     fetchData()
 }, [session_id]);
@@ -137,18 +132,6 @@ useEffect(()=>{
     }
 },[bookingSuccess, paymentDetails])
 
-useEffect(()=>{
-    if(bookingDetails?.id){
-        set_localstorage('bookingId', bookingDetails.id)
-    }
-    else if(!bookingDetails){
-        let bookingId = get_localstorage('bookingId')
-        if(bookingId)
-        {
-            delete_hold_booking({bookingId})
-        }
-    }
-},[bookingDetails])
 
 // set Dictionary of selected selectedOptions key:value 
 function set_selected_options(e){ 
@@ -258,6 +241,9 @@ async function hold_booking(){
         setAlert(true)
         setAlertMessage(result2.error)
         return;
+    }
+    else{
+        set_localstorage('bookingId', result2.id)
     }
     setBookingDetails(result2)
     setIsLoading(false)

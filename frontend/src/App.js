@@ -62,7 +62,7 @@ function App() {
 	return () => {
 		window.removeEventListener('popstate', handlePopState);
 	};
-	}, []);
+	}, [location]);
 
 
 

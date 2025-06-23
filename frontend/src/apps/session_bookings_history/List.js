@@ -36,13 +36,13 @@ export default function List({ bookings}) {
                         primary={
                         <Box className="list-group-item list-group-item-secondary rounded p-2 d-flex justify-content-between align-items-center">
                             <span>	
-                                {datetime.getFullYear()}-
-                                {String(datetime.getMonth() + 1).padStart(2, '0')}-
-                                {String(datetime.getDate()).padStart(2, '0')}{" "}
+                                {datetime.getUTCFullYear()}-
+                                {String(datetime.getUTCMonth() + 1).padStart(2, '0')}-
+                                {String(datetime.getUTCDate()).padStart(2, '0')}{" "}
                                 {String((datetime.getUTCHours() % 12) || 12).padStart(2, '0')}:
                                 {String(datetime.getUTCMinutes()).padStart(2, '0')} {datetime.getUTCHours() >= 12 ? 'PM' : 'AM'}
                           </span>
-                            <span>{item.type_of_players} {item.id}</span>
+                            <span>{item.type_of_players} </span>
                         </Box>
                         }
                         secondary={
