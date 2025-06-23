@@ -31,8 +31,8 @@ class Product(models.Model):
         total_seconds = self.duration.total_seconds()
         input_max_num = self.max_num
         
-        if total_seconds % 3600 != 0:
-            raise ValidationError("Duration must be in whole hours (e.g., 1:00:00, 2:00:00).")
+        # if total_seconds % 3600 != 0:
+        #     raise ValidationError("Duration must be in whole hours (e.g., 1:00:00, 2:00:00).")
         
         if input_max_num <= 0:
             raise ValidationError("The Max number should be more than 0, as this is the session capacity")
@@ -72,7 +72,7 @@ class Schedule(models.Model):
     end_time = models.TimeField(null=True, blank=True)
     weekday = models.CharField(max_length=20,null=True, blank=True)
     except_hours = ArrayField(
-        models.CharField(max_length=2),  # '11', '12', etc.
+        models.CharField(max_length=10),  # '11', '12', etc.
         blank=True,
         default=list
     )
@@ -110,7 +110,6 @@ class Booking(models.Model):
             old_instance = self.__class__.objects.get(pk=self.pk)
             # update the number of players in the session
             current_session = Session.objects.get(id=old_instance.session.id)
-            product = Product.objects.get(id=current_session.product.id)
             all_bookings_num = sum(
                 Booking.objects.filter(session_id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True)
             )

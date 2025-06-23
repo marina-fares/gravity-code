@@ -85,14 +85,24 @@ class DefaultSessionAdminForm(forms.ModelForm):
             except_hours_flag = data.get("except_hours_flag")
             start_time_str = data.get("start_time_input")
             end_time_str = data.get("end_time_input")
-
+            product_input = data.get("product")
+            product = Product.objects.get(id=product_input) if product_input else None
             if except_hours_flag and start_time_str and end_time_str:
                 try:
-                    start_hour = int(start_time_str.split(":")[0])
-                    end_hour = int(end_time_str.split(":")[0])
+                    start_hour = datetime.datetime.strptime(start_time_str, "%H:%M").time()
+                    end_hour = datetime.datetime.strptime(end_time_str, "%H:%M").time()
 
                     # Ensure choices are string-formatted to match submitted values
-                    hour_choices = [(str(h), f"{h}:00") for h in range(start_hour, end_hour + 1)]
+                    
+                    # hour_choices = [(str(h), f"{h}:00") for h in range(start_hour, end_hour + 1)]
+                    hour_choices = []
+                    current_time = start_hour
+                    while current_time <= end_hour:
+                        hour_choices.append((str(current_time), f"{current_time.hour}:{current_time.minute:02d}"))
+                        today = datetime.date.today()
+                        current_datetime = datetime.datetime.combine(today, current_time)
+                        current_datetime += product.duration  # This now works
+                        current_time = current_datetime.time()
                     self.fields['except_hours'].choices = hour_choices
                 except Exception:
                     pass  # Safe fail, clean() will handle it later
@@ -105,6 +115,8 @@ class DefaultSessionAdminForm(forms.ModelForm):
         end_time = cleaned_data.get("end_time_input")
         except_hours_flag = cleaned_data.get("except_hours_flag")
         except_hours = cleaned_data.get("except_hours")
+        product = cleaned_data.get("product")
+        # product = Product.objects.get(id=product_input) if product_input else None
         
         # Ensure minutes and seconds are zero for start time
         if start_time and (start_time.minute != 0 or start_time.second != 0):
@@ -116,7 +128,15 @@ class DefaultSessionAdminForm(forms.ModelForm):
         
 
         if except_hours_flag and start_time and end_time:
-            hour_choices = [(str(h), f"{h}:00") for h in range(start_time.hour, end_time.hour + 1)]
+            hour_choices = []
+            current_time = start_time
+            while current_time <= end_time:
+                hour_choices.append((str(current_time), f"{current_time.hour}:{current_time.minute:02d}"))
+                today = datetime.date.today()
+                current_datetime = datetime.datetime.combine(today, current_time)
+                current_datetime += product.duration  # This now works
+                
+                current_time = current_datetime.time()
             self.fields['except_hours'].choices = hour_choices
 
             if not except_hours:
@@ -155,11 +175,9 @@ class DefaultSessionAdminForm(forms.ModelForm):
             days_label.append(dict(WEEKDAYS).get(day))
 
         if except_hour_flag and not except_hours_input:
-            return None  # don't save anything
+            return None  # don't do anything
         
         # replace the except hour str with time
-
-
         for day_input in days_label:
             try:
                 obj = Schedule.objects.get(weekday=str(day_input), product=product)
@@ -168,13 +186,16 @@ class DefaultSessionAdminForm(forms.ModelForm):
                 # Second: If not found, create it
                 obj = Schedule.objects.create(start_time=start_time_input, end_time=end_time_input, weekday=str(day_input), product=product, except_hours=except_hours_input)
                 created = True
-            
-            if created:
-                for i in range(start_time_input.hour, end_time_input.hour + 1):
 
-                    if str(i) not in except_hours_input:
-                        created_sessions = create_session(product, start_date, end_date, datetime.time(i,0), day_input)
-            
+            if created:
+                current_time = start_time_input
+                while current_time <= end_time_input:
+                    if str(current_time) not in except_hours_input:
+                        created_sessions = create_session(product, start_date, end_date, current_time, day_input)
+                    today = datetime.date.today()
+                    current_datetime = datetime.datetime.combine(today, current_time)
+                    current_datetime += product.duration  # This now works
+                    current_time = current_datetime.time()  
             else:
                 default_start_time = obj.start_time
                 default_end_time = obj.end_time
@@ -182,12 +203,26 @@ class DefaultSessionAdminForm(forms.ModelForm):
                 default_time_list = []
                 input_time_list = []
                 
-                for i in range(default_start_time.hour, default_end_time.hour + 1):
-                    default_time_list.append(datetime.time(i,0))
+                current_time = default_start_time
+                while current_time <= default_end_time:
+                    default_time_list.append(current_time)
+                    today = datetime.date.today()
+                    current_datetime = datetime.datetime.combine(today, current_time)
+                    current_datetime += product.duration  # This now works
+                    current_time = current_datetime.time()  
 
-                for i in range(start_time_input.hour, end_time_input.hour + 1):
-                    if str(i) not in except_hours_input:
-                        input_time_list.append(datetime.time(i,0))
+
+                current_time = start_time_input
+
+                
+                while current_time <= end_time_input:
+                    if str(current_time) not in except_hours_input:
+                        input_time_list.append(current_time)
+                    today = datetime.date.today()
+                    current_datetime = datetime.datetime.combine(today, current_time)
+                    current_datetime += product.duration  # This now works
+                    current_time = current_datetime.time()  
+
 
                 for i in default_time_list:
                     if i not in input_time_list:
@@ -258,17 +293,29 @@ class CustomSessionAdminForm(forms.ModelForm):
             except_hours_flag = data.get("except_hours_flag")
             start_time_str = data.get("start_time_input")
             end_time_str = data.get("end_time_input")
+            product_input = data.get("product")
+            product = Product.objects.get(id=product_input) if product_input else None
 
             if except_hours_flag and start_time_str and end_time_str:
                 try:
-                    start_hour = int(start_time_str.split(":")[0])
-                    end_hour = int(end_time_str.split(":")[0])
+                    start_hour = datetime.datetime.strptime(start_time_str, "%H:%M").time()
+                    end_hour = datetime.datetime.strptime(end_time_str, "%H:%M").time()
 
                     # Ensure choices are string-formatted to match submitted values
-                    hour_choices = [(str(h), f"{h}:00") for h in range(start_hour, end_hour + 1)]
+                    
+                    # hour_choices = [(str(h), f"{h}:00") for h in range(start_hour, end_hour + 1)]
+                    hour_choices = []
+                    current_time = start_hour
+                    while current_time <= end_hour:
+                        hour_choices.append((str(current_time), f"{current_time.hour}:{current_time.minute:02d}"))
+                        today = datetime.date.today()
+                        current_datetime = datetime.datetime.combine(today, current_time)
+                        current_datetime += product.duration  # This now works
+                        current_time = current_datetime.time()
                     self.fields['except_hours'].choices = hour_choices
                 except Exception:
                     pass  # Safe fail, clean() will handle it later
+
 
 
 
@@ -280,6 +327,7 @@ class CustomSessionAdminForm(forms.ModelForm):
         end_date = cleaned_data.get("end_date")
         except_hours_flag = cleaned_data.get("except_hours_flag")
         except_hours = cleaned_data.get("except_hours")
+        product = cleaned_data.get("product")
         
         # Ensure minutes and seconds are zero for start time
         if start_time and (start_time.minute != 0 or start_time.second != 0):
@@ -293,9 +341,19 @@ class CustomSessionAdminForm(forms.ModelForm):
         #     raise ValidationError("The Start Date should be today or after today")
         
         if except_hours_flag and start_time and end_time:
-
-            hour_choices = [(str(h), f"{h}:00") for h in range(start_time.hour, end_time.hour + 1)]
+            hour_choices = []
+            current_time = start_time
+            while current_time <= end_time:
+                hour_choices.append((str(current_time), f"{current_time.hour}:{current_time.minute:02d}"))
+                today = datetime.date.today()
+                current_datetime = datetime.datetime.combine(today, current_time)
+                current_datetime += product.duration  # This now works
+                
+                current_time = current_datetime.time()
             self.fields['except_hours'].choices = hour_choices
+
+            if not except_hours:
+                raise forms.ValidationError("Kindly select at least one except hour.")
 
             if not except_hours:
                 raise forms.ValidationError("Kindly select at least one except hour.")
@@ -341,9 +399,7 @@ class CustomSessionAdminForm(forms.ModelForm):
 
         for day_input in days_label:
             try:
-
                 obj = Schedule.objects.get(weekday=str(day_input), product=product)
-
                 created = False
             except Schedule.DoesNotExist:
                 # Second: If not found, create it
@@ -357,22 +413,31 @@ class CustomSessionAdminForm(forms.ModelForm):
                 default_time_list = []
                 input_time_list = []
                 
-                for i in range(default_start_time.hour, default_end_time.hour + 1):
-                    default_time_list.append(datetime.time(i,0))
+                current_time = default_start_time
+                while current_time <= default_end_time:
+                    default_time_list.append(current_time)
+                    today = datetime.date.today()
+                    current_datetime = datetime.datetime.combine(today, current_time)
+                    current_datetime += product.duration  # This now works
+                    current_time = current_datetime.time() 
 
-                for i in range(start_time_input.hour, end_time_input.hour + 1):
-                    if str(i) not in except_hours_input:
-                        input_time_list.append(datetime.time(i,0))
+                current_time = start_time_input
+                while current_time <= end_time_input:
+                    if str(current_time) not in except_hours_input:
+                        input_time_list.append(current_time)
+                    today = datetime.date.today()
+                    current_datetime = datetime.datetime.combine(today, current_time)
+                    current_datetime += product.duration  # This now works
+                    current_time = current_datetime.time()
 
                 for i in default_time_list:
                     if i not in input_time_list:
-                        delete_session(product, i, day_input)
+                        delete_session(product, start_date, end_date,i, day_input)
                 for i in input_time_list:
                     if i not in default_time_list:
                         created_sessions = create_session(product, start_date, end_date, i, day_input)
 
                 
-                Schedule.objects.filter(weekday=str(day_input), product=product).update(start_time=start_time_input, end_time=end_time_input, except_hours=except_hours_input)
         if created_sessions is not None:
             return created_sessions[0] 
         else:

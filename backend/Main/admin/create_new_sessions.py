@@ -13,8 +13,15 @@ def check_sessions():
     old_sessions = Session.objects.filter(product=product, start_time=datetime.combine(start_date, start_time))
 
 
-def delete_session(product, start_time, day):
-    Session.objects.filter(product=product, start_time__hour=start_time.hour, weekday=day).delete()
+def delete_session(product, start_date, end_date, start_time, day):
+    if start_date and end_date:
+        current_date = start_date
+        while current_date <= end_date:
+            session_dt = timezone.make_aware(datetime.combine(current_date, start_time))
+            Session.objects.filter(product=product, start_time=session_dt, weekday=day).delete()     
+            current_date += timedelta(days=1)
+    else:
+        Session.objects.filter(product=product, start_time__hour=start_time.hour, weekday=day).delete()
 
 def create_session(product, start_date, end_date, start_time, weekdays):
     sessions = []
