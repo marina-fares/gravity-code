@@ -6,6 +6,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import DatabaseError, IntegrityError
+from django.contrib.auth.models import User
 
 class BookingApi(generics.GenericAPIView):
     """
@@ -29,7 +30,15 @@ class BookingApi(generics.GenericAPIView):
             all_customers = Customer.objects.filter(identifier__icontains=search_field)
             sessionBookings1 = Booking.objects.filter(booking_customer__in = all_customers, session__product__group__name__in=current_user_group_names)
             sessionBookings2 = Booking.objects.filter(square_receipt_number__icontains = search_field, session__product__group__name__in=current_user_group_names)
-            sessionBookings = sessionBookings1 | sessionBookings2
+            # get the bookings of the options
+            group_users = User.objects.filter(
+                groups__name__in=current_user_group_names
+            ).values_list('username', flat=True)
+            sessionBookings3 = Booking.objects.filter(
+                    square_receipt_number__icontains=search_field,
+                    creation_agent__in=group_users
+                )
+            sessionBookings = sessionBookings1 | sessionBookings2 | sessionBookings3
         serializer = BookingSerializer(sessionBookings, many=True)
 
         return Response(serializer.data)  # Use .data here
@@ -211,20 +220,32 @@ class OneBookingApi(generics.GenericAPIView):
         Update existing booking if it exists, otherwise create a new one.
         """
         data = request.data.copy()
+        customer = None
         try:
             booking = Booking.objects.get(id=booking_id)
-            customer = Customer.objects.get(id=data['booking_customer'])
             is_new = False
         except Booking.DoesNotExist:
             booking = None
             is_new = True
 
+        customer_id = data.get('booking_customer')
+        if customer_id:
+            try:
+                if (type(customer_id) is int):
+                    customer = Customer.objects.get(id=customer_id)
+                elif (type(customer_id) is object):
+                    customer = Customer.objects.get(id=customer_id.id)
+            except Customer.DoesNotExist:
+                customer = None  # fallback if invalid ID is provided
+
         serializer = self.get_serializer(instance=booking, data=data, partial=True)
 
         if serializer.is_valid():
             instance = serializer.save()
-            instance.booking_customer = customer  # You can assign it here if needed
-            instance.save()
+            # If a customer is provided, update the booking_customer field
+            if customer:
+                instance.booking_customer = customer
+                instance.save(update_fields=['booking_customer'])
             return Response(serializer.data, status=status.HTTP_201_CREATED if is_new else status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

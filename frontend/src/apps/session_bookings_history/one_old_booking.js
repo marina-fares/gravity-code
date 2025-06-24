@@ -15,6 +15,7 @@ import {
     get_session_details, get_available_sessions
 } from '../../components/logic/booking_functions';
 import { Typography, Autocomplete, Box, List, TextField } from '@mui/material';
+import { app_put } from '../../components/logic/app';
 
 export default function OneOldBooking() {
     const navigate = useNavigate();
@@ -46,19 +47,26 @@ export default function OneOldBooking() {
             const subShiftData = await get_sub_shift()
             setSubShiftDetails(subShiftData)
 
-            const sessionDetails = await get_session_details(session_id)
-            const dateObj = new Date(sessionDetails[0].start_time);
-            const dateOnly = dateObj.toISOString().split('T')[0];
-            const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
-            const sessionsData = await get_available_sessions(payload);
-            console.log("-------------------",sessionsData )
-            let currentSession = sessionDetails.find((session)=> session.id == session_id)
-            let date = new Date(currentSession.start_time)
-            // var time = (date.getHours() % 12 || 12) + ':' + date.getMinutes() +' ' + ((date.getHours()>= 12)? 'PM' : 'AM')
+            let sessionsData = {}
+            let currentSession = {}
+            let date = null
+            if (session_id !== 'null' ) {
+                console.log("session_id", session_id)
+                console.log("session_id", typeof(session_id))
+                const sessionDetails = await get_session_details(session_id)
+                const dateObj = new Date(sessionDetails[0].start_time);
+                const dateOnly = dateObj.toISOString().split('T')[0];
+                const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
+                sessionsData = await get_available_sessions(payload);
+                console.log("-------------------",sessionsData )
+                currentSession = sessionDetails.find((session)=> session.id == session_id)
+                date = new Date(currentSession.start_time)    
+                setAvailableSessions(sessionsData)
+                setSelectedSession(currentSession)
+                setSelectedDate(date.toISOString().split('T')[0])   
+            }
+            
 
-            setAvailableSessions(sessionsData)
-            setSelectedSession(currentSession)
-            setSelectedDate(date.toISOString().split('T')[0])
 
         };
         fetchData()
@@ -118,8 +126,7 @@ export default function OneOldBooking() {
 
         // const newState = 'refunded'
         bookingDetails.status = 'refunded'
-        let new_session_id = session_id
-        await update_booking_details({bookingDetails, new_session_id})
+        await app_put(`booking/${bookingDetails.id}/`,{}, bookingDetails)
 
         await delete_from_inventory({bookingDetails, shiftDetails, subShiftDetails})
         setRefundSuccess(true) 
@@ -185,7 +192,7 @@ return (
             </div>
             <div className='col-8 border-0 '>
                 {bookingDetails && <Card>
-                    <h4 className="h4 margin-left"> Customer Name: {bookingDetails.booking_customer.identifier}</h4>
+                    <h4 className="h4 margin-left"> Customer Name: {bookingDetails?.booking_customer?.identifier}</h4>
                     <h4 className="h4 margin-left" >session: {bookingDetails.type_of_players}  -  People: {bookingDetails.number_of_players}</h4>
                     {availableSessions &&
                     <div className='row'>
@@ -207,7 +214,7 @@ return (
     disablePortal
     freeSolo
     id="sessions"
-    options={availableSessions.map((session) => {
+    options={availableSessions?.map((session) => {
       const datetime = new Date(session.start_time);
       return `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getUTCHours()).padStart(2, '0')}:${String(datetime.getUTCMinutes()).padStart(2, '0')}`;
     })}

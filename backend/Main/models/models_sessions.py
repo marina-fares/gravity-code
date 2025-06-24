@@ -109,17 +109,18 @@ class Booking(models.Model):
         if self.pk:  # Only for existing instances (not new ones)
             old_instance = self.__class__.objects.get(pk=self.pk)
             # update the number of players in the session
-            current_session = Session.objects.get(id=old_instance.session.id)
-            all_bookings_num = sum(
-                Booking.objects.filter(session_id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True)
-            )
-            new_sessions_seats = current_session.added_seats + current_session.product.max_num - all_bookings_num - current_session.block_seats 
-            current_session.available_seats = new_sessions_seats
-            current_session.save()
+            if old_instance and old_instance.session and old_instance.number_of_players:
+                current_session = Session.objects.get(id=old_instance.session.id)
+                all_bookings_num = sum(
+                    Booking.objects.filter(session_id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True)
+                )
+                new_sessions_seats = current_session.added_seats + current_session.product.max_num - all_bookings_num - current_session.block_seats 
+                current_session.available_seats = new_sessions_seats
+                current_session.save()
 
             
 
-        else:
+        elif self.session and self.number_of_players:
             session_new = self.session 
             session_new.available_seats -= self.number_of_players
             session_new.save()
