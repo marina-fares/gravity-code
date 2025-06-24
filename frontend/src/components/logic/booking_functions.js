@@ -230,8 +230,9 @@ async function delete_from_inventory({bookingDetails, shiftDetails, subShiftDeta
     
     bookingDetails.options.forEach((item, index) => 
     {
-
-        shiftDetails.inventory[item.name].refund += parseInt(item.quantity)
+        if(shiftDetails.inventory[item.name]){
+            shiftDetails.inventory[item.name].refund += parseInt(item.quantity)
+        }
     })
 
     if(bookingDetails.payment.method === "cash")
