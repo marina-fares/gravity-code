@@ -21,7 +21,7 @@ import { get_shift } from '../logic/shifts_functions_apis';
 import { useEffect } from 'react';
 
 
-const pages = ['Available Sessions', 'Options', 'Inventory', 'Shifts History', 'Bookings History', 'KeyPad'];
+const pages = ['Available Sessions', 'Options', 'Inventory', 'Shifts History', 'Bookings History'];
 const settings = ['End Shift', 'Logout'];
 
 const NavBar = () => {
@@ -76,10 +76,7 @@ const NavBar = () => {
         {
           navigate('/old_shift')
         }
-        if(e.currentTarget.id === "KeyPad")
-        {
-          navigate('/keypad')
-        }
+
     
       setAnchorElNav(null);
   };

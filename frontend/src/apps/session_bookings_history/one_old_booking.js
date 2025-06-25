@@ -58,7 +58,6 @@ export default function OneOldBooking() {
                 const dateOnly = dateObj.toISOString().split('T')[0];
                 const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
                 sessionsData = await get_available_sessions(payload);
-                console.log("-------------------",sessionsData )
                 currentSession = sessionDetails.find((session)=> session.id == session_id)
                 date = new Date(currentSession.start_time)    
                 setAvailableSessions(sessionsData)
@@ -246,7 +245,7 @@ return (
                     <PaperRow  right={bookingDetails.type_of_players} />
                     {/* <PaperRow  right={bookingDate} />
                     <PaperRow  right={bookingTime} /> */}
-                    <PaperRow right={`Account Owner `} left={get_user_and_jwt().user.username} />
+                    <PaperRow right={`Account Owner `} left={bookingDetails.creation_agent} />
                     <PaperRow right='' left="" />
                     <hr style={{ margin: '10px' }} />
                     <PaperRow right={ ` Receipt: ${bookingDetails.square_receipt_number}`} />

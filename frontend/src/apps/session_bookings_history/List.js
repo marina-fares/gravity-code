@@ -66,6 +66,7 @@ export default function List({ bookings}) {
                             )}
                             <span><strong>Receipt Number:</strong> {item.square_receipt_number}</span>
                             <span><strong>Total Price:</strong> {item.payment.amount}</span>
+                            {item.status && item.status == 'refunded' && <span><strong> This Booking is refunded </strong></span>}
                         </div>
                         }
                     />
