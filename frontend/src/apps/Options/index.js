@@ -47,7 +47,7 @@ export default function Options() {
 	let [val, set_val] = useState()
 	let [ customItem, setCustomItem ] = useState(
 		{
-			"name": " ",
+			"name": "Custom Item",
 			"quantity": "1",
 			"base_price_money": {
 			"amount": 0,

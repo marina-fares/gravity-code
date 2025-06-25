@@ -180,12 +180,14 @@ async function create_hold_booking({bookingDetails, session_id, numberOfPlayers 
         "status": "hold",
         "session": session_id
     }
-    // if (bookingDetails?.id) {
-    // data.id = bookingDetails.id;
-    // }
+    // if the booking already exists, then update it
+    if (bookingDetails?.id) {
+    data.id = bookingDetails.id;
+    }
     let result = null
     if(bookingDetails?.id){
-        result = await app_post(`booking/${bookingDetails?.id}/`, data)
+        result = await app_put(`booking/${bookingDetails?.id}/`,{}, data)
+        
     }
     else{
         result = await app_post(`booking/`, data)    

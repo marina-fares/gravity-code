@@ -46,7 +46,7 @@ export default function Booking() {
     let [ salesReceiptDetails, setSalesReceiptDetails] = useState()
     let [ customItem, setCustomItem ] = useState(
         {
-            "name": "",
+            "name": "Custom Item",
             "quantity": "1",
             "base_price_money": {
             "amount": 0,
@@ -236,6 +236,7 @@ async function hold_booking(){
         setOrderDetails(result)
     }
     
+    // check if the hold booking is already created
     const result2 = await create_hold_booking({bookingDetails, session_id, numberOfPlayers })
     if(result2.error){
         setAlert(true)
