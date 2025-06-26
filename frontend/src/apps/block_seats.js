@@ -14,7 +14,7 @@ export default function BlockSeats(){
     let { session_id } = useParams()
     let [ isLoading, setIsLoading ] = useState()
     let [ currentsessionDetails, setCurrentSessionDetails ] = useState()
-    let [ blockSeats, setBlockSeats ] = useState(0)
+    let [ blockSeats, setBlockSeats ] = useState({})
     let [ alert, setAlert ] = useState(false)
     let [ alertMessage, setAlertMessage ] = useState('')
    
@@ -23,7 +23,9 @@ export default function BlockSeats(){
             const sessionData = await get_session_details(session_id)
             const currentSessionData = sessionData.find((session)=> session.id == session_id)
             setCurrentSessionDetails(currentSessionData)
-            setBlockSeats(currentSessionData.block_seats)
+            setBlockSeats(currentSessionData.block_seats_obj)
+            console.log(currentSessionData.block_seats_obj)
+            console.log(currentSessionData.block_seats_obj.number)
         })
         fetchData()
     },[session_id])
@@ -34,14 +36,14 @@ export default function BlockSeats(){
 
     try {
 
-        if (!blockSeats || isNaN(blockSeats) ) {
+        if (!blockSeats.number || isNaN(blockSeats.number) ) {
         throw new Error("Invalid number of seats");
         }
 
         // current_session = 
         const currentSession = await {
             ...currentsessionDetails,
-            block_seats: Number(blockSeats)
+            block_seats_obj: blockSeats
         };
         await app_put(`session/${session_id}/`,{}, currentSession);
         navigate('/');
@@ -57,31 +59,55 @@ export default function BlockSeats(){
     return (
         <>
             {currentsessionDetails && 
-            <form className="p-5 m-5 flex-column d-flex justify-content-center" >
+            <div className='m-5 p-5'>
             <LoadingFun open={isLoading} />
             <AlertFun open_alert={alert} set_open_alert={setAlert} message={alertMessage} setLoading={setIsLoading} />
 
-            <TextField
-                id="outlined-helperText"
-                label="Block Seats"
-                value={blockSeats}
-                onChange={(e) => setBlockSeats(e.target.value)}
-                helperText=""
-            />
-
-            <Button
-                size="small"
-                variant="outlined"
-                style={{ padding: "2px 6px", minWidth: "auto" }}
-                onClick={(e)=> block_seats(e)}
-                type="submit"
-            >
-                Save
-            </Button>
+            <form className="flex-column d-flex justify-content-center"  onSubmit={(e) => block_seats(e)} >
+                <div className="d-flex flex-row">
+                    <TextField
+                        required
+                        id="Note"
+                        label="Block Note"
+                        onChange={(e) =>
+                            setBlockSeats(prev => ({
+                                ...prev,
+                                note: e.target.value
+                            }))
+                        }
+                        value={(blockSeats?.note === 'none')? '': blockSeats?.note }
+                        sx={{ flex: 1, mr: 1 }}
+                    />
+                    <TextField
+                        required
+                        id="Number"
+                        label="Block Number"
+                        onChange={(e) =>
+                            setBlockSeats(prev => ({
+                                ...prev,
+                                number: Number(e.target.value)
+                            }))
+                            
+                        }
+                        value={blockSeats?.number }
+                        sx={{ flex: 1 }}
+                    />
+                </div>
+                <Button
+                    size="small"
+                    variant="outlined"
+                    style={{ padding: "2px 6px", minWidth: "auto" }}
+                    type="submit"
+                    className="mt-2"
+                >
+                    Save
+                </Button>
             </form>
+
+            </div>
 
             
             }
-</>
+        </>
     )
 }

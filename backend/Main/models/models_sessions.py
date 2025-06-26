@@ -1,11 +1,6 @@
-from urllib import request
 from django.db import models
-from django.contrib.auth.models import User, Group
-from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save
-from django.contrib import admin
-from Main.interfaces.square_interface import SquareApiInterface
-from datetime import datetime, timedelta
+from django.contrib.auth.models import Group
+from datetime import timedelta
 from django.db import models
 from django.utils import timezone
 from django.contrib.postgres.fields import ArrayField
@@ -48,11 +43,15 @@ class Session(models.Model):
     """
     This class is used to create a model for the promo codes.
     """
+    def default_block_seats():
+        return {'number': 0, 'note': 'none'}
+    
     product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True, blank=True, unique=False)
     start_time = models.DateTimeField(null=True, blank=True, unique=False)
     end_time = models.DateTimeField(null=True, blank=True, unique=False)
     available_seats = models.IntegerField(null=True, blank=True, unique=False)
     block_seats = models.IntegerField(null=True, blank=True, unique=False, default=0)
+    block_seats_obj = models.JSONField("Block Seats Obj",default=default_block_seats, null=True, blank=True)    
     weekday = models.CharField(max_length=10, null=True, blank=True) 
     added_seats = models.IntegerField(default=0, null=True, blank=True, unique=False) 
 
@@ -109,13 +108,18 @@ class Booking(models.Model):
         if self.pk:  # Only for existing instances (not new ones)
             old_instance = self.__class__.objects.get(pk=self.pk)
             # update the number of players in the session
+            print("------------------------------------")
+            print("Old Instance: ", old_instance)
             if old_instance and old_instance.session and old_instance.number_of_players:
+                print("update the number of players in the session")
                 current_session = Session.objects.get(id=old_instance.session.id)
                 all_bookings_num = sum(
                     Booking.objects.filter(session_id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True)
                 )
                 new_sessions_seats = current_session.added_seats + current_session.product.max_num - all_bookings_num - current_session.block_seats 
                 current_session.available_seats = new_sessions_seats
+                print("New Session Seats: ", new_sessions_seats)
+                print("all_bookings_num: ", all_bookings_num)
                 current_session.save()
 
             
@@ -136,7 +140,7 @@ class Booking(models.Model):
 
 
 class Customer(models.Model):
-    identifier = models.CharField(max_length=30, unique=False)
+    identifier = models.CharField(max_length=150, unique=False)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, null=True)
     # all_bookings = models.Many(Booking, blank=True, null=True)
 

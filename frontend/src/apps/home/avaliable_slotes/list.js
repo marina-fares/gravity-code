@@ -53,6 +53,16 @@ export default function List({ date, availableSessions, selectedProduct, add_blo
 										{/* Buttons container */}
 										<div className="d-flex gap-2 flex-wrap justify-content-center justify-content-md-end w-100 w-md-auto" style={{ zIndex: 1 }}>
 											<Button
+											variant="outlined"
+											style={{ padding: "2px 6px", minWidth: "100px" }}
+											onClick={(e) => {
+												e.stopPropagation();
+												navigate(`/book/${item.id}`);
+											}}
+											>
+											+
+											</Button>
+											<Button
 											size="small"
 											variant="outlined"
 											style={{ padding: "2px 6px", minWidth: "auto" }}
@@ -74,17 +84,7 @@ export default function List({ date, availableSessions, selectedProduct, add_blo
 											>
 											block
 											</Button>
-											<Button
-											size="small"
-											variant="outlined"
-											style={{ padding: "2px 6px", minWidth: "auto" }}
-											onClick={(e) => {
-												e.stopPropagation();
-												navigate(`/book/${item.id}`);
-											}}
-											>
-											+
-											</Button>
+
 										</div>
 										</Card.Header>
 
@@ -101,8 +101,8 @@ export default function List({ date, availableSessions, selectedProduct, add_blo
 											<div className="col-sm ">
 											Available Seats: {item.available_seats}
 											</div>
-											{item.block_seats >0 && <div className="col-sm">
-											Blocks: {item.block_seats}
+											{item.block_seats_obj.number >0 && <div className="col-sm">
+											Blocks: {item.block_seats_obj.number} - {item.block_seats_obj.note}
 											</div>}
 											{item.added_seats>0 && <div className="col-sm">
 											Added Seats: {item.added_seats}
