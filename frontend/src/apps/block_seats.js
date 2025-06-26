@@ -35,12 +35,10 @@ export default function BlockSeats(){
     setIsLoading(true);
 
     try {
-
-        if (!blockSeats.number || isNaN(blockSeats.number) ) {
+        if (blockSeats.number === '' || blockSeats.number === null || blockSeats.number === undefined || isNaN(Number(blockSeats.number))){
         throw new Error("Invalid number of seats");
         }
-
-        // current_session = 
+         
         const currentSession = await {
             ...currentsessionDetails,
             block_seats_obj: blockSeats
