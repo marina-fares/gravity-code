@@ -18,23 +18,17 @@ class SquareApiInterface(json.JSONEncoder):
         idempotency_key_2 = str(idempotency_key)
         idempotency_key_3 = uuid.uuid1(random.randint(0, 281474976710655))
         idempotency_key_4 = str(idempotency_key)
-        #print("111111111111111111111111111111111111111111111idempotency_key")
-        # print(type(idempotency_key))
-        # print(type(idempotency_key_2))
-        # print(self.url + url)
-        # print(self.key)
+
         
         if url == "/orders" and request_type == "post":
             for i in payload.get('order').get('line_items'):
                 if i.get('applied_discounts') is None:
                     pass
                 else:
-                    print("yessssssssssssssssssssssss")
-                    print(i.get('applied_discounts')) 
+
                     i.get('applied_discounts')[0] = {"discount_uid": idempotency_key_4 , "uid": idempotency_key_4}
                     payload.get("order").get("discounts")[0]["scope"] = "LINE_ITEM"
                     payload.get("order").get("discounts")[0]["uid"] = idempotency_key_4
-                    print(payload)
         if url == "/payments" and request_type=="post":
 
             b = {"cash_details": {
@@ -46,9 +40,7 @@ class SquareApiInterface(json.JSONEncoder):
                 }}
             
             if payload.get('source_id') == "CASH":
-                # payload = dict(payload.items() + b.items())
-                # print("3333333333333333333333333333333333")
-                # print(payload)
+
                 payload.update(b)
             else:
                 payload.update(c)
@@ -65,6 +57,5 @@ class SquareApiInterface(json.JSONEncoder):
                 'Authorization': 'Bearer ' + self.key,
             }, json=payload)
 
-        #print(response.json())
         return response
 

@@ -11,6 +11,7 @@ import { Grid, Input, Button, FormControl, TextField, RadioGroup, FormControlLab
 import LoadingFun from '../../components/ui/loading';
 import AlertFun from '../../components/ui/alert';
 import { InvoicePrint }  from '../../components/ui/booking_invoice';
+import { app_post } from '../../components/logic/app';
 
 export default function Options() {
 	const navigate = useNavigate()
@@ -28,7 +29,7 @@ export default function Options() {
     let [squareLineItems, setSquareLineItems] = useState([])
 	let [bookingsuccess, set_bookingsuccess] = useState(false);
 	let [zohoItems, setZohoItems] = useState();
-	let [zohoAllItems, ] = useState(JSON.parse(get_localstorage('zoho_items')))
+	let [zohoAllItems, ] = useState(JSON.parse(get_localstorage('zohoItems')))
     let [payment_for_square_api] = useState(
         {
             "amount_money": {
@@ -40,9 +41,20 @@ export default function Options() {
             }
     )
 	let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
+	let [zoho_sales_receipt_number, set_zoho_sales_receipt_number] = useState()
 	let [order, setOrder] = useState()
 	let [payment, setPayment] = useState()
 	let [val, set_val] = useState()
+	let [ customItem, setCustomItem ] = useState(
+		{
+			"name": "Custom Item",
+			"quantity": "1",
+			"base_price_money": {
+			"amount": 0,
+			"currency": "EGP"
+			}
+
+		})
     
 	useEffect(() => {
 		const fetchData = async () => {
@@ -73,8 +85,7 @@ export default function Options() {
 
 
 	useEffect(()=>{
-		
-		if((squareLineItems.length === Object.keys(options).length) && !bookingsuccess && squareLineItems.length !== 0 && zohoItems.length === Object.keys(options).length ) 
+		if(((squareLineItems.length === Object.keys(options).length) || squareLineItems.length === Object.keys(options).length+1) && !bookingsuccess && squareLineItems.length !== 0 && (zohoItems.length === Object.keys(options).length || zohoItems.length === Object.keys(options).length+1) ) 
 		{
 			create_order_api()
 		}
@@ -173,32 +184,35 @@ export default function Options() {
 			})
 	}
 
-	function update_inventory(){
-		let updatedShiftData = shiftDetails
-		let updatedSubShiftData = subShiftDetails
-		order.line_items.forEach(item => {
-			updatedShiftData.inventory[item.name].sold_at_square += parseInt(item.quantity)
+	async function update_inventory(){
+		let updatedShiftData = await shiftDetails
+		let updatedSubShiftData = await subShiftDetails
+		await order.line_items.forEach(item => {
+			if(updatedShiftData.inventory[item.name]){
+				updatedShiftData.inventory[item.name].sold_at_square += parseInt(item.quantity)
+			}
 		})
 
 		if(firstPaidMethod === 'cash')
 			{
-				updatedShiftData.shift_money_cash += parseInt(firstPaid)/100
-				updatedSubShiftData.shift_money_cash += parseInt(firstPaid)/100
+				updatedShiftData.shift_money_cash += await parseInt(firstPaid)/100
+				updatedSubShiftData.shift_money_cash += await parseInt(firstPaid)/100
 			}
 			else if(firstPaidMethod === 'creditcard')
 			{
-				updatedShiftData.shift_money_visa += parseInt(firstPaid)/100
-				updatedSubShiftData.shift_money_visa += parseInt(firstPaid)/100
+				updatedShiftData.shift_money_visa += await parseInt(firstPaid)/100
+				updatedSubShiftData.shift_money_visa += await parseInt(firstPaid)/100
 			}
 		
-			let old_options = (updatedShiftData.options2)? updatedShiftData.options2 : []
-			let new_options = [{[payment.receipt_number]: order.id}]
-			updatedShiftData.options2 = [...old_options, ...new_options]
+			let old_options = await (updatedShiftData.options2)? updatedShiftData.options2 : []
+			let new_options = await [{[payment.receipt_number]: order.id}]
+			updatedShiftData.options2 = await [...old_options, ...new_options]
 
 			
 
-		set_shift(updatedShiftData)
-		set_sub_shift(updatedSubShiftData)
+		await set_shift(updatedShiftData)
+		await set_sub_shift(updatedSubShiftData)
+		await create_booking_in_backend()
 		set_bookingsuccess(true)
 		setLoadingFlag(false)
 	}
@@ -240,9 +254,10 @@ export default function Options() {
 				}
 			
 		}).then(response => {
-			if (response.code == 0)
+			if (response.code === 0)
 				{
 					set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id)	
+					set_zoho_sales_receipt_number(response.sales_receipt_details.receipt_number)
 				}
 			else{
 				set_zoho_sales_receipt_id(true)
@@ -278,6 +293,40 @@ export default function Options() {
 			
 			))
 			}
+
+		if(customItem.base_price_money.amount > 0 && customItem.name !== ""){
+			setSquareLineItems(prev => [...prev, customItem])
+			setZohoItems(prev => [...prev, 
+				{
+				name: customItem.name,
+				quantity: 1,
+				rate: customItem.base_price_money.amount/1.14,
+				tax_id: "5118629000000088105"
+				}
+			])
+		}
+	}
+
+	async function create_booking_in_backend(){
+		let data = {
+		options: order.line_items,
+        payment: {
+            amount: payment.amount_money.amount/100,
+            method: (payment.source_type === 'CASH')? 'cash' : 'creditcard',
+            promoCode: "" ,
+            percentage: ""
+        },
+        number_of_players: 0,
+        creation_agent: shiftDetails.user.username,
+        created_at: order.created_at,
+        square_receipt_number: payment.receipt_number,
+        square_payment_id: payment.id,
+        square_order_id: order.id,
+        zoho_sales_receipt_id: zoho_sales_receipt_id,
+        zoho_sales_receipt_num: zoho_sales_receipt_number,
+        status: "done"
+		}
+		await app_post(`booking/`, data)
 	}
 
 	function setFirstPaid_fun(e){
@@ -369,6 +418,37 @@ export default function Options() {
 					</Card>
 				</Grid>
 			))}
+			<div className="d-flex flex-row pt-3 gap-2 justify-content-center w-50">
+			<TextField
+					required
+					id="Custom Field Name"
+					label= "Custom Field Name"
+					onChange= {(e) => {
+						setCustomItem(prev => ({
+						...prev,
+						name:e.target.value}))
+					}}
+					className="from-control border-0 w-100 "
+					value={customItem.name}
+					
+				/>
+			<TextField
+					required
+					id="Custom Field Price"
+					label= "Custom Field Price"
+					onChange= {(e) => {
+						setCustomItem(prev => ({
+						...prev,
+						base_price_money:{
+							"amount": e.target.value*100,
+							"currency": "EGP"
+						}}))
+					}}
+					className="from-control border-0 w-100 "
+					value={customItem.base_price_money.amount/100}
+					
+				/>
+			</div>
 			<FormControl  spacing={2} className="p-4 w-100">
 				<TextField
 				required

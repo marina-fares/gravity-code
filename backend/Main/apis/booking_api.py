@@ -1,0 +1,279 @@
+from rest_framework import permissions, generics
+from rest_framework.response import Response
+from ..models.models_sessions import Booking, Session, Customer, Product
+from Main.serializers.booking_serializer import BookingSerializer
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db import DatabaseError, IntegrityError
+from django.contrib.auth.models import User
+
+class BookingApi(generics.GenericAPIView):
+    """
+    This class is used to make a request to the Square API.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BookingSerializer
+
+    def get(self, request, session_id=None):
+        """
+        This method is used to get all bookings for a specific session.
+        """
+        search_field = request.query_params.get('tt', '')
+        current_user = request.user
+
+        if session_id:
+            sessionBookings = Booking.objects.filter(session=session_id, status='done')
+        elif search_field:
+            current_user_groups = current_user.groups.all()
+            current_user_group_names = [group.name for group in current_user_groups]
+            all_customers = Customer.objects.filter(identifier__icontains=search_field)
+            sessionBookings1 = Booking.objects.filter(booking_customer__in = all_customers, session__product__group__name__in=current_user_group_names)
+            sessionBookings2 = Booking.objects.filter(square_receipt_number__icontains = search_field, session__product__group__name__in=current_user_group_names)
+            # get the bookings of the options
+            group_users = User.objects.filter(
+                groups__name__in=current_user_group_names
+            ).values_list('username', flat=True)
+            sessionBookings3 = Booking.objects.filter(
+                    square_receipt_number__icontains=search_field,
+                    creation_agent__in=group_users
+                )
+            sessionBookings = sessionBookings1 | sessionBookings2 | sessionBookings3
+        serializer = BookingSerializer(sessionBookings, many=True)
+
+        return Response(serializer.data)  # Use .data here
+
+
+    def post(self, request, session_id):
+        try:
+            current_user = request.user
+            data = request.data.copy()
+
+            # Get session or return 404
+            booking_session = get_object_or_404(Session, id=session_id)
+            data['session'] = booking_session
+
+            # Optional: get customer
+            booking_customer_id = data.get('booking_customer')
+            if booking_customer_id:
+                customer_instance = get_object_or_404(Customer, id=booking_customer_id)
+                data['booking_customer'] = customer_instance
+
+            # Check if we're updating an existing booking or creating a new one
+            booking_id = data.get('id')
+            existing_booking = Booking.objects.filter(id=booking_id).first()
+
+
+            # Update the number of players in the session
+            current_session = booking_session  # already fetched above
+            product = Product.objects.get(id=current_session.product.id)
+            all_bookings_num = sum(
+                Booking.objects.filter(session_id=session_id).exclude(status='refunded').values_list('number_of_players', flat=True)
+            )
+            if booking_id and existing_booking:
+                new_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats 
+            else:
+                new_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats - data['number_of_players']
+            old_sessions_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats 
+            print("---------------------------------", new_sessions_seats)
+            if(new_sessions_seats < 0):
+                return Response({"error": "This Session Doesn't have available Seats, Only Available " + str(old_sessions_seats) + " seat" }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            current_session.available_seats = new_sessions_seats            
+            current_session.save()
+
+            if booking_id and existing_booking:
+                # Booking exists, updating it...
+                session_booking = existing_booking
+                for key, value in data.items():
+                    setattr(session_booking, key, value)
+                session_booking.save()
+                created = False
+            else:
+                # Booking does not exist, creating it..."
+                if data.get('id'):
+                    data.pop('id', None)
+                data['options']= None
+                session_booking = Booking.objects.create(**data)
+                created = True
+
+
+            serializer = BookingSerializer(session_booking)
+            return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+        except ObjectDoesNotExist as e:
+            return Response({"error": "Not found: " + str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+        except ValidationError as e:
+            return Response({"error": "Validation error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except IntegrityError as e:
+            return Response({"error": "Database integrity error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except DatabaseError as e:
+            return Response({"error": "Database error: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            return Response({"error": "Unexpected error: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def put(self, request, session_id):
+        try:
+            current_user = request.user
+            data = request.data.copy()
+            print(data)
+
+            # Get session or return 404
+            booking_session = get_object_or_404(Session, id=session_id)
+            if not data['session']:
+                data['session'] = booking_session.id  # Use ID instead of model instance
+
+            booking_id = data.get('id')
+            existing_booking = Booking.objects.filter(id=booking_id).first()
+            print("booking id-----------", booking_id)
+            print("-----------existing booking", existing_booking)
+
+            if booking_id and existing_booking:
+                # Update existing booking
+                print("------------------------save")
+                booking_serializer = BookingSerializer(existing_booking, data=data, partial=True)
+                if booking_serializer.is_valid():
+                    booking_instance = booking_serializer.save()
+                
+
+
+            # Update the number of players in the session
+            current_session = booking_session  # already fetched above
+            product = Product.objects.get(id=current_session.product.id)
+            all_bookings_num = sum(
+                Booking.objects.filter(session_id=session_id).exclude(status='refunded').values_list('number_of_players', flat=True)
+            )
+            current_session.available_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats
+            current_session.save()
+
+            if data['session'] and data['session'] != session_id:
+                current_session = get_object_or_404(Session, id=data['session'])
+                if current_session:
+                    product = Product.objects.get(id=current_session.product.id)
+                    all_bookings_num = sum(
+                        Booking.objects.filter(session_id=session_id).exclude(status='refunded').values_list('number_of_players', flat=True)
+                    )
+                    current_session.available_seats = current_session.added_seats + product.max_num - all_bookings_num - current_session.block_seats
+                    current_session.save()
+
+            serializer = BookingSerializer(booking_instance)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except ObjectDoesNotExist as e:
+            return Response({"error": "Not found: " + str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+        except ValidationError as e:
+            return Response({"error": "Validation error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except IntegrityError as e:
+            return Response({"error": "Database integrity error: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        except DatabaseError as e:
+            return Response({"error": "Database error: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            return Response({"error": "Unexpected error: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OneBookingApi(generics.GenericAPIView):
+    """
+    This class is used to make a request to the Square API.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BookingSerializer
+
+    def get(self, request, booking_id):
+        """
+        Return details of a specific booking by ID.
+        """
+        try:
+            booking = Booking.objects.get(id=booking_id)
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = BookingSerializer(booking)
+        return Response(serializer.data, status=status.HTTP_200_OK) # ✅ Fix: use .data only here
+
+    
+    def post(self, request, booking_id=None):
+        """
+        Create a new booking using the given booking_id as a reference if needed.
+        """
+        data = request.data.copy()
+        if booking_id:
+            data["id"] = booking_id  # Optional: only if you want to set the ID manually
+            serializer = self.get_serializer(data=data)
+        # use this condition to create new hold booking
+        else:
+            serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def put(self, request, booking_id):
+        """
+        Update existing booking if it exists, otherwise create a new one.
+        """
+        data = request.data.copy()
+        customer = None
+        try:
+            booking = Booking.objects.get(id=booking_id)
+            is_new = False
+        except Booking.DoesNotExist:
+            booking = None
+            is_new = True
+
+        customer_id = data.get('booking_customer')
+        if customer_id:
+            try:
+                if (type(customer_id) is int):
+                    customer = Customer.objects.get(id=customer_id)
+                elif (type(customer_id) is object):
+                    customer = Customer.objects.get(id=customer_id.id)
+            except Customer.DoesNotExist:
+                customer = None  # fallback if invalid ID is provided
+
+        serializer = self.get_serializer(instance=booking, data=data, partial=True)
+
+        if serializer.is_valid():
+            instance = serializer.save()
+            # If a customer is provided, update the booking_customer field
+            if customer:
+                instance.booking_customer = customer
+                instance.save(update_fields=['booking_customer'])
+            return Response(serializer.data, status=status.HTTP_201_CREATED if is_new else status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+    def delete(self, request, booking_id):
+        """
+        Delete the booking with the specified booking_id.
+        """
+        try:
+            booking = Booking.objects.get(id=booking_id)
+            
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found."}, status=status.HTTP_404_NOT_FOUND)
+        if booking and booking.status != 'done':
+            
+            # update the number of players in the session
+            current_session = booking.session
+            product = Product.objects.get(id=current_session.product.id)
+            all_bookings_num = sum(Booking.objects.filter(session__id=current_session.id).exclude(status='refunded').values_list('number_of_players', flat=True))
+            current_session.available_seats = current_session.added_seats + product.max_num - all_bookings_num + booking.number_of_players - current_session.block_seats
+            current_session.save()
+            #delete the hold 
+            booking.delete()
+        return Response({"message": "Booking deleted successfully."}, status=status.HTTP_200_OK)    
+
+

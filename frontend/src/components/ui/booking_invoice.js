@@ -51,7 +51,6 @@ const Invoice = React.forwardRef(({shift, note}, ref) => {
 
 
 const today = new Date(shift?.dateTime || '') 
-	
 	return shift && <div ref={ref} style={{ width: '80mm' }}>
 				<PageHeader title={shift.branch_name} />
 		
@@ -64,7 +63,7 @@ const today = new Date(shift?.dateTime || '')
 				{shift.discount && <PaperRow key={shift.discount} right={ ` Discount: ${shift.discount}`} />}
 				<hr style={{ margin: '10px' }} />
 				
-				{shift.options &&
+				{shift.options && Object.keys(shift.options).length > 0 &&
 				shift.options.map((res) => {
 					if (Number(res.quantity) > 0) {
 					return (
@@ -84,7 +83,7 @@ const today = new Date(shift?.dateTime || '')
 				<PaperRow key={shift.total_price} right='Total' right_bold={true} left={`E£${(shift.total_price)}.00`} left_bold={true} />
 				
 				{(shift.first_paid !== "") && 
-				<PaperRow key={shift.first_paid_method} right={`${shift.first_paid_method === "CASH"? "Cash" : "creditcard"}`} right_bold={true} left={`E£${shift.first_paid}.00`} left_bold={true} />
+				<PaperRow key={shift.first_paid_method} right={`${(shift.first_paid_method === "CASH" || shift.first_paid_method === "cash")? "cash" : "creditcard"}`} right_bold={true} left={`E£${shift.first_paid}.00`} left_bold={true} />
 				}
 				<PaperRow key='123' right='Change' right_bold={true} left={`E£0.00`} left_bold={true} />
 				{ note &&
@@ -105,13 +104,13 @@ export const InvoicePrint = ({shift}) => {
 		<div className='container border-0'>
 
 
-			<div style={{ border: '1px solid #000', padding: '10px', margin: '10px' }}>
+			<div style={{ border: '1px solid #000', padding: '10px', margin: '10px', width: '90mm' }}>
 			
 				<Invoice ref={componentRef} shift={shift} note={note} />
 			</div>
 			<Input
 				className='form-control d-flex flex-column justify-content-end w-25'
-				defaultValue={1}
+				value={note}
 				onChange={(e) => set_note(e.target.value)}
 				type='test'
 				name='number of players'

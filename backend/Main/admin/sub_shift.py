@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ..models_sub_shift import SubShift, SubShiftHistory
+from ..models.models_sub_shift import SubShift, SubShiftHistory
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 

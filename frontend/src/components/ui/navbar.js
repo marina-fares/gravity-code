@@ -17,19 +17,19 @@ import logout from '../logic/logout'
 import { useNavigate } from "react-router-dom";
 import logo from '../../gravity.png'
 import { get_user_and_jwt } from '../logic/users';
-import { get_shift } from '../../apps/start_shift/shifts_functions';
+import { get_shift } from '../logic/shifts_functions_apis';
 import { useEffect } from 'react';
 
 
-const pages = ['Available Sessions', 'Options', 'Inventory', 'Old Shift'];
+const pages = ['Available Sessions', 'Options', 'Inventory', 'Shifts History', 'Bookings History'];
 const settings = ['End Shift', 'Logout'];
 
 const NavBar = () => {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
-  let [shift, set_shift] = React.useState();
-  let [alert, set_alert] = React.useState(false)
-  let [check_password, set_check_password] = React.useState(false)
+  let [, set_shift] = React.useState();
+  let [, set_alert] = React.useState(false)
+  let [check_password, ] = React.useState(false)
 
   useEffect(() => {
     get_shift_data()
@@ -56,6 +56,10 @@ const NavBar = () => {
 
   const handleCloseNavMenu = (e) => {
 
+        if(e.currentTarget.id === "Bookings History")
+        {
+          navigate('/bookings_history')
+        }
         if(e.currentTarget.id === "Available Sessions")
         {
           navigate('/home')
@@ -68,10 +72,11 @@ const NavBar = () => {
         {
           navigate('/options')
         }
-        if(e.currentTarget.id === "Old Shift")
+        if(e.currentTarget.id === "Shifts History")
         {
           navigate('/old_shift')
         }
+
     
       setAnchorElNav(null);
   };

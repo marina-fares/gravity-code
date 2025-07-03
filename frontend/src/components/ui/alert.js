@@ -8,7 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 
-export default function AlertFun({ open_alert, set_open_alert, message }) {
+export default function AlertFun({ open_alert, set_open_alert, message, setLoading }) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -32,7 +32,9 @@ export default function AlertFun({ open_alert, set_open_alert, message }) {
       </DialogContent>
 
       <DialogActions>  
-        <Button autoFocus onClick={() => set_open_alert(false)}>
+        <Button autoFocus onClick={() => {
+          setLoading(false)
+          set_open_alert(false)}}>
           Close
         </Button>
       </DialogActions>

@@ -1,6 +1,6 @@
 import { get_jwt } from './users'
 
-let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
+let APP_BASE_URL = 'https://fodev.gravitycode.me/api/'
 
 
 function app_post(url, data){
@@ -19,7 +19,7 @@ function app_post(url, data){
     .then(response => response.json())
 }
 
-function app_get(url, params){
+function app_get(url, params = {}){
     let headers = {
         'Content-Type': 'application/json'
     }
@@ -27,12 +27,62 @@ function app_get(url, params){
     if(token){
         headers['Authorization'] = `Bearer ${token}`
     }
-    return fetch(APP_BASE_URL + url, {
+
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = APP_BASE_URL + url + (queryString ? `?${queryString}` : '');
+
+    return fetch(fullUrl, {
         'method': 'get',
         headers,
-        params: params
     })
     .then(response => response.json())
 }
 
-export { app_post, app_get }
+function app_delete(url, params = {}){
+    let headers = {
+        'Content-Type': 'application/json'
+    }
+    let token = get_jwt()
+    if(token){
+        headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = APP_BASE_URL + url + (queryString ? `?${queryString}` : '');
+
+    return fetch(fullUrl, {
+        'method': 'delete',
+        headers,
+    })
+    .then(response => response.json())
+}
+
+function app_put(url, params = {}, bodyData = {}) {
+    let headers = {
+        'Content-Type': 'application/json'
+    };
+
+    let token = get_jwt();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = APP_BASE_URL + url + (queryString ? `?${queryString}` : '');
+
+    return fetch(fullUrl, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(bodyData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    });
+}
+
+
+
+export { app_post, app_get, app_delete, app_put }

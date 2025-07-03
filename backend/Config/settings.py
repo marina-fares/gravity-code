@@ -51,10 +51,16 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'drf_yasg',
     "corsheaders",
+    'django_crontab',
 
     'rest_framework',
     'Main',
 ]
+
+CRONJOBS = [
+    ('0 2 * * *', 'django.core.management.call_command', ['run_midnight_task']),
+]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -72,11 +78,14 @@ CORS_ALLOWED_ORIGINS = [
     # 'http://44.201.165.150:3000'
     'http://44.201.165.150:5000',
     'https://fobook.gravitycode.me',
+    'https://fodev.gravitycode.me',
     'http://localhost:3001'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+        'https://fo.gravitycode.me',
     'https://fobook.gravitycode.me',
+    'https://fodev.gravitycode.me',
     'http://localhost:3001'
 ]
 
@@ -209,4 +218,3 @@ ZOHO_DOMAIN_URL = os.environ.get('ZOHO_DOMAIN_URL')
 ZOHO_REFRESH_TOKEN = os.environ.get('ZOHO_REFRESH_TOKEN')
 ZOHO_CLIENT_ID = os.environ.get('ZOHO_CLIENT_ID')
 ZOHO_CLIENT_SECRET = os.environ.get('ZOHO_CLIENT_SECRET')
-

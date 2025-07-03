@@ -24,7 +24,6 @@ class UsersGroups(generics.GenericAPIView):
     def get(self, request):
         current_user = request.user
         current_user_groups = current_user.groups.all()
-        print("--------------------------------groups-----------------------------")
-        print(current_user_groups)
+
         serializer = GroupSerializer(current_user_groups[0]).data
         return  Response(serializer)

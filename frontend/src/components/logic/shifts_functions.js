@@ -8,10 +8,8 @@ async function end_shift(shift, sub_shift) {
 	shift.end_time = date
 	sub_shift.end_time = date
 
-	await app_post('old_shift/', {"payload": shift})
-	await app_post('sub_shift_history/', {"payload": sub_shift})
 
-	await app_api_post('square/', {
+	const response = await app_api_post('square/', {
 		request_type: 'put',
 		url: `/labor/shifts/${shift.current_shift_id}`,
 		payload: {
@@ -30,7 +28,15 @@ async function end_shift(shift, sub_shift) {
 			},
 		},
 	}).then((res) => {
-		// debugger;
+		if(res.errors){
+			return res.errors
+		}
+	}
+	);
+	
+	if(!response){
+		await app_post('old_shift/', {"payload": shift})
+		await app_post('sub_shift_history/', {"payload": sub_shift})
 		shift.end_time = null;
 		shift.start_time = null;
 		shift.current_shift_id = null;
@@ -58,11 +64,9 @@ async function end_shift(shift, sub_shift) {
 		sub_shift.note = {}
 		set_shift(shift);
 		set_sub_shift(sub_shift)
-
-		
 	}
-);
-	window.location.replace("/");
+
+	return response
 }
 
 async function get_zoho_items(){
@@ -75,7 +79,7 @@ async function get_zoho_items(){
 		response.items.forEach((item)=>{
 			zoho_items[item.description.split('_')[1]] = [item.item_id, item.rate]
 		})
-		set_localstorage("zoho_items", JSON.stringify(zoho_items))
+		set_localstorage("zohoItems", JSON.stringify(zoho_items))
 	})
 }
 async function get_catalog() {
@@ -91,38 +95,52 @@ async function get_catalog() {
 		// catalog = {cat_name: cat_id} 
 		let category_items = {}
 		
-		// catalog = {cat_name: {item_name: item_id}} 
+
+		catalog["objects"].forEach((obj, ind)=>{
+		if(obj["type"] === "CATEGORY"){
+			category_ids[obj.category_data.name] = obj.id  
+			category_items[obj.id] = {}
+		}
+		})
+
+			
+		let item_name = ""
+		let item_id = ""
+		let item = {}
+
+		catalog["objects"].forEach((obj, ind)=>{
+			item = {}
+			if(obj["type"] === "ITEM"){
+			item_name = obj["item_data"]["name"]
+			item_id = obj["item_data"]["variations"][0]["id"]
 		
 
-		// let catalog_ids = {}
-			catalog["objects"].forEach((obj, ind)=>{
-			if(obj["type"] === "CATEGORY"){
-				category_ids[obj.category_data.name] = obj.id  
-				category_items[obj.id] = {}
-			}
-			})
+			item[item_name] = item_id 
+			let cat_obj = obj["item_data"]["categories"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
+			let old_cat = category_items[cat_obj] 
+			category_items[cat_obj] =  Object.assign({}, old_cat, item);
+				
+		}})
 
-			
-			let item_name = ""
-			let item_id = ""
-			let item = {}
+		let squareItems = {}
+		catalog["objects"].forEach((obj, ind)=>{
+			item = {}
+			if(obj["type"] === "ITEM"){
+			item_name = obj["item_data"]["name"]
+			item_id = obj["item_data"]["variations"][0]["id"]
+		
 
-			catalog["objects"].forEach((obj, ind)=>{
-				item = {}
-				if(obj["type"] === "ITEM"){
-				item_name = obj["item_data"]["name"]
-				item_id = obj["item_data"]["variations"][0]["id"]
-			
-
-				item[item_name] = item_id 
-				let cat_obj = obj["item_data"]["categories"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
-				let old_cat = category_items[cat_obj] 
-				category_items[cat_obj] =  Object.assign({}, old_cat, item);
-					
-				}})
+			item[item_name] = item_id 
+			let cat_obj = obj["item_data"]["categories"] ? obj["item_data"]["categories"][0]["id"] : obj["item_data"]["category_id"]
+			let old_cat = category_items[cat_obj] 
+			let cat_name = Object.keys(category_ids).find(key => category_ids[key] === cat_obj);
+			squareItems[cat_name] =  Object.assign({}, old_cat, item);
+				
+		}})
 		
 		set_localstorage("category_ids",JSON.stringify(category_ids))
 		set_localstorage("category_items",JSON.stringify(category_items))
+		set_localstorage("squareItems",JSON.stringify(squareItems))
 		
 		return response;
 	});
@@ -130,6 +148,8 @@ async function get_catalog() {
 
 async function split_shift(shift, sub_shift) {
 
+	console.log("-----------------------------151")
+	console.log(sub_shift)
 	let date = new Date().toISOString();
 
 	sub_shift.end_time = date
@@ -148,7 +168,7 @@ async function split_shift(shift, sub_shift) {
 	sub_shift.note = {}
 
 	await set_sub_shift(sub_shift)
-	window.location.replace("/");
+	// window.location.replace("/");
 
 }
 

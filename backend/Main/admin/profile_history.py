@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ..models import Profile, ProfileHistory
+from ..models.models import Profile, ProfileHistory
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin
 
@@ -12,12 +12,12 @@ class GroupFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value():
-            return queryset.filter(profile__user__groups__id=self.value())
+            return queryset.filter(profile__groups__id=self.value())
         return queryset
 
 class ProfileHistoryAdmin(admin.ModelAdmin):
     list_filter = (GroupFilter, )
-    search_fields = ('profile__username',)
+    search_fields = ('profile__username','date')
     def get_queryset(self, request):
         current_user = request.user
         if current_user.is_superuser:

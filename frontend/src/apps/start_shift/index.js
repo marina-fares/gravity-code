@@ -111,7 +111,7 @@ export default function StartShift() {
     return (
         <Card style={{ marginTop: 100 }}>
             <LoadingFun open={open} />
-			<AlertFun open_alert={alert} set_open_alert={setAlert} message={error_message} />
+			<AlertFun open_alert={alert} set_open_alert={setAlert} message={error_message} setLoading={setOpen}/>
             <Card.Body>
                 <Card.Title>Start Shift</Card.Title>
                 <Grid container spacing={2}>

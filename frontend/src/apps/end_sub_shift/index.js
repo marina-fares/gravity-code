@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Grid, InputLabel, Input, Alert, FormControl } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Card from 'react-bootstrap/Card';
@@ -38,6 +38,10 @@ export default function EndShift() {
 		}
 	};
 
+	async function split_shift_fun(){
+		const response = await split_shift(shift_details, sub_shift_details)
+		navigate('/')
+	}
 	
 	if (!(shift_details)?.current_shift_id) {
 		return <div>Loading your shift... If you haven't started your shift yet, kindly do so.</div>;
@@ -71,7 +75,12 @@ export default function EndShift() {
 								className='form-control d-flex flex-column w-50'
 								type="number"
 								value={actualCash}
-								onChange={(e) => setActualCash(e.target.value)}
+								onChange={(e) => {
+									setActualCash(e.target.value)
+									set_sub_shift_details(prev => ({...prev,
+										actual_cash: Number(e.target.value)})
+									)
+								}}
 							/>
 
 							<label style={{ margin: '10px' }} className='d-flex flex-column w-50'>Actual Visa in Drawer</label>
@@ -79,14 +88,19 @@ export default function EndShift() {
 								className='form-control d-flex flex-column w-50'
 								type="number"
 								value={actualVisa}
-								onChange={(e) => setActualVisa(e.target.value)}
+								onChange={(e) => {
+									setActualVisa(e.target.value)
+									set_sub_shift_details(prev => ({...prev,
+										actual_visa: Number(e.target.value)})
+									)
+								}}
 							/>
 
 							<div className=' d-flex flex-row justify-content-center w-100'>
 								<Card className="m-3">
 									<Card.Title className="m-3">Shift Cash</Card.Title>
 									<Card.Body>
-										<h3>{sub_shift_details.start_shift_cash + sub_shift_details.shift_money_cash - sub_shift_details.refund_cash} LE</h3>
+										<h3>{ sub_shift_details.shift_money_cash - sub_shift_details.refund_cash} LE</h3>
 									</Card.Body>
 								</Card>
 
@@ -118,7 +132,7 @@ export default function EndShift() {
 										End Shift Page
 									</Button>
 									<Button variant="contained" className='p-2 m-2' onClick={() => {
-										split_shift(shift_details, sub_shift_details);
+										split_shift_fun();
 									
 									}}>
 										Split Shift

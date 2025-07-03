@@ -67,7 +67,7 @@ export default function Inventory() {
 								Object.keys(updated_shift.inventory).map((key, i) => {
 									return (
 									
-										<Grid xs={12} md={6} lg={4} item>
+										<Grid xs={12} md={6} lg={4} item key={key}>
 											<div className='m-2' style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
 												<span style={{ width: 100 }}>{key}</span>
 												<TextField inputMode='numeric' label={key} id={key} value={updated_shift.inventory[key].start_shift || 0} onChange={(e) => {updated_shift_fun(key)}}></TextField>

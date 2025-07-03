@@ -1,55 +1,28 @@
 import List from './list';
-import { app_api_get } from '../../../components/logic/apis';
-import { Fragment, useState } from 'react';
-import{ useEffect } from 'react';
+import{ useEffect, useState } from 'react';
+import { get_available_sessions } from '../../../components/logic/booking_functions';
 
-
-export default function AvailableSlots({date, session_type}){
+export default function AvailableSlots({date, allProducts, selectedProduct, setSelectedProduct, add_block_seats}){
 
   
-  let [available_sessions, set_available_sessions] = useState([]);
-  let[current_session_type, set_current_session_type] = useState('');
+  let [availableSessions, setAvailableSessions] = useState([]);
 
-  console.log("new", date, session_type)
 
   useEffect(
     ()=>{
-      console.log(date, session_type)
-      if((session_type !== current_session_type) ){
-        set_available_slots(date, session_type)
-        console.log("yessssssssssssssss")
-      }
-      else{
-        // 
+      if((date && selectedProduct) ){
+        set_available_slots(date, selectedProduct)
       }
     }
-    ,[date,session_type]
+    ,[date,selectedProduct]
   )
 
-  function set_available_slots(date, session_type ){
-    console.log(date, session_type)
-   if(date && session_type){
-
-   
-    set_current_session_type(session_type.name )
+async  function set_available_slots(date, selectedProduct ){
  
-    const startTime = (new Date(date).toISOString())
-    
-    const tomorrow =  new Date(date)
-    tomorrow.setHours(24)
+    const payload = { "date": date , "product" : selectedProduct.id}
 
-    const endTime = (tomorrow.toISOString())
- 
-  app_api_get('bookeo/', {
-    "request_type": "get",
-    "url": "/availability/slots",
-    "payload": { "startTime": startTime , "endTime" : endTime,productId: session_type.productId},
-  })
-  .then(response => {
-  set_available_sessions(response.data || [])
-  console.log("sessions", response)
-  })
-   }
+    const data = await get_available_sessions(payload);
+    setAvailableSessions(data)
   }
   
     
@@ -59,6 +32,6 @@ export default function AvailableSlots({date, session_type}){
 
 
   return (
-    <List data= {available_sessions} session_type={session_type} className='m-5' />
+    <List date={date} availableSessions={availableSessions} selectedProduct={selectedProduct} add_block_seats={add_block_seats} className='m-5' />
   )
 }

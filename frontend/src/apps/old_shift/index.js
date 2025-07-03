@@ -53,19 +53,27 @@ export default function OldShift(){
             itemDate.getDate() === selected_date.getDate() &&
             itemDate.getMonth() === selected_date.getMonth()
         );
-        }).map((item) => (
-        <div key={item.date} className="mb-3">
+        }).map((item) => {
+            let datetime = new Date(item.json_data.start_time)
+        return(<div key={item.date} className="mb-3">
             <Card
             className="m-2"
             style={{ cursor: 'pointer' }}
             onClick={() => navigate('/one_old_shift', { state: item })}
             >
             <Card.Header>
-                {item.date} - {item.profile?.username}
+                {datetime.toLocaleString('en-US', {
+                month: 'short',
+                day: '2-digit',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true,
+                })} - {item.profile?.username}
             </Card.Header>
             </Card>
-        </div>
-        ))) :
+        </div>)
+        })) :
         (
             <div>
                 You're not Authorized to see the shift history

@@ -25,7 +25,7 @@ export default function OneOldShift() {
         <Card.Body className="container">
             <h4>{profile?.username}</h4>
 
-            <InvoicePrint shift={state.json_data} />
+            <InvoicePrint shift={state.json_data} profile={state.profile}/>
 
             {Object.keys(notes).length > 0 && (
                 <Card.Text>

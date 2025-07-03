@@ -1,603 +1,531 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { app_api_get } from '../../components/logic/apis';
 import { get_localstorage, set_localstorage } from '../../components/logic/localstorage';
-import { Grid, TextField, Button, Input, FormControl, RadioGroup, FormControlLabel, Radio, Checkbox, CircularProgress } from '@mui/material';
+import { Grid, TextField, Button, Input, FormControl, RadioGroup, FormControlLabel, Radio, Checkbox } from '@mui/material';
 import Card from 'react-bootstrap/Card';
-import { useNavigate } from 'react-router-dom';
-import * as React from 'react';
 import Autocomplete from '@mui/material/Autocomplete';
-import { get_jwt } from '../../components/logic/users';
-import { get_shift, set_shift_fun, get_sub_shift } from '../start_shift/shifts_functions';
-import {get_user_and_jwt} from '../../components/logic/users'
-import ResponsiveDialog from './alert'
-import Backdropfun from './loading'
-import delete_hold from './delete_hold'
-import BookingAPI from './booking_functions';
+import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis'
+import LoadingFun from '../../components/ui/loading';
+import AlertFun from '../../components/ui/alert';
+import { get_promo_codes, get_session_details, get_all_customers, delete_booking_on_error } from './functions_apis';
+import { get_total_price, create_payment_api, create_sales_receipt, add_to_inventory, create_hold_booking, create_customer, create_booking, delete_hold_booking } from '../../components/logic/booking_functions';
+import { InvoicePrint } from '../../components/ui/booking_invoice';
 
-let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
 
 export default function Booking() {
-
-	let { event_id } = useParams()
-    let booking_session_object = JSON.parse(get_localstorage('booking_session_object'));
-    let [isloading, set_isloading] = useState(false);
-    let [options, set_options] = useState({});
-    let [customer, set_customer] = useState({});
-    let [numbers, set_numbers] = useState([{
-        "peopleCategoryId": booking_session_object.bookingLimits[1].peopleCategoryId,
-        "number": "1"
-    }]);
-    let [note, set_note] = useState();
-    let [list_promocode, set_list_promocode] = useState([]);
-    let [promocode, set_promocode] = useState();
-    let [firstPaid, set_firstPaid] = useState(0);
-    let [firstPaid_method, set_firstPaid_method] = useState('cash');
-    let [arr_options, set_arr_options] = useState([])
-    let [alert, set_alert] = useState(false)
-    let [message, set_message] = useState()
-    let [square_totalprice, set_square_totalprice] = useState('')
-    let [totalprice, set_totalprice] = useState()
-    let [updated_shift, set_updated_shift] = useState();
-    let [customer_data, set_customer_data] = useState([])
-    let [category_ids, set_category_ids] = useState(JSON.parse(get_localstorage('category_ids')))
-    let [category_items, set_category_items] = useState(JSON.parse(get_localstorage('category_items')))
-    let [zoho_items, set_zoho_items] = useState(JSON.parse(get_localstorage('zoho_items')))
-    // the ids that will add in the square API
-    let [options_square_ids, set_options_square_ids] = useState([])
-    let [options_square_items, set_options_square_items] = useState([])
-    let [options_zoho_items, set_options_zoho_items] = useState([])
-    let [bookingsuccess, set_bookingsuccess] = useState(false)
-    let [square_receipt_number, set_square_receipt_number] = useState()
-    let [booking_bookeo, set_booking_bookeo] = useState(false)
+    let date = new Date()
+	let { session_id } = useParams()
+    let [sessionsDetails, setSessionsDetails ] = useState([])
+    let [isLoading, setIsLoading] = useState(false);
+    let [selectedOptions, setSelectedOptions] = useState({});
+    let [note, setNote] = useState();
+    let [allPromoCodes, setAllPromoCodes] = useState([]);
+    let [promoCode, setSelectedPromoCode] = useState();
+    let [paid, setPaid] = useState(0);
+    let [paymentMethod, setPaymentMethod] = useState('cash');
+    let [alert, setAlert] = useState(false)
+    let [alertMessage, setAlertMessage] = useState()
+    let [shiftDetails, setShiftDetails] = useState();
+    let [ allSquareItems ] = useState(JSON.parse(get_localstorage('squareItems')))
+    let [allZohoItems] = useState(JSON.parse(get_localstorage('zohoItems')))
+    let [selectedSquareItems, setSelectedSquareItems] = useState([])
+    let [selectedZohoItems, setSelectedZohoItems] = useState([])
+    let [bookingSuccess, setBookingSuccess] = useState(false)
     let [promotrue, set_promotrue] = useState(false)
-    let [open, setOpen] = useState(false)
-    let [value, set_value] = useState(false)
-    let [test, set_test] = useState(category_items[category_ids[booking_session_object["name"]]])
-    // for the number of players item for square, this is the name of the session type
-    let [category_of_session, set_category_of_session] = useState(`1HR ${booking_session_object.name}`)
+    let [selectedCategory, setSelectedCategory] = useState()
+    let [numberOfPlayers, setNumberOfPlayers] = useState(1)
+    const [subShiftDetails, setSubShiftDetails] = useState();
+    let [ allCustomers, setAllCustomers ] = useState()
+    let [ customerName, setCustomerName ] = useState(
+    date.getFullYear() + "/" + (Number(date.getMonth())+1) + "/" + date.getDate() + ' ' +
+    date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()
+    )
+    let [ orderDetails, setOrderDetails ] = useState()
+    let [ paymentDetails, setPaymentDetails ] = useState()
+    let [ bookingDetails, setBookingDetails ] = useState()
+    let [ salesReceiptDetails, setSalesReceiptDetails] = useState()
+    let [ customItem, setCustomItem ] = useState(
+        {
+            "name": "Custom Item",
+            "quantity": "1",
+            "base_price_money": {
+            "amount": 0,
+            "currency": "EGP"
+            }
 
-    let [square_order_id, set_square_order_id] = useState()
-    let [payment_ids, set_payment_ids] = useState([]);
-    let [create_order_flag, set_create_order_flag] =useState(false)
-    const [sub_shift, set_sub_shift] = useState();
-    const [alert_threshold_amount, set_alert_threshold_amount] = useState(false);
-const navigate = useNavigate()
+        })
 
 
-// set the payment variable
-function set_firstPaid_fun(e){
-    const value = Math.max(0, Math.min(10000000000, Number(e.target.value)));
-    set_firstPaid(value);
-};
+// get the shift, sub_shift data and promoCodes
+// should check the holds in this step
+useEffect(() => {
+    const fetchData = async () =>{
+        const shiftData = await get_shift()
+        setShiftDetails(shiftData)
 
-// stop loading the page
-const handleClose = () => {
-    setOpen(false);
-};
+        const subShiftData = await get_sub_shift()
+        setSubShiftDetails(subShiftData)
 
-// start loading the page
-const handleToggle = () => {
-    setOpen(!open); 
-};     
+        const promoCodesData = await get_promo_codes()
+        setAllPromoCodes(promoCodesData)
+        
+        const sessionData = await get_session_details(session_id)
+        setSessionsDetails(sessionData)
+        setSelectedCategory(`1HR ${sessionData[0].product.nick_name}`)
 
-// close the Alert tab
-const handleCloseAlert = () => {
+        const customersData = await get_all_customers()
+        setAllCustomers(customersData)
 
-if(bookingsuccess){
-    navigate("/home")
-}
-else{
-    set_alert(false) // no error
-    setOpen(false)
-}
-};
+    }
+    fetchData()
+}, [session_id]);
+
+
+
 
 useEffect(()=>{
-    console.log("zoho items", JSON.parse(get_localstorage('zoho_items')))
-    console.log(category_of_session)
-if(category_ids != undefined)
-{
-    set_test(category_items[category_ids[booking_session_object["name"]]])
-    console.log("----------------------100")
-    console.log(category_items)
-    console.log(category_ids)
-}
-}, [category_ids, category_items])
+    if( numberOfPlayers && selectedCategory && allZohoItems && customItem){
+        set_options_for_apis()
+    }
+},[selectedOptions, numberOfPlayers, selectedCategory, promotrue, promoCode, allZohoItems, customItem])
 
-// delete anu holds on startup
+useEffect(()=>{
+    if(orderDetails){
+        setPaid(orderDetails?.total_money?.amount/100 ?? 0)
+    }
+},[orderDetails])
+
 useEffect(() => {
-    var shift_data = get_shift()
-    shift_data.then((x) => {
-        set_updated_shift(x);
-        
-      });
-    if(bookingsuccess)
+    const handleBooking = async () => {
+
+        if (bookingDetails?.type_of_players && !bookingSuccess) {
+            let result = await null
+
+            const times = promoCode?.duration || 1;
+            for(let i=0 ; i < times ; i++){
+            
+                let round = i
+                result = await create_booking({ sessionsDetails, bookingDetails, round });
+            }
+
+            if (result.error) {
+                let paymentData = paymentDetails
+                let zohoReceiptID = salesReceiptDetails?.id
+                delete_booking_error({paymentData, zohoReceiptID})
+                setAlert(true)
+                setAlertMessage(result.error)
+                
+            }
+            else{
+                setBookingSuccess(true);
+            }
+        }
+    };
+
+    handleBooking();
+}, [bookingDetails, sessionsDetails, promoCode, paymentDetails, salesReceiptDetails]);
+
+useEffect(()=>{
+    if(bookingSuccess && paymentDetails)
     {
-    delete_hold()
-}
-    console.log("shift in the booking page")
-    console.log(updated_shift)
-
-    let headers = {
-        'Content-Type': 'application/json'
+        setIsLoading(false)
     }
-    let token = get_jwt()
-    if(token){
-        headers['Authorization'] = `Bearer ${token}`
-    }
-    console.log("options_square_ids = ", options_square_ids)
-    // app_api_get('promo_code/').then((res)=>console.log(res))
-    fetch(APP_BASE_URL + 'promo_code/', {
-    'method': 'GET',
-    headers
-    })
-.then(response => response.json())
-.then(res => {
-    console.log("promocode")
-    console.log(res)
-    set_list_promocode(res)}
-)
+},[bookingSuccess, paymentDetails])
 
 
-get_sub_shift().then((x) => {
-    set_sub_shift(x)
-})
-
-// set the first choise in the session which is 1HR park or 1HR koids
-
-}, []);
-
-
-
-
-// set Dictionary of selected options key:value 
-function set_options_fun(e){ 
-
-    set_options(options => ({
-        ...options,
+// set Dictionary of selected selectedOptions key:value 
+function set_selected_options(e){ 
+    setSelectedOptions(selectedOptions => ({
+        ...selectedOptions,
         [e.target.name]: e.target.value.length === 0 ? 0 : e.target.value
     }));
 }
 
-// set Array of options for bookeo and square and zoho
-function set_arr_options_fun(){
-set_arr_options([])
-set_options_square_ids([])
-set_options_zoho_items([])
+// set Array of selectedOptions for bookeo and square and zoho
+function set_options_for_apis() {
+    let zohoItemsList = [];
+    let squareIdsList = [];
 
+    // add the custom Item to zoho ans square
+    if(customItem.base_price_money.amount > 0 && customItem.name !== ""){
+        squareIdsList.push(customItem)
+        zohoItemsList.push({
+            name: customItem.name,
+            quantity: 1,
+            rate: customItem.base_price_money.amount/1.14,
+            tax_id: "5118629000000088105"
+    })
+    }
 
-// Bookeo Options 
-console.log("--------------------options_zoho_items", options)
-// this array for bookeo
-for( let key in options)
-{
-    console.log("------172", key)
-    set_arr_options(arr_options => (
-        [
-            ...arr_options,{   
-    ["name"]: key,
-    ["value"]: options[key]
-    }]));    
-}
-
-// add the number of players in the zoho line items 
-    // in case there is no promocode or we have promocode for bookeo only
-    ((promocode && promocode.duration > 1))?set_options_zoho_items([]) 
-    :
-    set_options_zoho_items( 
-    [{
-        ["item_id"]: zoho_items[category_of_session][0],
-        ["quantity"]: (numbers[0]["number"]).toString(),
-        ["rate"]: (!promocode)?zoho_items[category_of_session][1]:(promocode && promocode.duration == 1 && promocode.square_pre > 0)?(zoho_items[category_of_session][1] - (zoho_items[category_of_session][1]  * Number(promocode.percentage)/100 )): zoho_items[category_of_session][1],
-        "tax_id": "5118629000000088105"
-    }] 
-)
-// add the options in zoho
-
-    for (const [key, value] of Object.entries(options)) {
-        
-        if(value !== 0)
-        {
-            set_options_zoho_items(options_zoho_items => (
-        [
-                    ...options_zoho_items,{   
-            ["quantity"]: (value).toString(),
-            ["item_id"]: zoho_items[key][0],
-            ["rate"]: (promocode && !promotrue && promocode.square_pre > 0)?(zoho_items[key][1] -(zoho_items[key][1] * Number(promocode.percentage)/100)): zoho_items[key][1],
-            "tax_id": "5118629000000088105",
-            
-        }] 
-        ))
+    // Add number of players to Zoho line items
+    const baseRate = allZohoItems[selectedCategory][1];
+    const discountedRate = promoCode && promoCode.duration === 1 && promoCode.square_pre > 0
+        ? baseRate - (baseRate * Number(promoCode.percentage) / 100)
+        : baseRate;
+    if (discountedRate > 0) {
+    zohoItemsList.push({
+        item_id: allZohoItems[selectedCategory][0],
+        quantity: numberOfPlayers,
+        rate: discountedRate,
+        tax_id: "5118629000000088105"
+    });
+    }
     
+
+    // Add selectedOptions to Zoho line items
+    for (const [key, value] of Object.entries(selectedOptions)) {
+        if (value !== 0) {
+            const baseRate = allZohoItems[key][1];
+            const discountedRate = (promoCode && !promotrue && promoCode.square_pre > 0)
+                ? baseRate - (baseRate * Number(promoCode.percentage) / 100)
+                : baseRate;
+
+            if (discountedRate > 0) {
+                zohoItemsList.push({
+                    quantity: value.toString(),
+                    item_id: allZohoItems[key][0],
+                    rate: discountedRate,
+                    tax_id: "5118629000000088105"
+                });
+            }
         }
     }
 
+    // Add number of players to Square selectedOptions
+    const baseSquareOption = {
+        quantity: String(numberOfPlayers),
+        catalog_object_id: allSquareItems[sessionsDetails[0].product.nick_name][selectedCategory]
+    };
 
-// square options
-// Add the number of players in square options
-if(promocode)
-{
-    // don't calculate the number of players in square
-    if(promocode.duration > 1)
-    {
-        console.log("promooooooooooooooo")
-        console.log(promocode.duration)
+    if (promoCode && promotrue) {
+        baseSquareOption.applied_discounts = [0];
     }
-    // calculare the number of players in square
-    else{
-        if(promotrue){
-            set_options_square_ids([Object.assign({}, {
-                ["quantity"]: (numbers[0]["number"]).toString(),
-                ["catalog_object_id"]: category_items[category_ids[booking_session_object["name"]]][category_of_session],
-            } , {"applied_discounts":[0]})])
+
+    squareIdsList.push(baseSquareOption);
+
+    // Add selectedOptions to Square selectedOptions
+    for (const [key, value] of Object.entries(selectedOptions)) {
+        if (value !== 0) {
+            squareIdsList.push({
+                quantity: value.toString(),
+                catalog_object_id:
+                    allSquareItems["Add On"][key] || allSquareItems[sessionsDetails[0].product.nick_name + "+"][key]
+            });
         }
-        else{
-            set_options_square_ids([{
-                ["quantity"]: (numbers[0]["number"]).toString(),
-                ["catalog_object_id"]: category_items[category_ids[booking_session_object["name"]]][category_of_session],
-            }    
-            ])
-        }
-        
-    }
-}
-else{
-// set the number of players in squaree
-set_options_square_ids([{
-    ["quantity"]: (numbers[0]["number"]).toString(),
-    ["catalog_object_id"]: category_items[category_ids[booking_session_object["name"]]][category_of_session],
-}])
-
-
-
-    
-}
-// add the options to square options
-for (const [key, value] of Object.entries(options)) {
-    if(value !== 0)
-    {
-        set_options_square_ids(options_square_ids => (
-            [
-                ...options_square_ids,{   
-        ["quantity"]: (value).toString(),
-        ["catalog_object_id"]: category_items[category_ids["Add On"]][key]?category_items[category_ids["Add On"]][key] : category_items[category_ids[ booking_session_object["name"]+"+"]][key]
-        
-    }]));
-
-    }
-}
-
-console.log("-------------------246", options_square_ids)
-console.log(options_zoho_items)
-}
-
-// get the number of players for bookeo
-function set_numbers_fun(e){
-    const value = Math.max(1, Math.min(10000000000000000000, Number(e.target.value)));
-    set_arr_options_fun()
-    set_numbers([{
-        "peopleCategoryId": booking_session_object.bookingLimits[1].peopleCategoryId,
-        "number": value
-    }])
-}
-
-
-function get_customer_data(e){
-    console.log(customer_data)
-    console.log(e)
-    console.log(typeof(customer_data))
-    console.log(customer_data.length)
-    if(customer_data.length === 0 )
-    {
-        app_api_get('bookeo/', {
-            "request_type": "get",
-            "url": `/customers`,
-            "payload":{
-                "itemsPerPage": 100,
-                "searchField": "firstName",
-                "searchText": e ,
-            },
-            })
-            .then(response1 => {
-            set_customer_data(response1.data)
-        })
-
-
     }
 
-}
-	
-function set_customer_fun(e){
-    console.log(e)
+    // Set state once
+    setSelectedZohoItems(zohoItemsList);
+    setSelectedSquareItems(squareIdsList);
 
-
-    if(e.split(" "))
-    {
-        let name=e.split(" ")
-        let firstName = name[0]
-        let lastName = name[1]
-        set_customer({"firstName": firstName,
-                        "lastName": lastName})
-    }
-
-
+    // Use useEffect to watch state if you want to log
+    // console.log("✅ Zoho Items:", zohoItemsList);
+    // console.log("✅ Square IDs:", squareIdsList);
 }
 
-
-
-    // send the Hold API for bookeo 
-function hold_api(){
-    console.log("-----------331")
-    console.log(options_zoho_items)
-    if(!bookingsuccess)
+async function hold_booking(){
+    setIsLoading(true)
+    let result = await get_total_price({ shiftDetails, promoCode, selectedSquareItems });
+    if(result.error)
     {
-    handleToggle()
-    
-    delete_hold()
-    if(numbers.number === "")
-    {
-    set_alert(true)
-    set_message("Invalid number of players")
+        setAlert(true)
+        setAlertMessage(result.error)
+        return;
     }
     else{
-        app_api_get('bookeo/', {
-            "request_type": "post",
-            "url": "/holds",
-            "payload": {
-                "eventId": event_id,
+        setOrderDetails(result)
+    }
+    
+    // check if the hold booking is already created
+    const result2 = await create_hold_booking({bookingDetails, session_id, numberOfPlayers })
+    if(result2.error){
+        setAlert(true)
+        setAlertMessage(result2.error)
+        return;
+    }
+    else{
+        set_localstorage('bookingId', result2.id)
+    }
+    setBookingDetails(result2)
+    setIsLoading(false)
+}
 
-                "participants": {
-                    "numbers": numbers,
-                },
-                "options":arr_options,
-                "promotionCodeInput": ((!promocode)?"": ((promocode.duration > 1)?"":promocode.code)),
-                
-                "productId": booking_session_object.productId                
-            }}
-            ).then(response => {
-               if(response.httpStatus){
-                set_alert(true)
-                set_message(response.message)
-               }
-               else{
-                set_totalprice(response.totalPayable.amount)
-                set_firstPaid(response.totalPayable.amount)
-                set_localstorage('hold_ids', response.id);
-                handleClose()
-               }
-
-            })
+// this function will be used to delete the booking if an error is occured
+async function delete_booking_error({paymentData, zohoReceiptID}){
+    
+    delete_booking_on_error({paymentData, shiftDetails, zohoReceiptID})
+    let bookingId = get_localstorage('bookingId')
+    if(bookingId)
+    {
+        delete_hold_booking({bookingId})
     }
 }
-}
 
-// function validate(){
-
-//  ();
-
-// hold_api()
-// }
-
-useEffect(()=>{
-    if(bookingsuccess){
-        handleClose()
-        set_alert(true)
+async function Book(){
+    setIsLoading(true)
+    let salesReceiptData = {}
+    
+    // create the payment in square
+    let result = await create_payment_api({shiftDetails, orderDetails, paymentMethod})
+    if (result.error) {
+        setAlert(true);
+        setAlertMessage(result.error)
+        return; 
     }
-},[bookingsuccess])
+    if (result.errors) {
+        setAlert(true);
+        setAlertMessage(`${result.errors[0].detail} - ${result.errors[0].field}`)
+        return; 
+    }
+    let paymentData = await result.payment
+    setPaymentDetails(paymentData)
 
+    // create sales receipt in zoho
+    if(selectedZohoItems && selectedZohoItems.length > 0){
+    
+    
+    let result2 = await create_sales_receipt({shiftDetails, orderDetails, paymentData, selectedZohoItems})
+    if (result2.code !== 0)
+    {
+        delete_booking_error({paymentData})
+        setAlert(true)
+        setAlertMessage(result2.message)
+        return;
+    }
+    salesReceiptData = await result2
+    console.log(salesReceiptData)
+    setSalesReceiptDetails(salesReceiptData)
+    }
+    const options = orderDetails.line_items
+    await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note})
 
+    // create the customer
+    let customerData = await create_customer({customerName})
+    if(customerData.error){
+        setAlert(true)
+        setAlertMessage(customerData.error || "error1")
+    }
+    
 
+    setBookingDetails(prev => ({
+        ...prev,
+        booking_customer: customerData.id,
+        options: orderDetails.line_items,
+        payment: {
+            amount: paid,
+            method: (paymentData.source_type === 'CASH')? 'cash' : 'creditcard',
+            promoCode: promoCode?.name ,
+            percentage: promoCode?.percentage
+        },
+        number_of_players: numberOfPlayers,
+        type_of_players: selectedCategory,
+        creation_agent: shiftDetails.user.username,
+        created_at: orderDetails.created_at,
+        square_receipt_number: paymentData.receipt_number,
+        square_payment_id: paymentData.id,
+        square_order_id: orderDetails.id,
+        zoho_sales_receipt_id: (salesReceiptData)?salesReceiptData?.sales_receipt_details?.sales_receipt_id : null,
+        zoho_sales_receipt_num: (salesReceiptData)?salesReceiptData?.sales_receipt_details?.receipt_number : null,
+        note: (note)?note: null,
+        status: "done"
+        }));
 
-const hi = window.innerHeight - 150
-
-
-function setnote(event){
- set_note( event.target.value)
 }
 
-
-  
-  
-function set_category_of_session_fun(e){ 
-    console.log("categoty of the session")
-    console.log(test)
-    console.log(e.target.value)
-    set_category_of_session(e.target.value)
-}
-
-
-
-// base_price_money
 
 
 return (
-<div>
-{updated_shift &&
-    <Grid container spacing={2} className="mt-0 w-100 d-flex flex-row justify-content-center" >
-            
+    <div>
+        {shiftDetails && sessionsDetails[0] && allCustomers &&
         
-           
-            <Backdropfun open={open}/>
-            <ResponsiveDialog 
-            options_square_items = {options_square_items} options_zoho_items ={options_zoho_items}
-            square_receipt_number={square_receipt_number} updated_shift={updated_shift} square_totalprice={square_totalprice}
-            firstPaid = {firstPaid} firstPaid_method ={firstPaid_method}
-            bookingsuccess={bookingsuccess} alert={alert} message={message} handleCloseAlert={handleCloseAlert}  
-            promocode={promocode} set_payment_ids={set_payment_ids} set_square_order_id={set_square_order_id} set_create_order_flag={set_create_order_flag}
-            alert_threshold_amount = {alert_threshold_amount}
-            />
-            <Fragment >
-                <h1 spacing={2} >{booking_session_object.name}</h1>
-                <Card className=" w-100 d-flex flex-row justify-content-center border-0 mt-0">
-                    {/* column: Name, number of players, payment, total price button, Back Button */}
-                    <Card className="w-50 max-vw-25 d-flex flex-column m-2 mt-0 border-0">      
-                        <Card className="w-auto  d-flex flex-row justify-content-center border-0 p-2">
-                                <Autocomplete
+            <Grid container spacing={2} className="mt-0 w-100 d-flex flex-row justify-content-center" >
+                <LoadingFun open={isLoading} />
+                <AlertFun set_open_alert={setAlert} open_alert={alert} message={alertMessage} setLoading={(setIsLoading)} />
+                {bookingSuccess &&  <InvoicePrint style={{ padding: "2px 6px", minWidth: "auto" }} shift={
+                    {square_receipt_number: paymentDetails.receipt_number,
+                        branch_name: shiftDetails.branch_name,
+                        location_name: shiftDetails.location_name,
+                        city: shiftDetails.city,
+                        total_price: paymentDetails.total_money.amount / 100,
+                        first_paid: paymentDetails.total_money.amount / 100,
+                        first_paid_method: (paymentDetails.source_type === 'CASH')?"cash":"creditcard",
+                        options: orderDetails.line_items,
+                        discount: promoCode?.name,
+                        dateTime: orderDetails.created_at
+                        // alert_threshold_amount : data.alert_threshold_amount
+                    }
+                } note={note} setNote={setNote}/>}
+                {!bookingSuccess && 
+                    <Fragment >
+                        <h1 spacing={2} >{sessionsDetails[0].product.nick_name}</h1>
+                        <Card className=" w-100 d-flex flex-row justify-content-center border-0 mt-0">
+                            <Card className="w-50 max-vw-25 d-flex flex-column m-2 mt-0 border-0">      
+                                {/* this is the name and the numbers field */}
+                                <Card className="w-auto  d-flex flex-row justify-content-center border-0 p-2">
+                                    <Autocomplete
                                     disablePortal
                                     freeSolo
                                     id="combo-box-demo"
-                                    options={customer_data.map((customer)=>   customer.firstName +" " + customer.lastName )}
-                                    className="form-control d-flex flex-column justify-content-start w-75 border-0 m-0 p-0"
+                                    options={allCustomers.map((customer) => customer.identifier || '')} // Ensure no undefined
+                                    value={customerName || ''} // Default to empty string
+                                    onInputChange={(event, newInputValue) => setCustomerName(newInputValue)}
+                                    renderInput={(params) => <TextField {...params} label="Customer Name" />}
                                     sx={{ width: 300 }}
-                                    onInputChange={(event, newValue) => {
-                                    // search customer on the first name
-                                        set_customer_fun(newValue)
-                                        get_customer_data(newValue)
-                                        
-                                    }}
-                                    renderInput={(params) => <TextField {...params} label="Customer Name" 
-                                    />}
-                                />
-                            
+                                    className="form-control d-flex flex-column justify-content-start w-75 border-0 m-0 p-0"
+                                    />
+                                    <Input className='form-control d-flex flex-column justify-content-end w-25' value={numberOfPlayers} inputProps={{ min: 1 , max: sessionsDetails[0].available_seats }} onChange={(e) => {setNumberOfPlayers(Number(e.target.value))}} type="number"  name="number of players" label ="number of players"  step="1" />   
+                                    <FormControlLabel 
+                                        control={<Checkbox checked={promotrue} onChange={((e)=>{
+                                        set_promotrue(!promotrue)
+                                        })} />}
+                                    />
+                                </Card>
 
-
-                            <Input className='form-control d-flex flex-column justify-content-end w-25' defaultValue={1} inputProps={{ min: 1 , max: booking_session_object.bookingLimits[0].max }} onChange={set_numbers_fun} type="number"  name="number of players" label ="number of players"  step="1" />   
-                            <FormControlLabel 
-                            control={<Checkbox checked={promotrue} onChange={((e)=>set_promotrue(!promotrue))} />}
-                            />
-
-
-                        </Card>
-
-                        
-
- 
-{/* we will read the categoty from sqaure using session_name like park category */}
-                        <RadioGroup
-                                row
-                                aria-labelledby="demo-row-radio-buttons-group-label"
-                                name="row-radio-buttons-group"
-                                value={category_of_session}
-                                onChange={(e) => {
-                                    set_category_of_session_fun(e)}
-                                }
-                                
-                            >
-                        { Object.entries(test).map(([key, val])=>(
-                        //Row For Each option
-                        
-                        // <FormControlLabel checked={((key=="1HR Park")?true:false)} label={key} value={val}  control={<Radio />} className="w-20 m-0 p-0" />
-                        <FormControlLabel key={key} label={key} value={key}  control={<Radio />} className="w-20 m-0 p-0" />
-                        
-                        ))} 
-                        </RadioGroup>
-
-
-                        <Autocomplete
-                            disablePortal
-                            freeSolo
-                            id="Promo Code"
-                            options={list_promocode.map((promo_code)=>  promo_code.code )}
-                            className="border-0 w-100 p-2"
-                            sx={{ width: 3 }}
-                            onInputChange={(event, newValue) => {
-                                let promo_code = list_promocode.find((promo_code)=> promo_code.code === newValue)
-                                
-                                
-                                if(promo_code){
-                                    console.log(promo_code)
-                                    set_promocode(promo_code)
-                                }
-                                else{
-                                    set_promocode()
-                                }
-                            }}
-                            renderInput={(params) => <TextField {...params} label="Promo Code" />}
-                            />
-
-                        <FormControl className="p-2">
-                            <TextField
-                                required
-                                id="First Paid"
-                                label= "First Paid"
-                                onChange= {set_firstPaid_fun}
-                                className="from-control border-0 w-100 "
-                                value={parseInt(firstPaid)}
-                                defaultValue={parseInt(totalprice)}
-                                
-                            />
-                            <RadioGroup
+                                {/* we will read the categoty from sqaure using session_name like park category */}
+                                <RadioGroup
                                     row
                                     aria-labelledby="demo-row-radio-buttons-group-label"
                                     name="row-radio-buttons-group"
+                                    value={selectedCategory}
                                     onChange={(e) => {
-                                        console.log(e.target.value)
-                                        set_firstPaid_method(e.target.value)}}
-                                    defaultValue="cash"
-                                >
-                                <FormControlLabel value="cash" control={<Radio />} label="Cash" className="w-50" />
-                                <FormControlLabel value="creditcard" control={<Radio />} label="Credit" />
-                            </RadioGroup>
-                        </FormControl>
+                                        
+                                        setSelectedCategory(e.target.value);
+                                    }}
+                                    >
+                                    {Object.entries(allSquareItems[sessionsDetails[0].product.nick_name]).map(([key, val]) => (
+                                        <FormControlLabel
+                                        key={key}
+                                        label={key}
+                                        value={key} // Use the key to track selected item
+                                        control={<Radio />}
+                                        className="w-20 m-0 p-0"
+                                        />
+                                    ))}
+                                </RadioGroup>
 
+                                <Autocomplete
+                                    disablePortal
+                                    freeSolo
+                                    id="Promo Code"
+                                    options={allPromoCodes.map((promo_code)=>  promo_code.code )}
+                                    className="border-0 w-100 p-2"
+                                    sx={{ width: 3 }}
+                                    onInputChange={(event, newValue) => {
+                                        let promo_code = allPromoCodes.find((promo_code)=> promo_code.code === newValue)                                
+                                        if(promo_code){
+                                            setSelectedPromoCode(promo_code)
+                                        }
+                                        else{
+                                            setSelectedPromoCode()
+                                        }
+                                    }}
+                                    renderInput={(params) => <TextField {...params} label="Promo Code" />}
+                                />
 
+                                <FormControl className="p-2">
+                                    <TextField
+                                        required
+                                        id="Paid"
+                                        label= "Paid"
+                                        onChange= {(e) => {
+                                            const value = Math.max(0, Math.min(10000000000, Number(e.target.value)));
+                                            setPaid(value);
+                                        }}
+                                        className="from-control border-0 w-100 "
+                                        value={parseInt(paid)}
+                                        
+                                    />
+                                    <RadioGroup
+                                            row
+                                            aria-labelledby="demo-row-radio-buttons-group-label"
+                                            name="row-radio-buttons-group"
+                                            onChange={(e) => {
+                                                setPaymentMethod(e.target.value)}}
+                                            defaultValue="cash"
+                                        >
+                                        <FormControlLabel value="cash" control={<Radio />} label="Cash" className="w-50" />
+                                        <FormControlLabel value="creditcard" control={<Radio />} label="Credit" />
+                                    </RadioGroup>
+                                </FormControl>
+                                <div className="d-flex flex-row p-2">
+                                <TextField
+                                        required
+                                        id="Custom Field Name"
+                                        label= "Custom Field Name"
+                                        onChange= {(e) => {
+                                            setCustomItem(prev => ({
+                                            ...prev,
+                                            name:e.target.value}))
+                                        }}
+                                        className="from-control border-0 w-100 "
+                                        value={customItem.name}
+                                        
+                                    />
+                                <TextField
+                                        required
+                                        id="Custom Field Price"
+                                        label= "Custom Field Price"
+                                        onChange= {(e) => {
+                                            setCustomItem(prev => ({
+                                            ...prev,
+                                            base_price_money:{
+                                                "amount": e.target.value*100,
+                                                "currency": "EGP"
+                                            }}))
+                                        }}
+                                        className="from-control border-0 w-100 "
+                                        value={customItem.base_price_money.amount/100}
+                                        
+                                    />
+                                </div>
+                                <Card className="w-auto  d-flex flex-row justify-content-center border-0 p-1" >
+                                    <Button   onClick={() => {hold_booking()}} variant="outlined" className="w-50">Total Price</Button>
+                                    <Button onClick={Book} variant="outlined"  className="w-50">Book</Button>                        
+                                </Card>
+                            </Card>
 
-            
-                        <Card className="w-auto  d-flex flex-row justify-content-center border-0 p-1" >
-                            <Button onClick={hold_api} variant="outlined" className="w-50">Total Price</Button>
-                            <BookingAPI set_bookingsuccess={set_bookingsuccess} bookingsuccess={bookingsuccess} options={options}
-        set_options={set_options} numbers={numbers} category_of_session={category_of_session} promocode={promocode}
-        updated_shift={updated_shift} square_receipt_number={square_receipt_number} set_square_receipt_number={set_square_receipt_number}
-        promotrue={promotrue} set_arr_options_fun={set_arr_options_fun} firstPaid={firstPaid} firstPaid_method={firstPaid_method}
-        options_square_ids={options_square_ids} set_square_totalprice={set_square_totalprice} set_options_square_items={set_options_square_items} set_alert={set_alert}
-        set_message={set_message} handleClose={handleClose} customer={customer} totalprice={totalprice} options_square_items={options_square_items} options_zoho_items = {options_zoho_items}
-        event_id={event_id} arr_options={arr_options} note={note} category_items={category_items} category_ids={category_ids} 
-        handleToggle={handleToggle} set_customer={set_customer}  square_order_id={square_order_id}
-        set_square_order_id={set_square_order_id} payment_ids={payment_ids} set_payment_ids={set_payment_ids} set_booking_bookeo={set_booking_bookeo}
-        booking_bookeo={booking_bookeo} create_order_flag={create_order_flag} current_eventid = {event_id} sub_shift = {sub_shift} set_alert_threshold_amount = {set_alert_threshold_amount}
-        alert_threshold_amount = {alert_threshold_amount} set_options_zoho_items = {set_options_zoho_items}
-        />
+                            {/* Options */}
+                            <Card className="w-50 max-vw-25 d-flex flex-column m-1 mt-0 border-0">
+
+                                { [ ...Object.entries(allSquareItems["Add On"] || {}),
+                                    ...Object.entries(allSquareItems[sessionsDetails[0].product.nick_name + "+"] || {})
+                                    ].map(([key, value])=>(
+                                    //Row For Each option
+                                    <Card className="w-auto  d-flex flex-row justify-content-center border-0 p-2" key={value}>
+                                        {/* Labels */}
+                                        <h1 className="form-control d-flex flex-column justify-content-start w-50 mt-2 border-0" key={value}>
+                                        {key}
+                                        </h1>
+                                        {/* number for each option */}
+                                        <Input className='form-control d-flex flex-column justify-content-start w-25 ' inputProps={{ min: 0, max: sessionsDetails[0].available_seats }} onChange={(e) => {set_selected_options(e)}} type="number"  name={key} id={value}  step="1" />
+                                        
+                                    </Card>
                         
-                        </Card>
-                    </Card>
-
-                    {/* Options */}
-                    <Card className="w-50 max-vw-25 d-flex flex-column m-1 mt-0 border-0">
-
-                        { booking_session_object.numberOptions.map((item)=>(
-                        //Row For Each option
-                        <Card className="w-auto  d-flex flex-row justify-content-center border-0 p-2" key={item.name}>
-                            {/* Labels */}
-                            <h1 className="form-control d-flex flex-column justify-content-start w-50 mt-2 border-0" key={item.name}>
-                            {item.name}
-                            </h1>
-                            {/* number for each option */}
-                            {    item.maxValue === 1
-                                    ? <Input className='form-control d-flex flex-column justify-content-start w-25 ' inputProps={{ min: item.minValue, max: item.maxValue }} onChange={(e) => {set_options_fun(e)}} type="checkbox"  name={item.name} id={item.id} label ={item.name} />
-                                    : <Input default={0} className='form-control d-flex flex-column justify-content-start w-25 ' inputProps={{ min: 0, max: item.maxValue }} onChange={(e) => {set_options_fun(e)}} type="number"  name={item.name} id={item.id}  step="1" />
-                            }   
-                        </Card>
-                
-                        ))} 
-                        <TextField
-                        id="outlined-multiline-flexible"
-                        label="Notes"
-                        multiline
-                        maxRows={4}
-                        // value={value}
-                        className = "from-control border-0 w-100 p-2"
-                        onChange={setnote}
-                        />
-<Card className="w-auto  d-flex flex-row justify-content-center border-0 p-2">
-
-                    {isloading && (
-                            <CircularProgress
-                                size={68}
-                            
-                            />
-                            )}
-                        <h4>{totalprice}</h4>
-                        </Card>
+                                ))} 
+                                <TextField
+                                    id="outlined-multiline-flexible"
+                                    label="Notes"
+                                    multiline
+                                    maxRows={4}
+                                    className = "from-control border-0 w-100 p-2"
+                                    onChange={(e) => {
+                                        setNote( e.target.value)
+                                    }}
+                                />
+                                <Card className="w-auto  d-flex flex-row justify-content-center border-0 p-2">
 
 
-                    </Card>
-                </Card>    
-							
-            </Fragment>
-    </Grid>
+                                    <h4>{(orderDetails)?orderDetails.total_money.amount/100 : 0}</h4>
+                                </Card>
 
-}
-        </div>)
+
+                            </Card>
+                        </Card>                    
+                    </Fragment>
+                }
+            </Grid>
+
+        }
+    </div>)
 
 }
