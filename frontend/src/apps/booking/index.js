@@ -367,8 +367,12 @@ return (
                                     freeSolo
                                     id="combo-box-demo"
                                     options={allCustomers.map((customer) => customer.identifier || '')} // Ensure no undefined
-                                    value={customerName || ''} // Default to empty string
-                                    onInputChange={(event, newInputValue) => setCustomerName(newInputValue)}
+                                    value={customerName} // Default to empty string
+                                    onInputChange={(event, newInputValue) => {
+                                    if (newInputValue && newInputValue.trim() !== '') {
+                                        setCustomerName(newInputValue);
+                                    }
+                                    }}                                    
                                     renderInput={(params) => <TextField {...params} label="Customer Name" />}
                                     sx={{ width: 300 }}
                                     className="form-control d-flex flex-column justify-content-start w-75 border-0 m-0 p-0"
