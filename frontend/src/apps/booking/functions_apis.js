@@ -16,7 +16,7 @@ async function get_all_customers(){
 }
 
 async function delete_booking_on_error({paymentData, shiftDetails, zohoReceiptID}){
-    await app_api_get('square/', {
+    if(paymentData?.id){await app_api_get('square/', {
         "request_type": "post",
         "url": `/refunds`,
         "payload": {
@@ -28,11 +28,13 @@ async function delete_booking_on_error({paymentData, shiftDetails, zohoReceiptID
                 "amount": paymentData.total_money.amount,
         } 
     }}
-    )
+    )}
+
+    if(zohoReceiptID){
     await app_api_get('zoho/', {
         "request_type": "delete",
         "url": `/salesreceipts/${zohoReceiptID}`,
         "payload":{},
-    })
+    })}
 }   
 export { get_promo_codes, get_session_details, get_all_customers, delete_booking_on_error };

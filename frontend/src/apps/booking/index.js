@@ -282,8 +282,6 @@ async function Book(){
 
     // create sales receipt in zoho
     if(selectedZohoItems && selectedZohoItems.length > 0){
-    
-    
     let result2 = await create_sales_receipt({shiftDetails, orderDetails, paymentData, selectedZohoItems})
     if (result2.code !== 0)
     {
@@ -293,9 +291,10 @@ async function Book(){
         return;
     }
     salesReceiptData = await result2
-    console.log(salesReceiptData)
     setSalesReceiptDetails(salesReceiptData)
     }
+
+    // update inventory
     const options = orderDetails.line_items
     await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note})
 
@@ -304,6 +303,7 @@ async function Book(){
     if(customerData.error){
         setAlert(true)
         setAlertMessage(customerData.error || "error1")
+        return;
     }
     
 
@@ -428,16 +428,14 @@ return (
 
                                 <FormControl className="p-2">
                                     <TextField
-                                        required
-                                        id="Paid"
-                                        label= "Paid"
-                                        onChange= {(e) => {
-                                            const value = Math.max(0, Math.min(10000000000, Number(e.target.value)));
-                                            setPaid(value);
-                                        }}
-                                        className="from-control border-0 w-100 "
-                                        value={parseInt(paid)}
-                                        
+                                    required
+                                    id="Paid"
+                                    label="Paid, this field is read only, should be updaed from total price button"
+                                    className="form-control border-0 w-100"
+                                    value={parseInt(paid)}
+                                    InputProps={{
+                                        readOnly: true,
+                                    }}
                                     />
                                     <RadioGroup
                                             row
