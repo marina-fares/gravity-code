@@ -174,7 +174,7 @@ function set_options_for_apis() {
 
     // Add selectedOptions to Zoho line items
     for (const [key, value] of Object.entries(selectedOptions)) {
-        if (value !== 0) {
+        if (value != "0") {
             const baseRate = allZohoItems[key][1];
             const discountedRate = (promoCode && !promotrue && promoCode.square_pre > 0)
                 ? baseRate - (baseRate * Number(promoCode.percentage) / 100)
@@ -205,7 +205,7 @@ function set_options_for_apis() {
 
     // Add selectedOptions to Square selectedOptions
     for (const [key, value] of Object.entries(selectedOptions)) {
-        if (value !== 0) {
+        if (value !== "0") {
             squareIdsList.push({
                 quantity: value.toString(),
                 catalog_object_id:

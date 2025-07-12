@@ -85,7 +85,7 @@ export default function Options() {
 
 
 	useEffect(()=>{
-		if(((squareLineItems.length === Object.keys(options).length) || squareLineItems.length === Object.keys(options).length+1) && !bookingsuccess && squareLineItems.length !== 0 && (zohoItems.length === Object.keys(options).length || zohoItems.length === Object.keys(options).length+1) ) 
+		if(((squareLineItems.length === Object.keys(options).length) || squareLineItems.length === Object.keys(options).length+1) && !bookingsuccess && squareLineItems.length !== 0 ) 
 		{
 			create_order_api()
 		}
@@ -281,6 +281,7 @@ export default function Options() {
 			["catalog_object_id"]: shiftDetails.inventory[key].id
 			}]));
 
+			if(value[0] !== 0){
 			setZohoItems(zohoItems => (
 				[
 							...zohoItems,{   
@@ -292,6 +293,7 @@ export default function Options() {
 				}]
 			
 			))
+			}
 			}
 
 		if(customItem.base_price_money.amount > 0 && customItem.name !== ""){
