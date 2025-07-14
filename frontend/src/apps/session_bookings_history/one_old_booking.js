@@ -185,8 +185,9 @@ return (
                             first_paid_method: bookingDetails.payment.method,
                             options: bookingDetails?.options?? null,
                             dateTime: bookingDetails.created_at,
-                            discount: (bookingDetails.payment)?bookingDetails.payment.promoCode:null
+                            discount: (bookingDetails.payment)?bookingDetails.payment.promoCode:null,
                             // promocode: data.promocode
+                            creation_agent: bookingDetails.creation_agent
                 }} note={note} set_note={setNote}/>
             </div>
             <div className='col-8 border-0 '>

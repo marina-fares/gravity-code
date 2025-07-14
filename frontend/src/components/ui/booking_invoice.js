@@ -56,7 +56,7 @@ const today = new Date(shift?.dateTime || '')
 		
 				<PaperRow key={`${shift.location_name} - ${today.toLocaleString('default', { month: 'long' })}`  } right={`${shift.location_name}`} left={`${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`} />
 				<PaperRow key={shift.city} right={`${shift.city}`} left={`${today.getHours() % 12 || 12}:${today.getMinutes()} ${(today.getHours()>= 12)? 'PM' : 'AM'}`} />
-				<PaperRow key={'user'} right={`User`} left={get_user_and_jwt().user.username} />
+				<PaperRow key={'user'} right={`User`} left={shift.creation_agent} />
 
 				<hr style={{ margin: '10px' }} />
 				<PaperRow key={shift.square_receipt_number} right={ ` Receipt: ${shift.square_receipt_number}`} />
