@@ -377,7 +377,8 @@ export default function Options() {
 				options: order.line_items,
 				dateTime: order.created_at,
 				discount: (order.discounts)?order.discounts[0].percentage:null,
-				bookingsuccess: bookingsuccess
+				bookingsuccess: bookingsuccess,
+				creation_agent: shiftDetails.user.username
 			}} note={val} set_note={set_val}/>
 				<Button onClick={() => navigate('/')}> Close </Button>
 			</div>

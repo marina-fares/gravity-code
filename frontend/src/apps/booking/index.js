@@ -351,7 +351,8 @@ return (
                         first_paid_method: (paymentDetails.source_type === 'CASH')?"cash":"creditcard",
                         options: orderDetails.line_items,
                         discount: promoCode?.name,
-                        dateTime: orderDetails.created_at
+                        dateTime: orderDetails.created_at,
+                        creation_agent: shiftDetails.user.username
                         // alert_threshold_amount : data.alert_threshold_amount
                     }
                 } note={note} setNote={setNote}/>}
