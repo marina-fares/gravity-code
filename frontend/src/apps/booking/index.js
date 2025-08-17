@@ -266,18 +266,18 @@ async function Book(){
     let salesReceiptData = {}
     
     // create the payment in square
-    let result = await create_payment_api({shiftDetails, orderDetails, paymentMethod})
-    if (result.error) {
+    let create_payment_api_result = await create_payment_api({shiftDetails, orderDetails, paymentMethod})
+    if (create_payment_api_result.error) {
         setAlert(true);
-        setAlertMessage(result.error)
+        setAlertMessage(create_payment_api_result.error)
         return; 
     }
-    if (result.errors) {
+    if (create_payment_api_result.errors) {
         setAlert(true);
-        setAlertMessage(`${result.errors[0].detail} - ${result.errors[0].field}`)
+        setAlertMessage(`${create_payment_api_result.errors[0].detail} - ${create_payment_api_result.errors[0].field}`)
         return; 
     }
-    let paymentData = await result.payment
+    let paymentData = await create_payment_api_result.payment
     setPaymentDetails(paymentData)
 
     // create sales receipt in zoho
@@ -287,7 +287,7 @@ async function Book(){
     {
         delete_booking_error({paymentData})
         setAlert(true)
-        setAlertMessage(result2.message)
+        setAlertMessage("This error from zoho: "+result2.message)
         return;
     }
     salesReceiptData = await result2

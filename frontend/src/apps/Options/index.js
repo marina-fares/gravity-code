@@ -15,31 +15,21 @@ import { app_post } from '../../components/logic/app';
 
 export default function Options() {
 	const navigate = useNavigate()
-	const [loadingFlag, setLoadingFlag] = React.useState(false);
+	const [isLoading, setIsLoading] = React.useState(false);
 	const [currentGroup, setCurrentGroup] = useState();
 		
 	let [shiftDetails, setShiftDetails] = useState(null);
 	let [subShiftDetails, setSubShiftDetails] = useState(null);
 	let [options, setOptions] = useState({});
     let [firstPaid, setFirstPaid] = useState(0);
-    let [firstPaidMethod, setFirstPaidMethod] = useState('cash');
+    let [paymentMethod, setPaymentMethod] = useState('cash');
     let [alert, setAlert] = useState(false)
-    let [message, setMessage] = useState(true)
+    let [alertMessage, setAlertMessage] = useState(true)
     let [totalPrice, setTotalPrice] = useState(0)
     let [squareLineItems, setSquareLineItems] = useState([])
 	let [bookingsuccess, set_bookingsuccess] = useState(false);
 	let [zohoItems, setZohoItems] = useState();
 	let [zohoAllItems, ] = useState(JSON.parse(get_localstorage('zohoItems')))
-    let [payment_for_square_api] = useState(
-        {
-            "amount_money": {
-            "amount": 0,
-            "currency": "EGP"
-            },
-        
-            "source_id": "",
-            }
-    )
 	let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
 	let [zoho_sales_receipt_number, set_zoho_sales_receipt_number] = useState()
 	let [order, setOrder] = useState()
@@ -71,36 +61,14 @@ export default function Options() {
 	},[])
 
 	useEffect(()=>{
-		if(payment && !bookingsuccess )
-		{
-			if(firstPaidMethod === "cash")
-			{
-				pay_order_api()
-			}
-			else{
-				update_inventory()
-			}
-		}
-	},[payment])
-
-
-	useEffect(()=>{
 		if(((squareLineItems.length === Object.keys(options).length) || squareLineItems.length === Object.keys(options).length+1) && !bookingsuccess && squareLineItems.length !== 0 ) 
 		{
 			create_order_api()
 		}
-		
 	},[squareLineItems, zohoItems])
 
-	useEffect(() => {
-
-		if(zoho_sales_receipt_id){
-			create_payment_api()
-		}
-	},[zoho_sales_receipt_id])
-
 	function create_order_api(){
-		setLoadingFlag(true)
+		setIsLoading(true)
 		app_api_get('square/', {
 			"request_type": "post",
 			"url": "/orders",
@@ -112,7 +80,7 @@ export default function Options() {
 					"customer_id": shiftDetails.customer_id
 				}
 		}}).then((response) => {
-			setLoadingFlag(false)
+			setIsLoading(false)
 			if(response.order)
 			{
 
@@ -123,68 +91,61 @@ export default function Options() {
 			}
 			else{
 				setAlert(true)
-				setMessage(response.errors[0].detail)
+				setAlertMessage(response.errors[0].detail)
 			}
 			})
 	}
-			// send the Book API for bookeo and square
-	function create_payment_api(){
-		app_api_get('square/', {
-			"request_type": "post",
-			"url": "/payments",
-			"payload": {...payment_for_square_api, 
-				"order_id": order.id,
-				"location_id": shiftDetails.square_location_id,
-				"note": `Booking owner: ${get_user_and_jwt().user.username} + ZohoId: ${zoho_sales_receipt_id}`,
-				"source_id" : (firstPaidMethod === "cash")?"CASH": "EXTERNAL", 
-				"amount" : firstPaid ,
-				"amount_money": {
-					"amount": firstPaid,
-					"currency": "EGP"
-					},
-					"autocomplete": (firstPaidMethod === "cash")?false: true, 
-					"team_member_id": shiftDetails.square_team_member_id,
-					"customer_id": shiftDetails.customer_id
-			}
-		}).then(response => {
-			setLoadingFlag(false)
-			if(response.payment){
-				setPayment(response.payment)
-				}
-			else{
-				setAlert(true)
-				setMessage(response.errors[0].detail)
-			}
-
-			})
-		//  add the credit payment, the second payment
-		
-	}
-		
-		
-	function pay_order_api(){
-	setLoadingFlag(true)
-	app_api_get('square/', {
-		"request_type": "post",
-		"url": `/orders/${order.id}/pay`,
-		"payload": {
-			"payment_ids": [payment.id]
-	} }
-	).then(response => {
-		if(response.order){
-			update_inventory()
-			
-			}
-		else{
-			setAlert(true)
-			setMessage(response.errors[0].detail)
+	
+	// send the Book API for bookeo and square
+	async function create_payment_api(){
+		let data = {
+			"order_id": order.id,
+			"location_id": shiftDetails.square_location_id,
+			"note": `Booking owner: ${get_user_and_jwt().user.username} + ZohoId: ${zoho_sales_receipt_id}`,
+			"source_id" : (paymentMethod === "cash")?"CASH": "EXTERNAL", 
+			"amount" : firstPaid ,
+			"amount_money": {
+				"amount": firstPaid,
+				"currency": "EGP"
+				},
+				"team_member_id": shiftDetails.square_team_member_id,
+				"customer_id": shiftDetails.customer_id
 		}
+		if (paymentMethod === 'cash') {
+            data.cash_details = {
+            buyer_supplied_money: {
+                amount: order.total_money.amount,
+                currency: "EGP"
+            }
+            };
+        }else{
+            data.autocomplete = true
+        }
+
+		const response = await app_api_get('square/', {
+		"request_type": "post",
+		"url": "/payments",
+		"payload": data
+		})
+
+		if(response.payment){
+			setPayment(response.payment)
+			return response.payment
+		}
+		else if (response.error){
+        setAlert(true);
+        setAlertMessage(response.error)
+        return; 
+    }
+    else if (response.errors) {
+        setAlert(true);
+        setAlertMessage(`${response.errors[0].detail} - ${response.errors[0].field}`)
+        return; 
+    }
 		
-		
-			})
 	}
 
-	async function update_inventory(){
+	async function update_inventory(payment_result){
 		let updatedShiftData = await shiftDetails
 		let updatedSubShiftData = await subShiftDetails
 		await order.line_items.forEach(item => {
@@ -193,28 +154,28 @@ export default function Options() {
 			}
 		})
 
-		if(firstPaidMethod === 'cash')
+		if(paymentMethod === 'cash')
 			{
 				updatedShiftData.shift_money_cash += await parseInt(firstPaid)/100
 				updatedSubShiftData.shift_money_cash += await parseInt(firstPaid)/100
 			}
-			else if(firstPaidMethod === 'creditcard')
+			else if(paymentMethod === 'creditcard')
 			{
 				updatedShiftData.shift_money_visa += await parseInt(firstPaid)/100
 				updatedSubShiftData.shift_money_visa += await parseInt(firstPaid)/100
 			}
 		
 			let old_options = await (updatedShiftData.options2)? updatedShiftData.options2 : []
-			let new_options = await [{[payment.receipt_number]: order.id}]
+			let new_options = await [{[payment_result.receipt_number]: order.id}]
 			updatedShiftData.options2 = await [...old_options, ...new_options]
 
 			
 
 		await set_shift(updatedShiftData)
 		await set_sub_shift(updatedSubShiftData)
-		await create_booking_in_backend()
+		await create_booking_in_backend(payment_result)
 		set_bookingsuccess(true)
-		setLoadingFlag(false)
+		setIsLoading(false)
 	}
 
 	function create_sales_receipt(){
@@ -227,7 +188,7 @@ export default function Options() {
 					"customer_name": "Options Page",
 					"date": today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0'),
 				"line_items": zohoItems,
-				"payment_mode":firstPaidMethod ,
+				"payment_mode":paymentMethod ,
 				"custom_fields": [{
 				"label": "Product",
 						"value": "Park"
@@ -262,11 +223,6 @@ export default function Options() {
 			else{
 				set_zoho_sales_receipt_id(true)
 			}
-			// else{
-			// 	setAlert(true)
-			// 	setMessage(response.message)
-			// }
-
 		})
 	}
 
@@ -309,20 +265,20 @@ export default function Options() {
 		}
 	}
 
-	async function create_booking_in_backend(){
+	async function create_booking_in_backend(payment_result){
 		let data = {
 		options: order.line_items,
         payment: {
-            amount: payment.amount_money.amount/100,
-            method: (payment.source_type === 'CASH')? 'cash' : 'creditcard',
+            amount: payment_result.amount_money.amount/100,
+            method: (payment_result.source_type === 'CASH')? 'cash' : 'creditcard',
             promoCode: "" ,
             percentage: ""
         },
         number_of_players: 0,
         creation_agent: shiftDetails.user.username,
         created_at: order.created_at,
-        square_receipt_number: payment.receipt_number,
-        square_payment_id: payment.id,
+        square_receipt_number: payment_result.receipt_number,
+        square_payment_id: payment_result.id,
         square_order_id: order.id,
         zoho_sales_receipt_id: zoho_sales_receipt_id,
         zoho_sales_receipt_num: zoho_sales_receipt_number,
@@ -335,9 +291,12 @@ export default function Options() {
 		const value = Math.max(0, Math.min(10000000000, Number(e.target.value)));
 		setFirstPaid(value);
 	};
-	function compelete_order(){
-		setLoadingFlag(true)
-		create_sales_receipt()	
+
+	async function compelete_order(){
+		setIsLoading(true)
+		await create_sales_receipt()	
+		let payment_result  = await create_payment_api()
+		await update_inventory(payment_result)
 	}
 
 	const handleAddInput = (key) => {
@@ -362,9 +321,8 @@ export default function Options() {
 		(shiftDetails && shiftDetails.current_shift_id )? 
 
 		<Grid container spacing={2} className="p-4 justify-content-center">
-			<LoadingFun open={loadingFlag} />
-			<AlertFun loadingFlag_alert={alert} set_loadingFlag_alert={setAlert} message={message} />
-			{ order && payment && bookingsuccess &&
+			<LoadingFun open={isLoading} />
+			<AlertFun set_open_alert={setAlert} open_alert={alert} message={alertMessage} setLoading={(setIsLoading)} />			{ order && payment && bookingsuccess &&
 			<div className='justify-content-center' style={{ width: '100mm' }}>
 			<InvoicePrint  shift={
 			{square_receipt_number: payment.receipt_number,
@@ -465,7 +423,7 @@ export default function Options() {
 						row
 						aria-labelledby="demo-row-radio-buttons-group-label"
 						name="row-radio-buttons-group"
-						onChange={(e) => setFirstPaidMethod(e.target.value)}
+						onChange={(e) => setPaymentMethod(e.target.value)}
 						defaultValue="cash"
 					>
 					<FormControlLabel value="cash" control={<Radio />} label="Cash" className="w-50" />
