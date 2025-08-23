@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    'Main.middleware.APILogMiddleware',
 ]
 CORS_ALLOWED_ORIGINS = [
     'http://frontend.gravity.com:3001',

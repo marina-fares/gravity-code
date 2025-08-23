@@ -7,3 +7,4 @@ from .bookings import *
 from .session import *
 from .product import *
 #from .group import *
+from .logs import *
