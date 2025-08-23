@@ -9,6 +9,8 @@ class APILog(models.Model):
     status_code = models.IntegerField()
     timestamp = models.DateTimeField(auto_now_add=True)
     duration = models.FloatField()
+    request_body = models.TextField(null=True, blank=True)
+    response_body = models.TextField(null=True, blank=True)  
 
     def __str__(self):
         return f"{self.method} {self.path} [{self.status_code}]"
