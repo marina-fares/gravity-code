@@ -17,6 +17,7 @@ class APILogMiddleware:
             APILog.objects.create(
                 user=request.user if request.user.is_authenticated else None,
                 method=request.method,
+                url=request.build_absolute_uri(),
                 path=path,
                 status_code=response.status_code,
                 duration=duration,
