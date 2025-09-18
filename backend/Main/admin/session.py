@@ -148,22 +148,22 @@ class DefaultSessionAdminForm(forms.ModelForm):
     def save(self, commit=True, *args, **kwargs):
         session_save = super().save(commit=False)
         WEEKDAYS = [
-        ('5', 'Saturday'),
-        ('6', 'Sunday'),
-        ('0', 'Monday'),
-        ('1', 'Tuesday'),
-        ('2', 'Wednesday'),
-        ('3', 'Thursday'),
-        ('4', 'Friday'),
+            ('5', 'Saturday'),
+            ('6', 'Sunday'),
+            ('0', 'Monday'),
+            ('1', 'Tuesday'),
+            ('2', 'Wednesday'),
+            ('3', 'Thursday'),
+            ('4', 'Friday'),
         ]
+
         product = self.cleaned_data.get("product")
         start_time_input = self.cleaned_data.get("start_time_input")
         end_time_input = self.cleaned_data.get("end_time_input")
         start_date = datetime.date.today()
         end_date = start_date.replace(year=start_date.year + 1)
         except_hour_flag = self.cleaned_data.get("except_hours_flag")
-        except_hours_input = self.cleaned_data.get("except_hours")
-
+        except_hours_input = self.cleaned_data.get("except_hours") or []
 
         weekdays = self.cleaned_data.get("weekdays")
         default_start_time = None
@@ -176,70 +176,81 @@ class DefaultSessionAdminForm(forms.ModelForm):
 
         if except_hour_flag and not except_hours_input:
             return None  # don't do anything
-        
-        # replace the except hour str with time
+
         for day_input in days_label:
             try:
                 obj = Schedule.objects.get(weekday=str(day_input), product=product)
                 created = False
             except Schedule.DoesNotExist:
-                # Second: If not found, create it
-                obj = Schedule.objects.create(start_time=start_time_input, end_time=end_time_input, weekday=str(day_input), product=product, except_hours=except_hours_input)
+                obj = Schedule.objects.create(
+                    start_time=start_time_input,
+                    end_time=end_time_input,
+                    weekday=str(day_input),
+                    product=product,
+                    except_hours=except_hours_input,
+                )
                 created = True
 
+            # استخدم datetime بدل time
+            today = datetime.date.today()
+            current_datetime = datetime.datetime.combine(today, start_time_input)
+            end_datetime = datetime.datetime.combine(today, end_time_input)
+
             if created:
-                current_time = start_time_input
-                while current_time <= end_time_input:
-                    if str(current_time) not in except_hours_input:
-                        created_sessions = create_session(product, start_date, end_date, current_time, day_input)
-                    today = datetime.date.today()
-                    current_datetime = datetime.datetime.combine(today, current_time)
-                    current_datetime += product.duration  # This now works
-                    current_time = current_datetime.time()  
+                while current_datetime <= end_datetime:
+                    if str(current_datetime.time()) not in except_hours_input:
+                        created_sessions = create_session(
+                            product,
+                            start_date,
+                            end_date,
+                            current_datetime.time(),
+                            day_input,
+                        )
+                    current_datetime += product.duration
             else:
-                default_start_time = obj.start_time
-                default_end_time = obj.end_time
+                default_start_datetime = datetime.datetime.combine(today, obj.start_time)
+                default_end_datetime = datetime.datetime.combine(today, obj.end_time)
 
                 default_time_list = []
                 input_time_list = []
-                
-                current_time = default_start_time
-                while current_time <= default_end_time:
-                    default_time_list.append(current_time)
-                    today = datetime.date.today()
-                    current_datetime = datetime.datetime.combine(today, current_time)
-                    current_datetime += product.duration  # This now works
-                    current_time = current_datetime.time()  
 
+                # Build default_time_list
+                current_default_dt = default_start_datetime
+                while current_default_dt <= default_end_datetime:
+                    default_time_list.append(current_default_dt.time())
+                    current_default_dt += product.duration
 
-                current_time = start_time_input
+                # Build input_time_list
+                current_input_dt = datetime.datetime.combine(today, start_time_input)
+                while current_input_dt <= end_datetime:
+                    if str(current_input_dt.time()) not in except_hours_input:
+                        input_time_list.append(current_input_dt.time())
+                    current_input_dt += product.duration
 
-                
-                while current_time <= end_time_input:
-                    if str(current_time) not in except_hours_input:
-                        input_time_list.append(current_time)
-                    today = datetime.date.today()
-                    current_datetime = datetime.datetime.combine(today, current_time)
-                    current_datetime += product.duration  # This now works
-                    current_time = current_datetime.time()  
+                # Delete missing sessions
+                for t in default_time_list:
+                    if t not in input_time_list:
+                        delete_session(product, t, day_input)
 
+                # Create new sessions
+                for t in input_time_list:
+                    if t not in default_time_list:
+                        created_sessions = create_session(
+                            product, start_date, end_date, t, day_input
+                        )
 
-                for i in default_time_list:
-                    if i not in input_time_list:
-                        delete_session(product, i, day_input)
-                for i in input_time_list:
-                    if i not in default_time_list:
-                        created_sessions = create_session(product, start_date, end_date, i, day_input)
+                # Update schedule
+                Schedule.objects.filter(weekday=str(day_input), product=product).update(
+                    start_time=start_time_input,
+                    end_time=end_time_input,
+                    except_hours=except_hours_input,
+                )
 
-                
-                Schedule.objects.filter(weekday=str(day_input), product=product).update(start_time=start_time_input, end_time=end_time_input, except_hours=except_hours_input)
         if created_sessions is not None:
-            return created_sessions[0] 
+            return created_sessions[0]
         else:
             return Session.objects.all()[0]
-        
 
-        
 
 
 
