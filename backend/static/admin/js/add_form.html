@@ -1,0 +1,14 @@
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('form');
+
+        if (form) {
+	        const button = document.createElement('button');
+		        button.textContent = "Click Me!";
+			        button.type = "button";
+				        button.className = "custom-button";  // optional styling
+					        button.onclick = () => alert("Button clicked!");
+
+						        form.appendChild(button);  // or insert before submit
+							    }
+							    });
+
