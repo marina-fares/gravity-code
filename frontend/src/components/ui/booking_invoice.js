@@ -52,8 +52,8 @@ const Invoice = React.forwardRef(({shift, note}, ref) => {
 
 const today = new Date(shift?.dateTime || '') 
 	return shift && <div ref={ref} style={{ width: '80mm' }}>
+				{shift.status && shift.status == 'refunded' && <span><strong> This Booking is refunded </strong></span>}
 				<PageHeader title={shift.branch_name} />
-		
 				<PaperRow key={`${shift.location_name} - ${today.toLocaleString('default', { month: 'long' })}`  } right={`${shift.location_name}`} left={`${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`} />
 				<PaperRow key={shift.city} right={`${shift.city}`} left={`${today.getHours() % 12 || 12}:${today.getMinutes()} ${(today.getHours()>= 12)? 'PM' : 'AM'}`} />
 				<PaperRow key={'user'} right={`User`} left={shift.creation_agent} />

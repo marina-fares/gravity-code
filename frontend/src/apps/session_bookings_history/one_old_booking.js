@@ -187,6 +187,7 @@ return (
                             dateTime: bookingDetails.created_at,
                             discount: (bookingDetails.payment)?bookingDetails.payment.promoCode:null,
                             // promocode: data.promocode
+                            status: bookingDetails.status,
                             creation_agent: bookingDetails.creation_agent
                 }} note={note} set_note={setNote}/>
             </div>
@@ -194,6 +195,7 @@ return (
                 {bookingDetails && <Card>
                     <h4 className="h4 margin-left"> Customer Name: {bookingDetails?.booking_customer?.identifier}</h4>
                     <h4 className="h4 margin-left" >session: {bookingDetails.type_of_players}  -  People: {bookingDetails.number_of_players}</h4>
+                    {bookingDetails.status && bookingDetails.status == 'refunded' && <span><strong> This Booking is refunded </strong></span>}
                     {availableSessions &&
                     <div className='row'>
                     { availableSessions && <div><TextField
