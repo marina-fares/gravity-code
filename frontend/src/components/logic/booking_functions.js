@@ -101,6 +101,10 @@ async function create_sales_receipt({ shiftDetails, orderDetails, paymentData, s
                 String(today.getMinutes()).padStart(2, '0') + ":" + 
                 String(today.getSeconds()).padStart(2, '0'),
 
+                },
+                {
+                "label": "Square receipt number",
+                "value": paymentData.receipt_number
                 }
                 ]
                 }

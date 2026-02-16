@@ -32,9 +32,9 @@ export default function Options() {
 	let [zohoAllItems, ] = useState(JSON.parse(get_localstorage('zohoItems')))
 	let [zoho_sales_receipt_id, set_zoho_sales_receipt_id] = useState()
 	let [zoho_sales_receipt_number, set_zoho_sales_receipt_number] = useState()
-	let [order, setOrder] = useState()
 	let [payment, setPayment] = useState()
 	let [val, set_val] = useState()
+	let [ orderDetails, setOrderDetails ] = useState()
 	let [ customItem, setCustomItem ] = useState(
 		{
 			"name": "Custom Item",
@@ -87,7 +87,7 @@ export default function Options() {
 			// set_square_order_id(response.order.id)
 			setTotalPrice(response.order.total_money.amount/100) 
 			setFirstPaid(response.order.total_money.amount) 
-			setOrder(response.order)
+			setOrderDetails(response.order)
 			}
 			else{
 				setAlert(true)
@@ -99,22 +99,22 @@ export default function Options() {
 	// send the Book API for bookeo and square
 	async function create_payment_api(){
 		let data = {
-			"order_id": order.id,
+			"order_id": orderDetails.id,
 			"location_id": shiftDetails.square_location_id,
-			"note": `Booking owner: ${get_user_and_jwt().user.username} + ZohoId: ${zoho_sales_receipt_id}`,
+			"note": `Booking owner: ${shiftDetails.user.username}`,
 			"source_id" : (paymentMethod === "cash")?"CASH": "EXTERNAL", 
-			"amount" : firstPaid ,
+			"amount" : orderDetails.total_money.amount ,
 			"amount_money": {
-				"amount": firstPaid,
-				"currency": "EGP"
-				},
+            "amount": orderDetails.total_money.amount,
+            "currency": "EGP"
+            },
 				"team_member_id": shiftDetails.square_team_member_id,
 				"customer_id": shiftDetails.customer_id
 		}
 		if (paymentMethod === 'cash') {
             data.cash_details = {
             buyer_supplied_money: {
-                amount: order.total_money.amount,
+                amount: orderDetails.total_money.amount,
                 currency: "EGP"
             }
             };
@@ -148,7 +148,7 @@ export default function Options() {
 	async function update_inventory(payment_result){
 		let updatedShiftData = await shiftDetails
 		let updatedSubShiftData = await subShiftDetails
-		await order.line_items.forEach(item => {
+		await orderDetails.line_items.forEach(item => {
 			if(updatedShiftData.inventory[item.name]){
 				updatedShiftData.inventory[item.name].sold_at_square += parseInt(item.quantity)
 			}
@@ -166,7 +166,7 @@ export default function Options() {
 			}
 		
 			let old_options = await (updatedShiftData.options2)? updatedShiftData.options2 : []
-			let new_options = await [{[payment_result.receipt_number]: order.id}]
+			let new_options = await [{[payment_result.receipt_number]: orderDetails.id}]
 			updatedShiftData.options2 = await [...old_options, ...new_options]
 
 			
@@ -178,7 +178,7 @@ export default function Options() {
 		setIsLoading(false)
 	}
 
-	function create_sales_receipt(){
+	function create_sales_receipt({payment_result}){
 		const today = new Date();
 		app_api_get('zoho/', {
 			"request_type": "post",
@@ -210,6 +210,10 @@ export default function Options() {
 					String(today.getMinutes()).padStart(2, '0') + ":" + 
 					String(today.getSeconds()).padStart(2, '0'),
 
+					},
+					{
+					"label": "Square receipt number",
+					"value": payment_result.receipt_number
 					}
 				]
 				}
@@ -267,7 +271,7 @@ export default function Options() {
 
 	async function create_booking_in_backend(payment_result){
 		let data = {
-		options: order.line_items,
+		options: orderDetails.line_items,
         payment: {
             amount: payment_result.amount_money.amount/100,
             method: (payment_result.source_type === 'CASH')? 'cash' : 'creditcard',
@@ -276,10 +280,10 @@ export default function Options() {
         },
         number_of_players: 0,
         creation_agent: shiftDetails.user.username,
-        created_at: order.created_at,
+        created_at: orderDetails.created_at,
         square_receipt_number: payment_result.receipt_number,
         square_payment_id: payment_result.id,
-        square_order_id: order.id,
+        square_order_id: orderDetails.id,
         zoho_sales_receipt_id: zoho_sales_receipt_id,
         zoho_sales_receipt_num: zoho_sales_receipt_number,
         status: "done"
@@ -294,8 +298,8 @@ export default function Options() {
 
 	async function compelete_order(){
 		setIsLoading(true)
-		await create_sales_receipt()	
 		let payment_result  = await create_payment_api()
+		await create_sales_receipt({payment_result})
 		await update_inventory(payment_result)
 	}
 
@@ -322,7 +326,7 @@ export default function Options() {
 
 		<Grid container spacing={2} className="p-4 justify-content-center">
 			<LoadingFun open={isLoading} />
-			<AlertFun set_open_alert={setAlert} open_alert={alert} message={alertMessage} setLoading={(setIsLoading)} />			{ order && payment && bookingsuccess &&
+			<AlertFun set_open_alert={setAlert} open_alert={alert} message={alertMessage} setLoading={(setIsLoading)} />			{ orderDetails && payment && bookingsuccess &&
 			<div className='justify-content-center' style={{ width: '100mm' }}>
 			<InvoicePrint  shift={
 			{square_receipt_number: payment.receipt_number,
@@ -332,9 +336,9 @@ export default function Options() {
 				total_price: payment.amount_money.amount/100,
 				first_paid: payment.amount_money.amount/100,
 				first_paid_method: payment.source_type,
-				options: order.line_items,
-				dateTime: order.created_at,
-				discount: (order.discounts)?order.discounts[0].percentage:null,
+				options: orderDetails.line_items,
+				dateTime: orderDetails.created_at,
+				discount: (orderDetails.discounts)?orderDetails.discounts[0].percentage:null,
 				bookingsuccess: bookingsuccess,
 				creation_agent: shiftDetails.user.username
 			}} note={val} set_note={set_val}/>
