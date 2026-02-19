@@ -87,23 +87,34 @@ class DefaultSessionAdminForm(forms.ModelForm):
             end_time_str = data.get("end_time_input")
             product_input = data.get("product")
             product = Product.objects.get(id=product_input) if product_input else None
+            print("this is the init phase", except_hours_flag, start_time_str, end_time_str, product)
             if except_hours_flag and start_time_str and end_time_str:
                 try:
                     start_hour = datetime.datetime.strptime(start_time_str, "%H:%M").time()
                     end_hour = datetime.datetime.strptime(end_time_str, "%H:%M").time()
 
-                    # Ensure choices are string-formatted to match submitted values
-                    
-                    # hour_choices = [(str(h), f"{h}:00") for h in range(start_hour, end_hour + 1)]
+                    today = datetime.date.today()
+                    start_datetime = datetime.datetime.combine(today, start_hour)
+                    end_datetime = datetime.datetime.combine(today, end_hour)
+
+                    # Handle overnight range (e.g., 23:00 → 02:00)
+                    if end_datetime <= start_datetime:
+                        end_datetime += datetime.timedelta(days=1)
+
                     hour_choices = []
-                    current_time = start_hour
-                    while current_time <= end_hour:
-                        hour_choices.append((str(current_time), f"{current_time.hour}:{current_time.minute:02d}"))
-                        today = datetime.date.today()
-                        current_datetime = datetime.datetime.combine(today, current_time)
-                        current_datetime += product.duration  # This now works
+                    current_datetime = start_datetime
+
+                    while current_datetime <= end_datetime:
                         current_time = current_datetime.time()
+
+                        hour_choices.append(
+                            (str(current_time), f"{current_time.hour}:{current_time.minute:02d}")
+                        )
+
+                        current_datetime += product.duration  # must be timedelta
+
                     self.fields['except_hours'].choices = hour_choices
+
                 except Exception:
                     pass  # Safe fail, clean() will handle it later
 
@@ -117,7 +128,7 @@ class DefaultSessionAdminForm(forms.ModelForm):
         except_hours = cleaned_data.get("except_hours")
         product = cleaned_data.get("product")
         # product = Product.objects.get(id=product_input) if product_input else None
-        
+        print("this is the clean phase", start_time, end_time, except_hours_flag, except_hours, product)
         # Ensure minutes and seconds are zero for start time
         if start_time and (start_time.minute != 0 or start_time.second != 0):
             raise ValidationError("Start time must be on the hour (e.g., 08:00, 14:00, etc.).")
@@ -126,18 +137,33 @@ class DefaultSessionAdminForm(forms.ModelForm):
         if end_time and (end_time.minute != 0 or end_time.second != 0):
             raise ValidationError("End time must be on the hour (e.g., 08:00, 14:00, etc.).")
         
+        if not product:
+            raise ValidationError("Product is required.")
 
         if except_hours_flag and start_time and end_time:
             hour_choices = []
-            current_time = start_time
-            while current_time <= end_time:
-                hour_choices.append((str(current_time), f"{current_time.hour}:{current_time.minute:02d}"))
-                today = datetime.date.today()
-                current_datetime = datetime.datetime.combine(today, current_time)
-                current_datetime += product.duration  # This now works
-                
+
+            today = datetime.date.today()
+            start_datetime = datetime.datetime.combine(today, start_time)
+            end_datetime = datetime.datetime.combine(today, end_time)
+
+            # Handle overnight case (e.g., 23:00 → 02:00)
+            if end_datetime <= start_datetime:
+                end_datetime += datetime.timedelta(days=1)
+
+            current_datetime = start_datetime
+
+            while current_datetime <= end_datetime:
                 current_time = current_datetime.time()
+
+                hour_choices.append(
+                    (str(current_time), f"{current_time.hour}:{current_time.minute:02d}")
+                )
+
+                current_datetime += product.duration  # must be timedelta
+
             self.fields['except_hours'].choices = hour_choices
+
 
             if not except_hours:
                 raise forms.ValidationError("Kindly select at least one except hour.")
@@ -174,6 +200,7 @@ class DefaultSessionAdminForm(forms.ModelForm):
         for day in weekdays:
             days_label.append(dict(WEEKDAYS).get(day))
 
+        print("-----------------177")
         if except_hour_flag and not except_hours_input:
             return None  # don't do anything
 
@@ -197,16 +224,24 @@ class DefaultSessionAdminForm(forms.ModelForm):
             end_datetime = datetime.datetime.combine(today, end_time_input)
 
             if created:
+                # Handle overnight case (e.g., 23:00 → 02:00)
+                if end_datetime <= current_datetime:
+                    end_datetime += datetime.timedelta(days=1)
+
                 while current_datetime <= end_datetime:
-                    if str(current_datetime.time()) not in except_hours_input:
-                        created_sessions = create_session(
+                    current_time = current_datetime.time()
+
+                    if str(current_time) not in except_hours_input:
+                        create_session(
                             product,
                             start_date,
                             end_date,
-                            current_datetime.time(),
+                            current_time,
                             day_input,
                         )
-                    current_datetime += product.duration
+
+                    current_datetime += product.duration  # must be timedelta
+
             else:
                 default_start_datetime = datetime.datetime.combine(today, obj.start_time)
                 default_end_datetime = datetime.datetime.combine(today, obj.end_time)
@@ -306,23 +341,29 @@ class CustomSessionAdminForm(forms.ModelForm):
             end_time_str = data.get("end_time_input")
             product_input = data.get("product")
             product = Product.objects.get(id=product_input) if product_input else None
-
+            print("this is the init phase", except_hours_flag, start_time_str, end_time_str, product)
             if except_hours_flag and start_time_str and end_time_str:
                 try:
                     start_hour = datetime.datetime.strptime(start_time_str, "%H:%M").time()
                     end_hour = datetime.datetime.strptime(end_time_str, "%H:%M").time()
 
-                    # Ensure choices are string-formatted to match submitted values
-                    
-                    # hour_choices = [(str(h), f"{h}:00") for h in range(start_hour, end_hour + 1)]
+                    today = datetime.date.today()
+                    start_datetime = datetime.datetime.combine(today, start_hour)
+                    end_datetime = datetime.datetime.combine(today, end_hour)
+
                     hour_choices = []
-                    current_time = start_hour
-                    while current_time <= end_hour:
-                        hour_choices.append((str(current_time), f"{current_time.hour}:{current_time.minute:02d}"))
-                        today = datetime.date.today()
-                        current_datetime = datetime.datetime.combine(today, current_time)
-                        current_datetime += product.duration  # This now works
+                    current_datetime = start_datetime
+
+                    while current_datetime <= end_datetime:
                         current_time = current_datetime.time()
+                        print("current time in init", current_time, end_hour)
+                        
+                        hour_choices.append(
+                            (str(current_time), f"{current_time.hour}:{current_time.minute:02d}")
+                        )
+                        
+                        current_datetime += product.duration  # timedelta
+                        
                     self.fields['except_hours'].choices = hour_choices
                 except Exception:
                     pass  # Safe fail, clean() will handle it later
@@ -339,7 +380,7 @@ class CustomSessionAdminForm(forms.ModelForm):
         except_hours_flag = cleaned_data.get("except_hours_flag")
         except_hours = cleaned_data.get("except_hours")
         product = cleaned_data.get("product")
-        
+        print("this is the clean phase", start_time, end_time, except_hours_flag, except_hours, product)
         # Ensure minutes and seconds are zero for start time
         if start_time and (start_time.minute != 0 or start_time.second != 0):
             raise ValidationError("Start time must be on the hour (e.g., 08:00, 14:00, etc.).")
@@ -348,19 +389,31 @@ class CustomSessionAdminForm(forms.ModelForm):
         if end_time and (end_time.minute != 0 or end_time.second != 0):
             raise ValidationError("End time must be on the hour (e.g., 08:00, 14:00, etc.).")
         
-        # if start_date < datetime.datetime.today():
+        if not product:
+            raise ValidationError("Product is required.")
         #     raise ValidationError("The Start Date should be today or after today")
         
         if except_hours_flag and start_time and end_time:
             hour_choices = []
-            current_time = start_time
-            while current_time <= end_time:
-                hour_choices.append((str(current_time), f"{current_time.hour}:{current_time.minute:02d}"))
-                today = datetime.date.today()
-                current_datetime = datetime.datetime.combine(today, current_time)
-                current_datetime += product.duration  # This now works
-                
+            today = datetime.date.today()
+            start_datetime = datetime.datetime.combine(today, start_time)
+            end_datetime = datetime.datetime.combine(today, end_time)
+
+            # Handle overnight case (e.g., 23:00 → 02:00)
+            if end_datetime <= start_datetime:
+                end_datetime += datetime.timedelta(days=1)
+
+            current_datetime = start_datetime
+
+            while current_datetime <= end_datetime:
                 current_time = current_datetime.time()
+                
+                hour_choices.append(
+                    (str(current_time), f"{current_time.hour}:{current_time.minute:02d}")
+                )
+                
+                current_datetime += product.duration  # must be timedelta
+
             self.fields['except_hours'].choices = hour_choices
 
             if not except_hours:
@@ -423,23 +476,40 @@ class CustomSessionAdminForm(forms.ModelForm):
 
                 default_time_list = []
                 input_time_list = []
-                
-                current_time = default_start_time
-                while current_time <= default_end_time:
-                    default_time_list.append(current_time)
-                    today = datetime.date.today()
-                    current_datetime = datetime.datetime.combine(today, current_time)
-                    current_datetime += product.duration  # This now works
-                    current_time = current_datetime.time() 
 
-                current_time = start_time_input
-                while current_time <= end_time_input:
+                today = datetime.date.today()
+
+                # --- Build default_time_list safely ---
+                default_start_datetime = datetime.datetime.combine(today, default_start_time)
+                default_end_datetime = datetime.datetime.combine(today, default_end_time)
+
+                if default_end_datetime <= default_start_datetime:
+                    default_end_datetime += datetime.timedelta(days=1)
+
+                current_datetime = default_start_datetime
+
+                while current_datetime <= default_end_datetime:
+                    default_time_list.append(current_datetime.time())
+                    current_datetime += product.duration
+
+
+                # --- Build input_time_list safely ---
+                input_start_datetime = datetime.datetime.combine(today, start_time_input)
+                input_end_datetime = datetime.datetime.combine(today, end_time_input)
+
+                if input_end_datetime <= input_start_datetime:
+                    input_end_datetime += datetime.timedelta(days=1)
+
+                current_datetime = input_start_datetime
+
+                while current_datetime <= input_end_datetime:
+                    current_time = current_datetime.time()
+
                     if str(current_time) not in except_hours_input:
                         input_time_list.append(current_time)
-                    today = datetime.date.today()
-                    current_datetime = datetime.datetime.combine(today, current_time)
-                    current_datetime += product.duration  # This now works
-                    current_time = current_datetime.time()
+
+                    current_datetime += product.duration
+
 
                 for i in default_time_list:
                     if i not in input_time_list:
