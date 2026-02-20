@@ -73,8 +73,8 @@ useEffect(() => {
         setSessionsDetails(sessionData)
         setSelectedCategory(`1HR ${sessionData[0].product.nick_name}`)
 
-        const customersData = await get_all_customers()
-        setAllCustomers(customersData)
+        // const customersData = await get_all_customers()
+        setAllCustomers([])
 
     }
     fetchData()
