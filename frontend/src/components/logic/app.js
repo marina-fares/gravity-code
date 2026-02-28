@@ -1,6 +1,6 @@
 import { get_jwt } from './users'
 
-let APP_BASE_URL = 'https://fobook.gravitycode.me/api/'
+let APP_BASE_URL = 'https://fodev.gravitycode.me/api/'
 
 
 function app_post(url, data){
