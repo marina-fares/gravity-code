@@ -35,7 +35,7 @@ class ProfileHistory(models.Model):
     """
     date = models.DateTimeField( null=True)
     profile = models.ForeignKey(
-        User, on_delete=models.CASCADE, unique=False,  null=True, blank=True)
+        User, on_delete=models.CASCADE, related_name='profile_history', unique=False,  null=True, blank=True)
     json_data = models.JSONField(null=True)
     
     def save_profile_history(sender, instance, **kwargs):
@@ -53,7 +53,7 @@ class ProfileHistory(models.Model):
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     password = models.CharField(max_length=200, unique=False, null=True)
     sub_shift_round = models.IntegerField(default=0, null=True, blank=True, unique=False)
     amount_cash_limit = models.FloatField(default=0, null=True)
