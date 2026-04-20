@@ -7,7 +7,7 @@ name = "pypi"
 django = "==4.1"
 django-extensions = "*"
 djangorestframework = "*"
-django-dotenv = "*"
+python-dotenv = ">=1.0"          # was django-dotenv (wrong package) — lock file still has old version
 markdown = "*"
 django-filter = "*"
 requests = "*"
@@ -16,8 +16,10 @@ drf-yasg = "*"
 djangorestframework-simplejwt = "*"
 django-cors-headers = "*"
 django-admin-rangefilter = "*"
-django-crontab = "*"  
-
+django-crontab = "*"
+typing-extensions = ">=4.6"     # was >=4.0 — Django 4.1 + asgiref 3.8 needs at least 4.6
+gunicorn = "==21.2.0"           # ADD — must be in Pipfile so pipenv lock captures it
+whitenoise = ">=6.6"
 [requires]
 python_version = "3.9"
 

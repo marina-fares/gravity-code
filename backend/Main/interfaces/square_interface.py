@@ -17,7 +17,7 @@ class SquareApiInterface(json.JSONEncoder):
         idempotency_key = uuid.uuid1(random.randint(0, 281474976710655))
         idempotency_key_2 = str(idempotency_key)
         idempotency_key_3 = uuid.uuid1(random.randint(0, 281474976710655))
-        idempotency_key_4 = str(idempotency_key)
+        idempotency_key_4 = str(idempotency_key_3)
 
         
         if url == "/orders" and request_type == "post":

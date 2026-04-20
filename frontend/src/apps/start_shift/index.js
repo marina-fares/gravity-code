@@ -53,9 +53,10 @@ export default function StartShift() {
 
 
 
-    const onStartShift = () => {
+    const onStartShift = async () => {
         setOpen(true);
-        const date = new Date().toISOString();
+
+        // Don't generate date here — let the backend do it
         app_api_post('square/', {
             request_type: 'post',
             url: '/labor/shifts',
@@ -64,7 +65,7 @@ export default function StartShift() {
                     wage: {},
                     status: 'OPEN',
                     location_id: shift_details.square_location_id,
-                    start_at: date,
+                    // No start_at here — backend will inject it
                     team_member_id: shift_details.square_team_member_id,
                 },
             },
@@ -74,7 +75,9 @@ export default function StartShift() {
                 setAlert(true);
                 set_error_message(`${res.errors[0].detail} ${res.errors[0].field}`);
             } else {
-                updateShiftData(res, date);
+                // Use the timestamp Square returns, not what we sent
+                const actual_start = res?.shift?.start_at;
+                updateShiftData(res, actual_start);
                 navigate('/home');
                 setOpen(false);
             }

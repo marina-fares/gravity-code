@@ -1,36 +1,77 @@
-version: '3'
+# docker-compose.yml
+# Removed: version (obsolete), nginx service, image: tag on app
 
 services:
 
   app:
-    build: ./backend
-    image: "backend-app"
-    hostname: "backend-app"
-    domainname: "gravity.com"
-    container_name: "backend-app"
-    tty: true
-    stdin_open: true
-    networks:
-      gravity_default:
-        aliases:
-          - "app.gravity.com"
-    volumes:
-      - ./backend:/usr/src/app
-      - ./backend/django-static:/usr/src/app/django-static 
-      - backend-pips-dir:/usr/local/lib/python3.9/site-packages:delegated
-    ports:
-      - 5000:5000
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: "gravity-app"
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
     environment:
-      VIRTUAL_HOST: "app.gravity.com"
-      HOST: "app.gravity.com"
-      PORT: 5000
-      HISTFILE: /usr/src/app/src/logs/.bash_history.log
+      TZ: Africa/Cairo
+      PLATFORM: PRODUCTION
+      GUNICORN_WORKERS: 4
+      GUNICORN_THREADS: 2
+      GUNICORN_TIMEOUT: 120
+      LOG_LEVEL: info
+    volumes:
+      - django-static:/usr/src/app/static
+      - ./backend:/usr/src/app
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - gravity_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
 
+  db:
+    image: postgres:15-alpine
+    container_name: "gravity-db"
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${PGUSER}"
+      POSTGRES_PASSWORD: "${PGPASSWORD}"
+      POSTGRES_DB: "${PGDATABASE}"
+    env_file:
+      - ./backend/.env 
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - gravity_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "127.0.0.1:5432:5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-
-    
 volumes:
-  backend-pips-dir:
+  db-data:
+  django-static:
 
 networks:
-  gravity_default:
+  gravity_net:
+    driver: bridge

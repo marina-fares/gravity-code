@@ -1,49 +1,100 @@
-FROM python:3.9-slim
+# =================================================================
+# Stage 1 — builder
+# Creates a virtualenv and installs all packages into it.
+# The virtualenv path is fixed and predictable — no path guessing.
+# =================================================================
+FROM python:3.9-slim AS builder
 
 ENV PYTHONUNBUFFERED=1 \
-    APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    VIRTUAL_ENV=/opt/venv
 
-# Install system dependencies
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    cron \
-    gettext \
-    libpq-dev \
-    postgresql-client \
     gcc \
     libffi-dev \
     python3-dev \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /usr/src/app
+# Create a virtualenv at a fixed, known path
+RUN python -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Install pipenv and other Python deps
-RUN pip install --upgrade pip pipenv python-dotenv
+WORKDIR /build
 
-# Clean any existing packages and upgrade pip, setuptools, and pipenv
-RUN pip uninstall -y pipenv setuptools virtualenv
-RUN pip install --upgrade pip
-RUN pip install pipenv --upgrade
-RUN pip install python-dotenv
-RUN pip install django-admin-rangefilter
+RUN pip install pipenv==2023.12.1
+COPY Pipfile Pipfile.lock ./
+RUN pipenv requirements > requirements.txt
 
-# Copy Pipfile and Pipfile.lock, then install dependencies using pipenv
-COPY Pipfile.lock /usr/src/app/
-COPY Pipfile /usr/src/app/
-RUN pipenv install --deploy --ignore-pipfile
-RUN pip install django-crontab
+# Install everything into the virtualenv
+RUN pip install -r requirements.txt && \
+    pip install \
+        "gunicorn==21.2.0" \
+        "typing-extensions>=4.6" \
+        "python-dotenv>=1.0"
 
-#RUN pip install django-admin-rangefilter
+# Verify everything is installed correctly before leaving builder
+RUN python -c "import django; print('Django', django.__version__)" && \
+    python -c "import typing_extensions; print('typing_extensions OK')" && \
+    python -c "import gunicorn; print('gunicorn OK')" && \
+    python -c "import psycopg2; print('psycopg2 OK')"
 
-COPY .env /usr/src/app/.env
 
-# Copy environment and source code
-COPY .env .env
+# =================================================================
+# Stage 2 — production runtime
+# Copies the entire virtualenv — no path ambiguity possible.
+# =================================================================
+FROM python:3.9-slim AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DJANGO_SETTINGS_MODULE=Config.settings \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH" \
+    APP_HOME=/usr/src/app
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    libpq5 \
+    gettext \
+    cron \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the entire virtualenv from builder — same fixed path, guaranteed to work
+COPY --from=builder /opt/venv /opt/venv
+
+# Verify packages are reachable in runtime stage
+RUN python -c "import django; print('Django', django.__version__, 'OK')" && \
+    python -c "import typing_extensions; print('typing_extensions OK')" && \
+    python -c "import gunicorn; print('gunicorn OK')" && \
+    python -c "import psycopg2; print('psycopg2 OK')"
+
+WORKDIR $APP_HOME
+
+# Copy source code — .env is NOT copied, passed at runtime via env_file
 COPY . .
 
-# Set up entrypoint
-COPY entrypoint.sh /usr/bin/entrypoint.sh
-RUN chmod +x /usr/bin/entrypoint.sh
-ENTRYPOINT ["/usr/bin/entrypoint.sh"]
+RUN chmod +x entrypoint.sh
+
+# Collect static files at build time with throwaway env values
+RUN SECRET_KEY=build-time-only-not-used-at-runtime \
+    PLATFORM=PRODUCTION \
+    PGHOST=localhost PGPORT=5432 \
+    PGUSER=x PGPASSWORD=x PGDATABASE=x \
+    python manage.py collectstatic --noinput
+
+# Start cron as root before dropping privileges
+RUN cron
+
+# Drop root
+RUN useradd --no-create-home --shell /bin/false appuser \
+    && chown -R appuser:appuser $APP_HOME
+USER appuser
 
 EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:5000/health/ || exit 1
+
+ENTRYPOINT ["./entrypoint.sh"]

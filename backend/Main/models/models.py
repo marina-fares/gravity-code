@@ -98,6 +98,10 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
 
+class IntegrationToken(models.Model):
+    service = models.CharField(max_length=50, unique=True)
+    access_token = models.TextField()
+    updated_at = models.DateTimeField(auto_now=True)
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):

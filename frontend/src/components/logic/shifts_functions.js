@@ -4,40 +4,37 @@ import { app_api_get, app_api_post } from './apis';
 import { set_shift, set_sub_shift } from './shifts_functions_apis.js';
 
 async function end_shift(shift, sub_shift) {
-	let date = new Date().toISOString();
-	shift.end_time = date
-	sub_shift.end_time = date
+    // Remove: let date = new Date().toISOString();
+    // Backend injects the timestamp
 
-
-	const response = await app_api_post('square/', {
-		request_type: 'put',
-		url: `/labor/shifts/${shift.current_shift_id}`,
-		payload: {
-			shift: {
-				id: shift.current_shift_id,
-				start_at: shift.start_time,
-				location_id: shift.square_location_id,
-				end_at: date,
-				team_member_id: shift.square_team_member_id,
-				wage: {
-					hourly_rate: {
-						amount: 0,
-						currency: 'EGP',
-					},
-				},
-			},
-		},
-	}).then((res) => {
+    const response = await app_api_post('square/', {
+        request_type: 'put',
+        url: `/labor/shifts/${shift.current_shift_id}`,
+        payload: {
+            shift: {
+                id: shift.current_shift_id,
+                start_at: shift.start_time,
+                location_id: shift.square_location_id,
+                // No end_at here — backend will inject it
+                team_member_id: shift.square_team_member_id,
+                status: 'CLOSED',
+                wage: {
+                    hourly_rate: { amount: 0, currency: 'EGP' },
+                },
+            },
+        },
+    }).then((res) => {
 		if(res.errors){
 			return res.errors
 		}
 	}
 	);
-	
-	if(!response){
-		await app_post('old_shift/', {"payload": shift})
-		await app_post('sub_shift_history/', {"payload": sub_shift})
-		shift.end_time = null;
+
+    if (!response) {
+        const actual_end = new Date().toISOString(); // only used locally
+        await app_post('old_shift/', { payload: shift });
+        await app_post('sub_shift_history/', { payload: sub_shift });
+        shift.end_time = null;
 		shift.start_time = null;
 		shift.current_shift_id = null;
 		shift.start_shift_cash = 0;
@@ -64,7 +61,7 @@ async function end_shift(shift, sub_shift) {
 		sub_shift.note = {}
 		set_shift(shift);
 		set_sub_shift(sub_shift)
-	}
+    }
 
 	return response
 }

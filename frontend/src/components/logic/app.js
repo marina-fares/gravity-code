@@ -1,6 +1,6 @@
 import { get_jwt } from './users'
 
-let APP_BASE_URL = 'https://fodev.gravitycode.me/api/'
+const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/';
 
 
 function app_post(url, data){

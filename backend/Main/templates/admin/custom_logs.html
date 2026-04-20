@@ -1,0 +1,26 @@
+<!-- templates/admin/custom_logs.html -->
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Timestamp</th>
+        <th>User</th>
+        <th>Method</th>
+        <th>Path</th>
+        <th>Status</th>
+        <th>Duration (ms)</th>
+    </tr>
+    {% for log in logs %}
+    <tr>
+        <td>{{ log.timestamp }}</td>
+        <td>{{ log.user }}</td>
+        <td>{{ log.method }}</td>
+        <td>{{ log.path }}</td>
+        <td>{{ log.status_code }}</td>
+        <td>{{ log.duration }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

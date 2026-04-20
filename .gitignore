@@ -23,6 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 *.pyc
 */node_modules/*
-backend/static/*
+
+
 *.env
 *.sqlite3
