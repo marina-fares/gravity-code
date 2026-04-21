@@ -1,33 +1,6 @@
 """
-models_sessions.py  —  Phase 1: Database & Model Optimisation
-=============================================================
-
-Changes from the original
---------------------------
-1.  Meta.indexes added to all models (zero indexes existed before).
-    - Booking: composite (session, status) — hottest path in the whole system.
-    - Session: composite (product, start_time) — "available slots" endpoint.
-    - Customer: btree on (group) + (identifier) for booking search.
-    - Product / Schedule: btree on (group) / (product).
-
-2.  Booking.calculate_available_seats() — new @staticmethod.
-    Replaces the Python-side sum() pattern used in 7+ places:
-        sum(Booking.objects.filter(...).values_list('number_of_players', flat=True))
-    with a single SQL SUM() aggregate. One DB round-trip, zero Python
-    iteration regardless of booking count.
-
-3.  Booking.save() rewritten with two key optimisations:
-    a. New booking  → atomic F() decrement instead of a Python recalculation.
-    b. Existing booking → recalculate ONLY when a seat-sensitive field changes.
-       Metadata-only saves (Zoho IDs, Square IDs, note, payment data, etc.)
-       now skip the recalculation entirely.
-    Uses Session.objects.filter().update() instead of session.save() to avoid
-    loading unnecessary columns and to skip Session post-save signals.
-
-4.  Session.default_block_seats promoted to @staticmethod so Django migrations
-    can serialise the default correctly without pickling issues.
-
-5.  Booking.number_of_players default corrected from True (bug) to None.
+models_sessions.py
+==================
 """
 
 from datetime import timedelta
@@ -55,13 +28,13 @@ class Product(models.Model):
     duration = models.DurationField(default=timedelta(0))
     min_num = models.IntegerField(default=0, null=True, blank=True)
     max_num = models.IntegerField(default=0, null=True, blank=True)
-    price = models.FloatField()
+    # FIX #1: FloatField for money loses precision (e.g. 99.9 → 99.89999999999).
+    # DecimalField stores exact values in the DB.
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
     class Meta:
         indexes = [
-            # Products are almost always looked up per-group.
-            # Covers: SessionApi, BookingApi search, admin querysets.
             models.Index(fields=["group"], name="product_group_idx"),
         ]
 
@@ -88,16 +61,13 @@ class Session(models.Model):
 
     Use Booking.calculate_available_seats(session) whenever you need an
     authoritative value — that helper runs a fresh SQL aggregate.
-    The cached value exists only to avoid an aggregate on every page load.
     """
-
 
     @staticmethod
     def default_block_seats():
         """
         Default factory for block_seats_obj.
-        Must be a @staticmethod so Django migrations can serialise it
-        without pickling errors.
+        @staticmethod so Django migrations can serialise it without pickling errors.
         """
         return {"number": 0, "note": "none"}
 
@@ -119,16 +89,12 @@ class Session(models.Model):
 
     class Meta:
         indexes = [
-            # Hottest read path: filter(product=X, start_time__date=Y)
-            # Called on every "get available slots" request from the frontend.
-            # Composite index covers both predicates in a single index scan.
+            # Hottest read: filter(product=X, start_time__date=Y)
             models.Index(
                 fields=["product", "start_time"],
                 name="session_product_start_idx",
             ),
-            # Used in SessionApi.get() / OneSessionApi.get():
-            #   filter(id__gte=session_id, start_time__date=...)
-            # Also used by the admin CalendarFilter.
+            # filter(id__gte=X, start_time__date=Y) and admin CalendarFilter
             models.Index(fields=["start_time"], name="session_start_time_idx"),
         ]
 
@@ -152,7 +118,6 @@ class Session(models.Model):
 class Schedule(models.Model):
     """
     Defines the recurring time template used to auto-generate Sessions.
-    Not involved in the live booking flow directly.
     """
 
     product = models.ForeignKey(
@@ -169,10 +134,39 @@ class Schedule(models.Model):
 
     class Meta:
         indexes = [
-            # Used in session-creation admin forms:
-            #   Schedule.objects.get(weekday=X, product=Y)
             models.Index(fields=["product"], name="schedule_product_idx"),
         ]
+
+
+# ---------------------------------------------------------------------------
+# Customer
+# ---------------------------------------------------------------------------
+
+class Customer(models.Model):
+    """
+    A lightweight customer record used to track who made a booking.
+    ``identifier`` is typically a phone number or name entered at the kiosk.
+
+    A pg_trgm GIN index on ``identifier`` is added in migration
+    0002_phase1_performance_indexes for fast icontains search.
+    """
+
+    identifier = models.CharField(max_length=150)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, null=True)
+
+    # FIX #2: Customer was missing its Meta.indexes entirely — it was placed
+    # AFTER the Booking class in the file, outside any class block, so Django
+    # never saw these indexes as part of the Customer model definition.
+    # Moved Customer BEFORE Booking so the FK in Booking can use a string
+    # reference and the indexes are properly attached.
+    class Meta:
+        indexes = [
+            models.Index(fields=["group"], name="customer_group_idx"),
+            models.Index(fields=["identifier"], name="customer_identifier_idx"),
+        ]
+
+    def __str__(self):
+        return self.identifier
 
 
 # ---------------------------------------------------------------------------
@@ -186,11 +180,10 @@ class Booking(models.Model):
     Seat accounting overview
     ------------------------
     New booking:
-        Session.available_seats is atomically decremented via an F() expression
-        inside save().  The booking_api holds SELECT FOR UPDATE on the session
-        row so concurrent requests cannot double-book.
+        Session.available_seats is atomically decremented via F() inside
+        save(). booking_api holds SELECT FOR UPDATE on the session row.
 
-    Update with seat change:
+    Update with seat-sensitive field change:
         Full recalculation via calculate_available_seats() — one SQL aggregate.
 
     Metadata-only update (payment IDs, note, Zoho IDs, etc.):
@@ -211,12 +204,14 @@ class Booking(models.Model):
     session = models.ForeignKey(
         Session, on_delete=models.PROTECT, null=True, blank=True
     )
-    booking_customer = models.ForeignKey('Customer', on_delete=models.CASCADE, null=True, blank=True, max_length=100)
+    # FIX #3: max_length is not a valid argument on ForeignKey — Django ignores
+    # it silently but it is misleading and generates migration noise.
+    booking_customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, null=True, blank=True
+    )
     customer_name = models.CharField(null=True, blank=True, max_length=100)
     options = models.JSONField(default=list, blank=True, null=True)
     payment = models.JSONField(default=dict, blank=True, null=True)
-    # Bug fix: original default=True was a boolean coerced to integer 1.
-    # Changed to None so "not yet set" is represented accurately.
     number_of_players = models.IntegerField(null=True, default=None)
     type_of_players = models.CharField(null=True, blank=True, max_length=20)
     creation_agent = models.CharField(null=True, blank=True, max_length=100)
@@ -233,91 +228,45 @@ class Booking(models.Model):
 
     class Meta:
         indexes = [
-            # ----------------------------------------------------------------
-            # MOST CRITICAL INDEX — covers the hottest query in the system.
-            #
-            # Every booking create/update/delete fires:
-            #   Booking.objects
-            #       .filter(session_id=X)
-            #       .exclude(status='refunded')
-            #       .aggregate(total=Sum('number_of_players'))
-            #
-            # Without this index PostgreSQL must scan the entire bookings
-            # table (90k+ rows) on EVERY booking write.
-            # The composite (session, status) covers both predicates in one
-            # index scan — session narrows to ~10-50 rows, status filters
-            # out refunded ones.
-            # ----------------------------------------------------------------
+            # MOST CRITICAL: covers seat recalculation on every booking write
             models.Index(
                 fields=["session", "status"],
                 name="booking_session_status_idx",
             ),
-            
-            # Booking search by customer (FK lookup on list + search)
+            # FK lookup: booking search + admin list
             models.Index(
                 fields=["booking_customer"],
                 name="booking_customer_idx",
             ),
-            # Receipt-number search (BTree for exact match;
-            # pg_trgm GIN index handles icontains — see migration RunSQL)
+            # Receipt-number BTree (GIN trigram index in migration)
             models.Index(
                 fields=["square_receipt_number"],
                 name="booking_receipt_idx",
             ),
-            # Admin date-range queries and history views
+            # Admin date_hierarchy and history views
             models.Index(fields=["created_at"], name="booking_created_at_idx"),
-            # Status-only filter (admin list, status='done' in session view)
+            # Status-only filter (admin, status='done' in session view)
             models.Index(fields=["status"], name="booking_status_idx"),
-            # creation_agent lookup in booking search endpoint
+            # creation_agent in booking search endpoint
             models.Index(fields=["creation_agent"], name="booking_agent_idx"),
         ]
 
     # -----------------------------------------------------------------------
-    # Seat-count helper — single source of truth for the formula
+    # FIX #4: @staticmethod decorator was missing from calculate_available_seats.
+    # Without it, calling Booking.calculate_available_seats(session) works
+    # but calling instance.calculate_available_seats(session) would pass
+    # `instance` as the first argument instead of `session`, causing a
+    # silent wrong result or AttributeError.
     # -----------------------------------------------------------------------
 
-
+    @staticmethod
     def calculate_available_seats(session):
         """
-        Return the correct available_seats value for *session* using a single
-        SQL SUM() aggregate.
+        Return the correct available_seats for *session* via a single SQL aggregate.
 
-        WHY THIS MATTERS
-        ----------------
-        Original pattern (used in 7 different places across the codebase):
+        Formula: added_seats + product.max_num - active_booking_sum - block_seats
 
-            sum(
-                Booking.objects
-                    .filter(session_id=X)
-                    .exclude(status='refunded')
-                    .values_list('number_of_players', flat=True)
-            )
-
-        This loads every booking row for the session into Python memory,
-        instantiates ORM objects, and then sums them in Python.
-
-        Optimised pattern (this method):
-
-            Booking.objects
-                .filter(session_id=X)
-                .exclude(status='refunded')
-                .aggregate(total=Sum('number_of_players'))['total'] or 0
-
-        One SQL round-trip, the database does the arithmetic, zero Python
-        iteration regardless of how many bookings exist.
-
-        With the composite (session, status) index in place, this query
-        is an index-only scan on a tiny slice of rows.
-
-        FORMULA
-        -------
-            available = added_seats + product.max_num
-                        - active_booking_sum
-                        - block_seats
-
-        Precondition: session.product must already be loaded.
-        Call this method only after select_related("product") to avoid an
-        extra database round-trip.
+        Precondition: session.product must already be loaded via select_related.
         """
         active_sum = (
             Booking.objects
@@ -333,11 +282,6 @@ class Booking(models.Model):
             - (session.block_seats or 0)
         )
 
-    # -----------------------------------------------------------------------
-    # save() — guarded recalculation
-    # -----------------------------------------------------------------------
-
-    # Changing any of these fields affects how many seats a session has.
     _SEAT_SENSITIVE_FIELDS = frozenset(
         {"number_of_players", "session", "session_id", "status"}
     )
@@ -346,45 +290,19 @@ class Booking(models.Model):
         """
         Seat accounting on save().
 
-        New booking (self.pk is None)
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Atomically decrement available_seats via F() expression.  Because
-        booking_api.py holds a SELECT FOR UPDATE lock on the session row for
-        the duration of the transaction, there is no race condition.
-
-        Existing booking update (self.pk is not None)
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Only recalculate when a seat-sensitive field is changing.
-
-        If update_fields is provided and contains none of:
-            number_of_players, session, session_id, status
-        then skip the recalculation entirely.
-
-        This is the single largest win for write-heavy workloads:
-        every booking completion writes at minimum: square_receipt_number,
-        square_payment_id, zoho_sales_receipt_id, status.  Most of those
-        writes are metadata-only and never touched seat counts — but the
-        original code recalculated on ALL of them.
-
-        Implementation details
-        ~~~~~~~~~~~~~~~~~~~~~~
-        - Uses Session.objects.filter().update() instead of session.save()
-          to avoid loading unneeded columns and to skip Session post-save
-          signals.
-        - Loads the pre-save snapshot with only() to minimise columns
-          transferred from PostgreSQL.
+        New booking  → atomic F() decrement (no extra SELECT).
+        Existing booking, seat-sensitive field changed → full recalculation.
+        Existing booking, metadata-only change → skip recalculation entirely.
         """
         update_fields = kwargs.get("update_fields")
 
         if self.pk:
-            # ── Existing booking ────────────────────────────────────────────
             should_recalculate = (
-                update_fields is None  # full save: always be conservative
+                update_fields is None
                 or bool(self._SEAT_SENSITIVE_FIELDS.intersection(update_fields))
             )
 
             if should_recalculate:
-                # Fetch pre-save snapshot with minimum columns.
                 try:
                     old = (
                         Booking.objects
@@ -408,8 +326,6 @@ class Booking(models.Model):
                     )
 
         elif self.session_id and self.number_of_players:
-            # ── New booking — atomic F() decrement ──────────────────────────
-            # SELECT FOR UPDATE in booking_api.py serialises concurrent writes.
             Session.objects.filter(pk=self.session_id).update(
                 available_seats=F("available_seats") - self.number_of_players
             )
@@ -421,10 +337,3 @@ class Booking(models.Model):
             f"{self.id} - {self.session} - "
             f"{self.number_of_players} - {self.status}"
         )
-class Customer(models.Model):
-    identifier = models.CharField(max_length=150, unique=False)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, null=True)
-    # all_bookings = models.Many(Booking, blank=True, null=True)
-
-    def __str__(self):
-        return self.identifier
