@@ -1,97 +1,255 @@
-from rest_framework import permissions, generics
-from rest_framework.response import Response
-from ..models.models_sessions import Session, Product, Booking
-from Main.serializers.session_serializer import SessionSerializer
-from datetime import datetime
-from rest_framework import status
-from rest_framework.exceptions import NotFound
+"""
+session_api.py  —  Phase 1: Database & Query Optimisation
+==========================================================
 
+Changes from the original
+--------------------------
+1.  All querysets now use .select_related("product") to prevent N+1 queries
+    when SessionSerializer nests ProductSerializer.
+    Original: one SQL query per session to fetch the related product.
+    Optimised: product loaded in the same JOIN for the entire queryset.
+
+2.  OneSessionApi.post()  (block seats update)
+    - Replaced Python-side sum() with Booking.calculate_available_seats()
+      (single SQL SUM aggregate).
+    - Uses session.save(update_fields=[...]) to update only the two changed
+      columns instead of writing every Session column.
+
+3.  OneSessionApi.put()  (general session update)
+    - Uses Booking.calculate_available_seats() for the recalculation.
+    - Added basic input validation for added_seats / block_seats.
+    - Re-fetches with select_related() for the response to avoid N+1.
+
+4.  Error handling improved:
+    - KeyError on missing payload fields returns a 400 with a clear message
+      instead of propagating as a 500.
+    - Date format validation returns a 400 with the invalid value in the
+      error message.
+
+5.  SessionApi.post() validates the request payload before hitting the DB.
+"""
+
+from datetime import datetime
+
+from django.core.exceptions import ValidationError
+from django.db import DatabaseError
+from rest_framework import generics, permissions, status
+from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
+
+from ..models.models_sessions import Booking, Product, Session
+from Main.serializers.session_serializer import SessionSerializer, SessionWriteSerializer
+
+
+# ---------------------------------------------------------------------------
+# SessionApi  —  list and date-based queries
+# ---------------------------------------------------------------------------
 
 class SessionApi(generics.GenericAPIView):
     """
-    This class is used to make a request to the Square API.
+    GET  /sessions/<session_id>/
+        All sessions on the same date as session_id, with id >= session_id.
+
+    POST /sessions/
+        All sessions for a specific product and date (the "get available
+        slots" endpoint — called on every date change from the frontend).
     """
+
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = SessionSerializer
 
     def get(self, request, session_id):
         """
-        This method is used to make a request to the Square API.
+        Fetch the current session plus all later sessions on the same date.
+        select_related("product") prevents one extra query per session when
+        SessionSerializer nests ProductSerializer.
         """
-        currentSessionDetails = Session.objects.get(id=session_id)
-        allSessions = Session.objects.filter(id__gte=session_id, start_time__date=currentSessionDetails.start_time.date())
-        serializer = SessionSerializer(allSessions, many=True).data
-        return Response(serializer)
+        try:
+            # Fetch the anchor session to determine the date.
+            current_session = (
+                Session.objects
+                .select_related("product")
+                .get(pk=session_id)
+            )
+        except Session.DoesNotExist:
+            raise NotFound(detail=f"Session with id '{session_id}' not found.")
+
+        sessions = (
+            Session.objects
+            .filter(
+                id__gte=session_id,
+                start_time__date=current_session.start_time.date(),
+            )
+            .select_related("product")   # prevents N+1 in SessionSerializer
+            .order_by("start_time")
+        )
+        return Response(SessionSerializer(sessions, many=True).data)
 
     def post(self, request):
-        # this return all sessions for spesific product and date 
-        # for the get available sessions function
-        date_string = request.data['payload']['date']
-        selectedProduct = request.data['payload']['product']
-        selectedSessionDate = datetime.strptime(date_string, "%Y-%m-%d").date()
-        allSessions = Session.objects.filter(product=selectedProduct, start_time__date=selectedSessionDate).order_by('start_time')
-        serializer = SessionSerializer(allSessions, many=True)
-        return Response(serializer.data)
+        """
+        Return all sessions for a specific product on a specific date.
 
-#I will use this class to update the spesific session
-#I will use this to block number of seats
+        This is the "get available slots" endpoint hit on every date change
+        in the frontend — it must be fast.
+
+        With the composite (product, start_time) index and .select_related(),
+        this is a single index scan + JOIN, regardless of total session count.
+        """
+        # Validate payload before any DB work.
+        try:
+            payload = request.data.get("payload", {})
+            date_string = payload["date"]
+            selected_product = payload["product"]
+        except KeyError as exc:
+            return Response(
+                {"error": f"Missing required payload field: {exc}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            session_date = datetime.strptime(date_string, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"error": f"Invalid date format '{date_string}'. Expected YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        sessions = (
+            Session.objects
+            .filter(product=selected_product, start_time__date=session_date)
+            .select_related("product")   # prevents N+1 in SessionSerializer
+            .order_by("start_time")
+        )
+        return Response(SessionSerializer(sessions, many=True).data)
+
+
+# ---------------------------------------------------------------------------
+# OneSessionApi  —  single session operations
+# ---------------------------------------------------------------------------
+
 class OneSessionApi(generics.GenericAPIView):
     """
-    This class is used to make a request to the Square API.
+    GET  /sessions/one/<session_id>/
+        Sessions from session_id onwards on the same date, filtered to
+        the same product.
+
+    POST /sessions/one/<session_id>/
+        Update block_seats and recalculate available_seats.
+
+    PUT  /sessions/one/<session_id>/
+        Update session fields and recalculate available_seats.
     """
+
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = SessionSerializer
 
     def get(self, request, session_id):
         """
-        This method is used to make a request to the Square API.
+        Fetch sessions from session_id onwards on the same date and product.
         """
-        currentSessionDetails = Session.objects.get(id=session_id)
-        allSessions = Session.objects.filter(id__gte=session_id, start_time__date=currentSessionDetails.start_time.date(), product__id=currentSessionDetails.product.id )
-        serializer = SessionSerializer(allSessions, many=True).data
-        return Response(serializer)
+        try:
+            current_session = (
+                Session.objects
+                .select_related("product")
+                .get(pk=session_id)
+            )
+        except Session.DoesNotExist:
+            raise NotFound(detail=f"Session with id '{session_id}' not found.")
+
+        sessions = (
+            Session.objects
+            .filter(
+                id__gte=session_id,
+                start_time__date=current_session.start_time.date(),
+                product_id=current_session.product_id,  # FK integer — no extra JOIN
+            )
+            .select_related("product")
+            .order_by("start_time")
+        )
+        return Response(SessionSerializer(sessions, many=True).data)
 
     def post(self, request, session_id):
         """
-        This method is used to make a request to the Square API.
+        Update block_seats for a session and recalculate available_seats.
+
+        Optimisations vs original:
+        - Replaces Python-side sum() with Booking.calculate_available_seats()
+          (single SQL SUM aggregate — one round-trip instead of N).
+        - Uses save(update_fields=...) to write only the two changed columns.
         """
-        blocks = request.data['numbers']
-        currentSession = Session.objects.get(id=session_id)
-        currentSession.block_seats = int(blocks)
+        try:
+            blocks = int(request.data["numbers"])
+        except (KeyError, ValueError, TypeError):
+            return Response(
+                {"error": "'numbers' must be a valid integer."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        product = Product.objects.get(id=currentSession.product.id)
-        all_bookkings_num = sum(Booking.objects.filter(session__id=currentSession.id).exclude(status='refunded').values_list('number_of_players', flat=True))
-        currentSession.available_seats = currentSession.added_seats + product.max_num - all_bookkings_num - int(blocks)
-        currentSession.save()
+        try:
+            # select_related so product.max_num is available without extra query.
+            current_session = (
+                Session.objects
+                .select_related("product")
+                .get(pk=session_id)
+            )
+        except Session.DoesNotExist:
+            raise NotFound(detail=f"Session with id '{session_id}' not found.")
 
-        serializer = SessionSerializer(currentSession)
-        return Response(serializer.data)
+        current_session.block_seats = blocks
+        # Single SQL aggregate replaces the Python sum() loop.
+        new_available = Booking.calculate_available_seats(current_session)
+        current_session.available_seats = new_available
+
+        # Write only the two changed columns — not the entire row.
+        current_session.save(update_fields=["block_seats", "available_seats"])
+
+        return Response(SessionSerializer(current_session).data)
 
     def put(self, request, session_id):
         """
-        update an old booking using the given booking_id as a reference if needed.
+        Update session fields and recalculate available_seats.
+
+        Applies incoming added_seats / block_seats to the in-memory instance
+        before calling calculate_available_seats() so the formula uses the
+        new values rather than the stale DB values.
         """
         data = request.data.copy()
 
         try:
-            currentSession = Session.objects.get(id=session_id)
+            current_session = (
+                Session.objects
+                .select_related("product")
+                .get(pk=session_id)
+            )
         except Session.DoesNotExist:
             raise NotFound(detail="Session not found.")
 
-        # Update the session available seats with the provided data 
-        all_bookings_num = sum(
-            Booking.objects.filter(session_id=currentSession.id).exclude(status='refunded').values_list('number_of_players', flat=True)
+        # Apply incoming seat-related values before recalculation.
+        try:
+            added_seats = int(data.get("added_seats", current_session.added_seats or 0))
+            block_seats = int(data.get("block_seats", current_session.block_seats or 0))
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "added_seats and block_seats must be valid integers."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Temporarily patch the in-memory instance so calculate_available_seats
+        # uses the incoming values rather than the stale persisted values.
+        current_session.added_seats = added_seats
+        current_session.block_seats = block_seats
+
+        new_available = Booking.calculate_available_seats(current_session)
+        data["available_seats"] = new_available
+
+        serializer = SessionWriteSerializer(
+            instance=current_session, data=data, partial=True
         )
-        new_sessions_seats = data['added_seats'] + currentSession.product.max_num - all_bookings_num - int(data['block_seats'])
-        data['available_seats'] = new_sessions_seats
-        
-        # save the updated session
-        serializer = SessionSerializer(instance=currentSession, data=data, partial=True)
         if serializer.is_valid():
-            instance = serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            serializer.save()
+            # Re-fetch with select_related for the read response — ensures
+            # SessionSerializer's nested ProductSerializer doesn't fire N+1.
+            updated = Session.objects.select_related("product").get(pk=session_id)
+            return Response(SessionSerializer(updated).data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-

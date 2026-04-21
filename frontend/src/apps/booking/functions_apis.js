@@ -10,11 +10,6 @@ async function get_session_details(session_id){
     return sessionDetais
 }
 
-async function get_all_customers(){
-    const customersData = await app_get('customers/')
-    return customersData
-}
-
 async function delete_booking_on_error({paymentData, shiftDetails, zohoReceiptID}){
     if(paymentData?.id){await app_api_get('square/', {
         "request_type": "post",
@@ -37,4 +32,4 @@ async function delete_booking_on_error({paymentData, shiftDetails, zohoReceiptID
         "payload":{},
     })}
 }   
-export { get_promo_codes, get_session_details, get_all_customers, delete_booking_on_error };
+export { get_promo_codes, get_session_details, delete_booking_on_error };

@@ -7,8 +7,8 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis'
 import LoadingFun from '../../components/ui/loading';
 import AlertFun from '../../components/ui/alert';
-import { get_promo_codes, get_session_details, get_all_customers, delete_booking_on_error } from './functions_apis';
-import { get_total_price, create_payment_api, create_sales_receipt, add_to_inventory, create_hold_booking, create_customer, create_booking, delete_hold_booking } from '../../components/logic/booking_functions';
+import { get_promo_codes, get_session_details, delete_booking_on_error } from './functions_apis';
+import { get_total_price, create_payment_api, create_sales_receipt, add_to_inventory, create_hold_booking, create_booking, delete_hold_booking } from '../../components/logic/booking_functions';
 import { InvoicePrint } from '../../components/ui/booking_invoice';
 
 
@@ -35,7 +35,6 @@ export default function Booking() {
     let [selectedCategory, setSelectedCategory] = useState()
     let [numberOfPlayers, setNumberOfPlayers] = useState(1)
     const [subShiftDetails, setSubShiftDetails] = useState();
-    let [ allCustomers, setAllCustomers ] = useState()
     let [ customerName, setCustomerName ] = useState(
     date.getFullYear() + "/" + (Number(date.getMonth())+1) + "/" + date.getDate() + ' ' +
     date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()
@@ -72,9 +71,6 @@ useEffect(() => {
         const sessionData = await get_session_details(session_id)
         setSessionsDetails(sessionData)
         setSelectedCategory(`1HR ${sessionData[0].product.nick_name}`)
-
-        // const customersData = await get_all_customers()
-        setAllCustomers([])
 
     }
     fetchData()
@@ -298,18 +294,11 @@ async function Book(){
     const options = orderDetails.line_items
     await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note})
 
-    // create the customer
-    let customerData = await create_customer({customerName})
-    if(customerData.error){
-        setAlert(true)
-        setAlertMessage(customerData.error || "error1")
-        return;
-    }
     
 
     setBookingDetails(prev => ({
         ...prev,
-        booking_customer: customerData.id,
+        customer_name: customerName,
         options: orderDetails.line_items,
         payment: {
             amount: paid,
@@ -336,7 +325,7 @@ async function Book(){
 
 return (
     <div>
-        {shiftDetails && sessionsDetails[0] && allCustomers &&
+        {shiftDetails && sessionsDetails[0] &&
         
             <Grid container spacing={2} className="mt-0 w-100 d-flex flex-row justify-content-center" >
                 <LoadingFun open={isLoading} />
@@ -367,7 +356,6 @@ return (
                                     disablePortal
                                     freeSolo
                                     id="combo-box-demo"
-                                    options={allCustomers.map((customer) => customer.identifier || '')} // Ensure no undefined
                                     value={customerName} // Default to empty string
                                     onInputChange={(event, newInputValue) => {
                                     if (newInputValue && newInputValue.trim() !== '') {

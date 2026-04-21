@@ -13,7 +13,7 @@ from .apis.users import UsersGroups
 from .apis.session_api import SessionApi, OneSessionApi
 from .apis.product_api import ProductApi
 from .apis.booking_api import BookingApi, OneBookingApi
-from .apis.customer_api import CustomerApi
+# from .apis.customer_api import CustomerApi
 from .views import admin_change_user_password
 urlpatterns = [
     path('current_user/', VerifyUserToken.as_view(), name='current_user'),
@@ -37,7 +37,7 @@ urlpatterns = [
     path('bookings/', BookingApi.as_view(), name='bookings'),
     path('booking/<int:booking_id>/', OneBookingApi.as_view(), name='bookings'),
     path('booking/', OneBookingApi.as_view(), name='create-booking'),
-    path('customers/', CustomerApi.as_view(), name='customers'),
+    # path('customers/', CustomerApi.as_view(), name='customers'),
     path('user/<int:user_id>/change-password/', admin_change_user_password, name='admin_change_user_password'),
 
 ]

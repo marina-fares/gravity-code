@@ -155,7 +155,7 @@ export default function OneOldBooking() {
             setAlertMessage("Please enter a correct password");
         } else {
             bookingDetails.session = selectedSession.id
-            bookingDetails.booking_customer = bookingDetails.booking_customer.id
+            bookingDetails.customer_name = bookingDetails.customer_name
             let new_session_id = selectedSession.id
             const response = await update_booking_details({bookingDetails, new_session_id})
             if (response){
@@ -193,7 +193,7 @@ return (
             </div>
             <div className='col-8 border-0 '>
                 {bookingDetails && <Card>
-                    <h4 className="h4 margin-left"> Customer Name: {bookingDetails?.booking_customer?.identifier}</h4>
+                    <h4 className="h4 margin-left"> Customer Name: {bookingDetails?.customer_name}</h4>
                     <h4 className="h4 margin-left" >session: {bookingDetails.type_of_players}  -  People: {bookingDetails.number_of_players}</h4>
                     {bookingDetails.status && bookingDetails.status == 'refunded' && <span><strong> This Booking is refunded </strong></span>}
                     {availableSessions &&

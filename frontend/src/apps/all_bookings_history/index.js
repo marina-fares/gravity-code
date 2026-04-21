@@ -29,7 +29,7 @@ export default function BookingsHistory() {
 
   return (
     <div className="main">
-      <h4>Search By The Receipt Code Or The Customer Name</h4>
+      <h4>Search By The Receipt Code</h4>
         
         <div className="search">
         <TextField
