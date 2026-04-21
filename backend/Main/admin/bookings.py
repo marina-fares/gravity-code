@@ -1,102 +1,166 @@
 """
-admin/bookings.py  —  Phase 1: Admin Query Optimisation
-========================================================
+admin/bookings.py
+=================
 
-Changes from the original
+ROOT CAUSE of the slow admin booking detail (change) page
+----------------------------------------------------------
+Django renders ForeignKey fields as <select> dropdowns by default.
+For the Booking model, that means:
+
+  - `session`          → SELECT * FROM Main_session   (thousands of timeslot rows)
+  - `booking_customer` → SELECT * FROM Main_customer  (thousands of customer rows)
+
+Every time you open ONE booking in the admin, Django fetches EVERY row from
+both tables to populate those two dropdowns. With years of session data and
+thousands of customers this is the dominant cause of the slow detail page.
+
+PRIMARY FIX: raw_id_fields + autocomplete_fields
+-------------------------------------------------
+  raw_id_fields = ("session",)
+      Replaces the full Session <select> with a plain integer input + popup
+      search. Django no longer loads the entire session table on form render.
+
+  autocomplete_fields = ("booking_customer",)
+      Replaces the full Customer <select> with a live-search input that only
+      queries when the user types. Requires CustomerAdmin to define
+      search_fields (see CustomerAdmin below).
+
+Additional list-view fixes
 --------------------------
-1.  BookingAdmin.get_queryset()
-    - Added select_related("session__product", "booking_customer") to
-      prevent N+1 queries in the admin list view.
-    - Group names fetched with values_list() — one query, no Python loop.
-    - Non-superuser filter uses a single queryset expression instead of
-      a Python list comprehension feeding a second query.
-
-2.  BookingAdmin.delete_queryset()  — critical fix
-    The original fired, per booking being deleted:
-        a. Session.objects.filter(id=...) — separate query to fetch session
-        b. sum(Booking.objects...values_list(...)) — full Python-side sum
-        c. session1.save() — full model save with all columns
-
-    With 10 bookings selected for bulk delete = 30 extra queries.
-
-    Optimised to:
-        a. Group bookings by session_id in Python (no extra queries).
-        b. Per unique session: one SQL SUM aggregate via
-           Booking.calculate_available_seats() — one round-trip.
-        c. Session.objects.filter().update() — targeted single-column update,
-           no post-save signals, no loading unused columns.
-
-    Total extra queries for 10 bookings across 3 sessions = 6
-    (2 per unique session: lock + update).  Down from 30.
-
-3.  Removed debug print() statement from delete_queryset().
+  list_select_related   — prevents N+1 on the list page
+  list_per_page = 50    — halves the default 100-row load
+  show_full_result_count = False — removes the COUNT(*) on every list page
+  explicit list_display — prevents Django rendering all fields + JSON fields
+  ordering = ("-created_at",) — uses the booking_created_at_idx index
 """
 
 from django.contrib import admin
 from django.db import transaction
 
-from ..models.models_sessions import Booking, Session
-from Main.serializers.booking_serializer import BookingSerializer
+from ..models.models_sessions import Booking, Customer, Session
 
 
+# ---------------------------------------------------------------------------
+# CustomerAdmin — MUST be registered here so BookingAdmin can use
+# autocomplete_fields = ("booking_customer",).
+# Django requires the FK target admin to define search_fields.
+# ---------------------------------------------------------------------------
+
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    search_fields = ("identifier",)
+    list_display = ("id", "identifier", "group")
+    list_filter = ("group",)
+    list_per_page = 50
+    show_full_result_count = False
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related("group")
+        if request.user.is_superuser:
+            return qs
+        group_names = list(request.user.groups.values_list("name", flat=True))
+        return qs.filter(group__name__in=group_names)
+
+
+# ---------------------------------------------------------------------------
+# BookingAdmin
+# ---------------------------------------------------------------------------
+
+@admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    search_fields = ("id", "session__start_time")
-    exclude = ["square_order_id", "square_payment_id", "zoho_sales_receipt_id"]
+
+    # ── PRIMARY FIX ─────────────────────────────────────────────────────────
+    # These two lines are the main fix for the slow detail page.
+    # Before: Django fetched ALL sessions + ALL customers on every form open.
+    # After:  Django fetches nothing extra — user searches via popup/autocomplete.
+    raw_id_fields = ("session",)
+    autocomplete_fields = ("booking_customer",)
+
+    # ── List view ────────────────────────────────────────────────────────────
+    list_display = (
+        "id",
+        "get_session_label",
+        "booking_customer",
+        "number_of_players",
+        "status",
+        "creation_agent",
+        "square_receipt_number",
+        "created_at",
+    )
+    search_fields = ("id", "square_receipt_number", "booking_customer__identifier")
+    list_filter = ("status",)
+    date_hierarchy = "created_at"
+    ordering = ("-created_at",)
+
+    # Forces list view to join session+product+customer in ONE query
+    # (prevents N+1 per row)
+    list_select_related = ("booking_customer", "session__product")
+
+    # Default is 100 — halving it halves the rows loaded per page
+    list_per_page = 50
+
+    # Removes the full COUNT(*) query fired on every list page load
+    show_full_result_count = False
+
+    # Write-once external IDs — readonly prevents edits and avoids
+    # rendering editable widgets for these fields
+    readonly_fields = (
+        "square_receipt_number",
+        "square_order_id",
+        "square_payment_id",
+        "zoho_sales_receipt_id",
+        "zoho_sales_receipt_num",
+        "created_at",
+    )
+
+    # ── Custom column ────────────────────────────────────────────────────────
+
+    def get_session_label(self, obj):
+        """
+        Shows product name + start time without an extra DB query.
+        select_related("session__product") in get_queryset() ensures
+        obj.session.product is already loaded.
+        """
+        if obj.session_id is None:
+            return "—"
+        s = obj.session
+        product_name = s.product.name if s.product_id else "?"
+        return f"{product_name} — {s.start_time}"
+
+    get_session_label.short_description = "Session"
+    get_session_label.admin_order_field = "session__start_time"
+
+    # ── Queryset ─────────────────────────────────────────────────────────────
 
     def get_queryset(self, request):
         """
-        Return the booking queryset for the admin list view.
-
-        select_related() prevents N+1 queries when the list renders
-        columns that traverse session → product or booking → customer.
+        select_related on BOTH session__product AND booking_customer.
+        The previous version had a trailing comma with nothing after it,
+        meaning booking_customer was NOT being joined — one extra query
+        per row in the list.
         """
         qs = Booking.objects.select_related(
             "session__product",
-            
+            "booking_customer",
         )
-
         if request.user.is_superuser:
             return qs
-
-        # One query: flat list of group names, no Python list comprehension.
         group_names = list(
             request.user.groups.values_list("name", flat=True)
         )
         return qs.filter(session__product__group__name__in=group_names)
 
+    # ── Bulk delete ──────────────────────────────────────────────────────────
+
     def delete_queryset(self, request, queryset):
         """
-        Bulk-delete bookings from the admin and recalculate available_seats
-        for every affected session.
-
-        Original approach (O(N) queries per booking):
-            for each booking:
-                1. Session.objects.filter(id=...) — redundant query
-                2. sum(Booking.objects...values_list(...)) — Python-side sum
-                3. session.save() — full model save
-
-        Optimised approach:
-            1. Group booking IDs by session_id in Python (no extra queries).
-            2. Delete all selected bookings in one queryset.delete() call.
-            3. For each UNIQUE affected session: one aggregate query +
-               one targeted update — regardless of how many bookings
-               were deleted for that session.
-
-        This reduces extra DB work from O(N_bookings) to O(N_unique_sessions).
+        Bulk-delete and recalculate seats in O(N_unique_sessions) queries.
         """
-        # Collect unique session IDs from the queryset before deletion.
-        # Use values_list() to avoid loading full Booking objects.
         affected_session_ids = list(
             queryset.values_list("session_id", flat=True).distinct()
         )
-
         with transaction.atomic():
-            # Delete all selected bookings in one shot.
             queryset.delete()
-
-            # Recalculate available_seats for every affected session.
-            # select_related("product") avoids an extra query per session when
-            # calculate_available_seats() accesses session.product.max_num.
             sessions = (
                 Session.objects
                 .select_related("product")
@@ -107,6 +171,3 @@ class BookingAdmin(admin.ModelAdmin):
                 Session.objects.filter(pk=session.pk).update(
                     available_seats=new_available
                 )
-
-
-admin.site.register(Booking, BookingAdmin)

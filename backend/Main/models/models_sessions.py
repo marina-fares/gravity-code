@@ -92,11 +92,12 @@ class Session(models.Model):
     """
 
 
+    @staticmethod
     def default_block_seats():
         """
         Default factory for block_seats_obj.
-        Must be a @staticmethod (not a nested function) so Django migrations
-        can serialise it without pickling errors.
+        Must be a @staticmethod so Django migrations can serialise it
+        without pickling errors.
         """
         return {"number": 0, "note": "none"}
 
@@ -252,6 +253,11 @@ class Booking(models.Model):
                 name="booking_session_status_idx",
             ),
             
+            # Booking search by customer (FK lookup on list + search)
+            models.Index(
+                fields=["booking_customer"],
+                name="booking_customer_idx",
+            ),
             # Receipt-number search (BTree for exact match;
             # pg_trgm GIN index handles icontains — see migration RunSQL)
             models.Index(
