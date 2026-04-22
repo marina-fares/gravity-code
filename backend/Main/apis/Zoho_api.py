@@ -1,88 +1,90 @@
-from rest_framework import permissions, generics
+import requests
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from ..serializers.user_serializer import UserProfileSerializer, GroupSerializer
+
+from ..serializers.user_serializer import UserProfileSerializer
 from ..serializers.ZohoApiSerializers import ZohoApiSerializers
 from ..interfaces.zoho_interface import ZohoApiInterface
-from rest_framework import status
-import requests
+
+
+def _call_zoho(zoho_interface, group_name, request_type, url, payload):
+    """
+    Call make_zoho_request and return a DRF Response.
+
+    FIX: make_zoho_request returns None when a network error occurs.
+    Both post() and put() previously called zoho_response.json() and
+    zoho_response.status_code directly — AttributeError on None = 500.
+    Centralised here so both methods share the same None guard.
+    """
+    response = zoho_interface.make_zoho_request(
+        group_name, request_type, url, payload
+    )
+
+    if response is None:
+        return Response(
+            {"error": "Could not reach Zoho API. Check server logs for details."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    try:
+        return Response(response.json(), status=response.status_code)
+    except ValueError:
+        return Response(
+            {"error": "Invalid response from Zoho API."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
 
 class ZohoAPI(generics.GenericAPIView):
-    """
-    This class is used to make a request to the Bookeo API.
-    """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ZohoApiSerializers
 
     def post(self, request):
-        """
-        This method is used to make a request to the Bechoookeo API.
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
-        user_data = UserProfileSerializer(request.user).data
-        zoho_interface = ZohoApiInterface()
+
+        group_name = UserProfileSerializer(request.user).data.get('group_name')
+        zoho = ZohoApiInterface()
 
         try:
-            zoho_response = zoho_interface.make_zoho_request(
-                user_data['group_name'],
-                **serializer.validated_data
+            return _call_zoho(
+                zoho,
+                group_name,
+                **serializer.validated_data,
             )
-            return Response(zoho_response.json(), status=zoho_response.status_code)
-
         except requests.exceptions.ConnectionError:
             return Response(
                 {"error": "No internet connection or Zoho API is unreachable."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-        except ValueError:
-            # JSON decoding error
+        except Exception as exc:
+            logger_msg = str(exc)
             return Response(
-                {"error": "Invalid response from Zoho API."},
-                status=status.HTTP_502_BAD_GATEWAY
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": logger_msg},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     def put(self, request):
-        """
-        This method is used to update data via the Zoho API.
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user_data = UserProfileSerializer(request.user).data
-        zoho_interface = ZohoApiInterface()
+        group_name = UserProfileSerializer(request.user).data.get('group_name')
+        zoho = ZohoApiInterface()
+
+        data = serializer.validated_data.copy()
+        request_type = data.pop("request_type")
+        url          = data.pop("url")
+        payload      = data.pop("payload")
 
         try:
-            data = serializer.validated_data.copy()
-            request_type = data.pop("request_type")  # استخراج نوع الطلب (PUT/POST/etc)
-            url = data.pop("url")
-            payload = data.pop("payload")
-
-            zoho_response = zoho_interface.make_zoho_request(
-                group_name=user_data['group_name'],
-                request_type=request_type,
-                url=url,
-                payload=payload
-            )
-            return Response(zoho_response.json(), status=zoho_response.status_code)
-
+            return _call_zoho(zoho, group_name, request_type, url, payload)
         except requests.exceptions.ConnectionError:
             return Response(
                 {"error": "No internet connection or Zoho API is unreachable."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-        except ValueError:
+        except Exception as exc:
             return Response(
-                {"error": "Invalid response from Zoho API."},
-                status=status.HTTP_502_BAD_GATEWAY
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

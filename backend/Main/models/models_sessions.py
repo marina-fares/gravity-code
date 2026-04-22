@@ -52,6 +52,18 @@ class Product(models.Model):
 # Session
 # ---------------------------------------------------------------------------
 
+def _default_block_seats():
+    """
+    Module-level default factory for Session.block_seats_obj.
+
+    Must be at module level, not a @staticmethod inside the class.
+    Django's JSONField system check (fields.E010) requires the default to be
+    a plain callable. A staticmethod descriptor satisfies this on some Django
+    versions but raises E010 on others. Module-level is unambiguous.
+    """
+    return {"number": 0, "note": "none"}
+
+
 class Session(models.Model):
     """
     A single scheduled time slot for a Product.
@@ -63,14 +75,6 @@ class Session(models.Model):
     authoritative value — that helper runs a fresh SQL aggregate.
     """
 
-    @staticmethod
-    def default_block_seats():
-        """
-        Default factory for block_seats_obj.
-        @staticmethod so Django migrations can serialise it without pickling errors.
-        """
-        return {"number": 0, "note": "none"}
-
     product = models.ForeignKey(
         Product, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -80,7 +84,12 @@ class Session(models.Model):
     block_seats = models.IntegerField(null=True, blank=True, default=0)
     block_seats_obj = models.JSONField(
         "Block Seats Obj",
-        default=default_block_seats,
+        # FIX: @staticmethod inside a class body is a descriptor, not a plain
+        # callable. When Django's system check evaluates `default=default_block_seats`
+        # at class definition time, it sees a staticmethod object and raises E010.
+        # Fix: reference the module-level function defined below the class,
+        # which is a plain callable with no descriptor wrapping.
+        default=_default_block_seats,
         null=True,
         blank=True,
     )

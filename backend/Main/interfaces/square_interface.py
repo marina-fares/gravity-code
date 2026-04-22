@@ -1,7 +1,7 @@
 import json
-import uuid
-import random
 import logging
+import random
+import uuid
 
 import requests
 from requests.exceptions import RequestException
@@ -10,9 +10,6 @@ from Config.settings import SQUARE_API_KEY, SQUARE_API_URL
 
 logger = logging.getLogger(__name__)
 
-# FIX M/N: Default timeout for all Square API calls.
-# Without a timeout a slow or unreachable Square will block the Gunicorn worker
-# indefinitely, eventually exhausting all workers under load.
 REQUEST_TIMEOUT = 30
 
 
@@ -23,14 +20,6 @@ class SquareApiInterface(json.JSONEncoder):
         self.key = key
 
     def make_square_request(self, request_type, url, payload):
-        """
-        Make an authenticated request to the Square API.
-
-        FIX M: Added timeout=REQUEST_TIMEOUT to every request call.
-        FIX N: Wrapped in try/except RequestException so network errors are
-               caught and returned as a structured error dict rather than
-               propagating as an unhandled exception with a stack trace.
-        """
         if not request_type:
             logger.error("square_interface: request_type is required")
             return None
@@ -40,7 +29,13 @@ class SquareApiInterface(json.JSONEncoder):
             logger.error("square_interface: unknown request_type '%s'", request_type)
             return None
 
-        idempotency_key = str(uuid.uuid1(random.randint(0, 281474976710655)))
+        # FIX: 'Bearer ' + None raises TypeError if key is missing.
+        # Checked in the API view before reaching here, but guard defensively.
+        if not self.key:
+            logger.error("square_interface: SQUARE_API_KEY is not set")
+            return None
+
+        idempotency_key   = str(uuid.uuid1(random.randint(0, 281474976710655)))
         idempotency_key_2 = str(uuid.uuid1(random.randint(0, 281474976710655)))
 
         # Inject UIDs for line-item discounts on order creation

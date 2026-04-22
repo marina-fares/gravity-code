@@ -1,108 +1,99 @@
-from rest_framework import permissions, generics
-from rest_framework.response import Response
-from Main.serializers.profile_serializer import ProfileSerializer, ProfileHistorySerializer
 from datetime import datetime
-from django.contrib.auth.models import Permission
-from django.apps import apps
 
-from ..models.models import User, ProfileHistory, Profile
+from django.contrib.auth.models import User
+from rest_framework import generics, permissions
+from rest_framework.response import Response
+
+from Main.serializers.profile_serializer import ProfileSerializer, ProfileHistorySerializer
+from ..models.models import Profile, ProfileHistory
+
+# Fields the frontend is allowed to write to Profile via the shift endpoint.
+# Anything not in this list is silently stripped — prevents accidental or
+# malicious writes to sensitive fields (square_secret, bookeo_api_key, etc.)
+ALLOWED_PROFILE_FIELDS = {
+    'start_time', 'end_time', 'start_shift_cash', 'refund_cash', 'refund_visa',
+    'shift_money_cash', 'shift_money_visa', 'actual_cash', 'actual_visa',
+    'inventory', 'note', 'options', 'options2', 'current_shift_id',
+}
+
 
 class GetShiftApi(generics.GenericAPIView):
-    """
-    This class is used to make a request to the Square API.
-    """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ProfileSerializer
 
     def get(self, request):
-        """
-        This method is used to make a request to the Square API.
-        """
-        profile = request.user.profile
-        #permission = {'permissions': list(request.user.get_all_permissions())}
-        serializer = ProfileSerializer(profile).data
-        #permission.update(serializer)
-        return Response(serializer)
-
+        return Response(ProfileSerializer(request.user.profile).data)
 
     def post(self, request):
-        """
-        This method handles profile updates and stores history.
-        """
+        """Update profile shift fields and record history snapshot at shift end."""
         data = request.data.get('payload', {})
 
-        # Save profile update history if end_time is provided
         if data.get('end_time') is not None:
-            current_user = request.user
             ProfileHistory.objects.create(
                 date=datetime.now(),
-                profile=current_user,
-                json_data=data
+                profile=request.user,
+                json_data=data,
             )
 
-        # Separate profile fields from user fields
-        profile_data = data.copy()
-        user_data = profile_data.pop('user', None)  # Remove 'user' field from profile data
+        # SECURITY FIX: original did Profile.objects.filter(...).update(**profile_data)
+        # with no field whitelist — the frontend could overwrite any Profile column
+        # including square_secret, bookeo_api_key, square_team_member_id, etc.
+        # Now only fields in ALLOWED_PROFILE_FIELDS are accepted.
+        raw_profile_data = {k: v for k, v in data.items() if k != 'user'}
+        profile_data = {k: v for k, v in raw_profile_data.items()
+                        if k in ALLOWED_PROFILE_FIELDS}
+        if profile_data:
+            Profile.objects.filter(user_id=request.user.id).update(**profile_data)
 
-        # Update the Profile model
-        Profile.objects.filter(user_id=request.user.id).update(**profile_data)
-
-        # Optionally update the User model
+        user_data = data.get('user')
         if user_data:
-            allowed_user_fields = ['first_name', 'last_name', 'email']  # Add others as needed
-            cleaned_user_data = {key: val for key, val in user_data.items() if key in allowed_user_fields}
-            User.objects.filter(id=request.user.id).update(**cleaned_user_data)
+            allowed_user_fields = {'first_name', 'last_name', 'email'}
+            cleaned = {k: v for k, v in user_data.items() if k in allowed_user_fields}
+            if cleaned:
+                User.objects.filter(id=request.user.id).update(**cleaned)
 
-        # Return updated history
-        serializer = ProfileHistorySerializer(ProfileHistory.objects.filter(profile=request.user), many=True)
-        return Response(serializer.data)
-
+        history_qs = (
+            ProfileHistory.objects
+            .filter(profile=request.user)
+            .select_related("profile")
+            .order_by("-date")[:100]   # SCALABILITY: cap to 100 most recent records
+        )
+        return Response(ProfileHistorySerializer(history_qs, many=True).data)
 
 
 class GetOldShiftApi(generics.GenericAPIView):
-    """
-    This class is used to make a request to the Square API.
-    """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ProfileHistorySerializer
 
-
     def post(self, request):
-        """
-        This method is used to make a request to the Shift API.
-        """
-
-        if (request.data['payload']['end_time']) is None :
-            pass
-        else:
-            current_user = User.objects.get(username=(request.user))
-            history = ProfileHistory.objects.create(
-            date=datetime.now(), profile=current_user, json_data=request.data['payload'])
-            history.save()
-        
-        
-        
-        serializer = ProfileHistorySerializer(many=True)
-        return Response(serializer.data)
-
-
+        """Record a shift-end history snapshot (legacy endpoint)."""
+        payload = request.data.get('payload')
+        if not payload:
+            from rest_framework import status
+            return Response({"error": "Missing 'payload'."}, status=status.HTTP_400_BAD_REQUEST)
+        if payload.get('end_time') is not None:
+            current_user = User.objects.get(username=request.user)
+            ProfileHistory.objects.create(
+                date=datetime.now(),
+                profile=current_user,
+                json_data=payload,
+            )
+        return Response([])
 
     def get(self, request):
-        """
-        This method is used to make a request to the Square API.
-        """
-
+        """Return shift history for the current user or group."""
         current_user = request.user
         if current_user.is_superuser:
-            shifts = ProfileHistory.objects.all()
+            shifts = (ProfileHistory.objects
+                      .select_related("profile")
+                      .order_by("-date")[:200])
         elif request.user.has_perm('Main.view_gravityuser'):
-            current_user_groups = current_user.groups.all()
-            current_user_group_names = [group.name for group in current_user_groups]
-            shifts = ProfileHistory.objects.filter(profile__groups__name__in=current_user_group_names)
-           # shifts = models.ProfileHistory.objects.all()
+            group_names = list(current_user.groups.values_list("name", flat=True))
+            shifts = (ProfileHistory.objects
+                      .filter(profile__groups__name__in=group_names)
+                      .select_related("profile")
+                      .order_by("-date")[:200])
         else:
-            shifts = []
-        serializer = ProfileHistorySerializer(instance=shifts, many=True)
-        return Response(serializer.data)
+            shifts = ProfileHistory.objects.none()
 
-
+        return Response(ProfileHistorySerializer(instance=shifts, many=True).data)

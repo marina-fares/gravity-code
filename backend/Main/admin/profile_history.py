@@ -1,7 +1,7 @@
 from django.contrib import admin
-from ..models.models import Profile, ProfileHistory
-from django.contrib.auth.models import User, Group
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group
+from ..models.models import ProfileHistory
+
 
 class GroupFilter(admin.SimpleListFilter):
     title = 'User group'
@@ -15,18 +15,21 @@ class GroupFilter(admin.SimpleListFilter):
             return queryset.filter(profile__groups__id=self.value())
         return queryset
 
+
 class ProfileHistoryAdmin(admin.ModelAdmin):
-    list_filter = (GroupFilter, )
-    search_fields = ('profile__username','date')
+    list_filter = (GroupFilter,)
+    search_fields = ('profile__username', 'date')
+    list_select_related = ('profile',)
+    list_per_page = 50
+    show_full_result_count = False
+
     def get_queryset(self, request):
-        current_user = request.user
-        if current_user.is_superuser:
-            return ProfileHistory.objects.all()
-        else:
-            current_user_groups = current_user.groups.all()
-            current_user_group_names = [
-                group.name for group in current_user_groups]
-            return ProfileHistory.objects.filter(profile__groups__name__in=current_user_group_names)
+        qs = super().get_queryset(request).select_related('profile')
+        if request.user.is_superuser:
+            return qs
+        # FIX: replaced Python list comprehension with values_list()
+        group_names = list(request.user.groups.values_list("name", flat=True))
+        return qs.filter(profile__groups__name__in=group_names)
 
 
 admin.site.register(ProfileHistory, ProfileHistoryAdmin)

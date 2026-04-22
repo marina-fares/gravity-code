@@ -24,8 +24,8 @@ class GravityUserAdmin(UserAdmin):
             return User.objects.all()
         else:
             current_user_groups = current_user.groups.all()
-            current_user_group_names = [group.name for group in current_user_groups]
-            return User.objects.filter(groups__name__in=current_user_group_names).distinct()
+            group_names = list(current_user.groups.values_list("name", flat=True))
+            return User.objects.filter(groups__name__in=group_names).distinct()
 
     def change_password_link(self, obj):
         url = reverse('admin_change_user_password', args=[obj.pk])

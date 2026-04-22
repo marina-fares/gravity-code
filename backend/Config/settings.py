@@ -69,7 +69,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://fodev.gravitycode.me',
     'http://localhost:3000',
     'http://localhost:3001',
-    'http://localhost:5000',    # ADDED — needed for admin login POST from browser
+    'http://localhost:8000',    # ADDED — needed for admin login POST from browser
     'http://127.0.0.1:5000',   # ADDED — needed for admin login POST from browser
 ]
 
@@ -110,7 +110,27 @@ DATABASES = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    # Deny unauthenticated requests by default — explicit AllowAny required
+    # to opt out. Prevents accidental data exposure if a new endpoint is added
+    # without a permission_classes declaration.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    # Rate limiting: anonymous requests (login brute-force) and authenticated
+    # requests (API abuse). Adjust limits to match your expected traffic.
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '60/minute',    # covers /api/token/ brute-force
+        'user': '600/minute',   # generous for authenticated kiosk polling
+    },
+    # Cursor pagination is safer than page-number for large datasets
+    # (no COUNT(*) query, stable ordering). Apply per-view or globally.
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 50,
 }
 
 SIMPLE_JWT = {
@@ -152,6 +172,32 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # Use CompressedManifestStaticFilesStorage only when collectstatic
 # runs as part of the build and you can guarantee the manifest exists.
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'  # FIXED
+
+# ---------------------------------------------------------------------------
+# HTTPS / Security Headers (production only)
+# ---------------------------------------------------------------------------
+if PLATFORM != 'DEVELOPMENT':
+    # SECURE_SSL_REDIRECT: Do NOT enable this when running behind an nginx/load
+    # balancer that terminates SSL externally (the standard Docker setup here).
+    # With SSL termination at the proxy, Gunicorn only ever sees plain HTTP on
+    # the internal network — SECURE_SSL_REDIRECT would redirect EVERY request
+    # including /health/ health checks to HTTPS, causing 301 loops.
+    #
+    # The correct approach is to let nginx enforce HTTPS externally and use
+    # SECURE_PROXY_SSL_HEADER so Django knows the original connection was secure.
+    SECURE_SSL_REDIRECT = False          # proxy handles SSL, not Gunicorn
+
+    SECURE_HSTS_SECONDS = 31536000          # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

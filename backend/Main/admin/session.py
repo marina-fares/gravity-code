@@ -583,15 +583,13 @@ class SessionAdmin(admin.ModelAdmin):
 
 
     def get_queryset(self, request):
-
-        current_user = request.user
-        if current_user.is_superuser:
-            return Session.objects.all()
-        else:
-            current_user_groups = current_user.groups.all()
-            current_user_group_names = [
-                group.name for group in current_user_groups]
-            return Session.objects.filter(groups__name__in=current_user_group_names)
+        qs = super().get_queryset(request).select_related("product__group")
+        if request.user.is_superuser:
+            return qs
+        # FIX: Session has no direct 'groups' field. Must traverse via product.
+        # Also replaced Python loop with values_list() — one query not two.
+        group_names = list(request.user.groups.values_list("name", flat=True))
+        return qs.filter(product__group__name__in=group_names)
 
     def get_product_duration(self, obj):
         return obj.product.duration if obj.product else "N/A"
