@@ -21,11 +21,15 @@ export default function BlockSeats(){
     useEffect(()=>{
         const fetchData = (async()=>{
             const sessionData = await get_session_details(session_id)
-            const currentSessionData = sessionData.find((session)=> session.id == session_id)
-            setCurrentSessionDetails(currentSessionData)
-            setBlockSeats(currentSessionData.block_seats_obj)
-            console.log(currentSessionData.block_seats_obj)
-            console.log(currentSessionData.block_seats_obj.number)
+            if(sessionData.status === 200){
+                const currentSessionData = sessionData.data.find((session)=> session.id == session_id)
+                setCurrentSessionDetails(currentSessionData)
+                setBlockSeats(currentSessionData.block_seats_obj)
+            }else{
+                setAlert(true)
+                setAlertMessage(sessionData.error)
+            }
+
         })
         fetchData()
     },[session_id])
@@ -41,7 +45,8 @@ export default function BlockSeats(){
          
         const currentSession = await {
             ...currentsessionDetails,
-            block_seats_obj: blockSeats
+            block_seats_obj: blockSeats,
+            product: currentsessionDetails.product.id
         };
         await app_put(`session/${session_id}/`,{}, currentSession);
         navigate('/');

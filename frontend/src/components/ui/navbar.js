@@ -19,7 +19,7 @@ import logo from '../../gravity.png'
 import { get_user_and_jwt } from '../logic/users';
 import { get_shift } from '../logic/shifts_functions_apis';
 import { useEffect } from 'react';
-
+import AlertFun from './alert';
 
 const pages = ['Available Sessions', 'Options', 'Inventory', 'Shifts History', 'Bookings History'];
 const settings = ['End Shift', 'Logout'];
@@ -30,6 +30,9 @@ const NavBar = () => {
   let [, set_shift] = React.useState();
   let [, set_alert] = React.useState(false)
   let [check_password, ] = React.useState(false)
+  let [alert, setAlert] = React.useState(false);
+  let [error_message, set_error_message] = React.useState('');
+  let [open, setOpen] = React.useState(false);
 
   useEffect(() => {
     get_shift_data()
@@ -38,9 +41,14 @@ const NavBar = () => {
   function get_shift_data (){
     let shit_data = get_shift();
 		shit_data.then((x) => {
-      if(x.square_secret !== null)
+      console.log("xxxxxxxxxxxxxxxxxxxxxxxx", x)
+      if(x.status == 200)
       {
 			  set_shift(x);
+      }
+      else{
+        setAlert(true);
+        set_error_message(x.error)
       }
 		});
   }
@@ -109,6 +117,7 @@ const NavBar = () => {
     <AppBar position="static">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
+          <AlertFun open_alert={alert} set_open_alert={setAlert} message={error_message} setLoading={setOpen}/>
           <Typography
             variant="h6"
             noWrap

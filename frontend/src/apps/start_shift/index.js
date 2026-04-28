@@ -25,11 +25,19 @@ export default function StartShift() {
     useEffect(() => {
         if (catalog) {
             get_shift().then((shiftData) => {
-                if (shiftData && shiftData.start_time && !shiftData.end_time && shiftData.current_shift_id !== null) {
-                    navigate('/home');
+                console.log('shiftData', shiftData);
+                if(shiftData.status === 200){
+                    if (shiftData.data && shiftData.data.start_time && !shiftData.data.end_time && shiftData.data.current_shift_id !== null) {
+                        navigate('/home');
+                    }
+                    initializeShiftInventory(shiftData.data);
+                    set_shift_details(shiftData.data);
                 }
-                initializeShiftInventory(shiftData);
-                set_shift_details(shiftData);
+                else{
+                    setAlert(true);
+                    set_error_message(shiftData.error)
+                }
+
             });
         }
     }, [catalog]);

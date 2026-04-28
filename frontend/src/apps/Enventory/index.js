@@ -18,27 +18,15 @@ export default function Inventory() {
 	useEffect(() => {
 		let x = get_shift();		
 		x.then((x) => {
-			set_updated_shift(x);
+			if(x.status === 200) {
+				set_updated_shift(x.data);
+			}
 			(x.current_shift_id === null)?set_hide(true): set_hide(false)
 		});
 	}, []);
 
 	function onStartShift() {
-		let x = get_shift();
-		x.then((y)=>{
-			let shift2 = y
-			for(let i in updated_shift.inventory)
-			{
-				if (updated_shift.inventory[i]['start_shift'] > shift2.inventory[i]['start_shift'])
-				{
-
-					shift2.inventory[i]['start_shift'] = updated_shift.inventory[i]['start_shift']
-					// set_shift({...shift})
-				}
-			}
-			set_shift_fun(shift2)
-			set_updated_shift(shift2)
-			})
+		set_shift_fun(updated_shift);
 		
 	}
 

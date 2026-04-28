@@ -39,21 +39,32 @@ export default function OneOldBooking() {
     useEffect(() => {
         const fetchData = async () => {
             const bookingData = await get_booking_details(booking_id);
-            setBookingDetails(bookingData)
+            if(bookingData.status == 200){
+            setBookingDetails(bookingData.data)
+            }else{
+                setAlert(true);
+                setAlertMessage(bookingData.error);
+            }
+
             
             const shiftData = await get_shift()
             setShiftDetails(shiftData)
 
             const subShiftData = await get_sub_shift()
-            setSubShiftDetails(subShiftData)
-
+            if(subShiftData.status == 200){
+                setSubShiftDetails(subShiftData.data)
+            }else{
+                setAlert(true);
+                setAlertMessage(subShiftData.error);
+            }
+            
             let sessionsData = {}
             let currentSession = {}
             let date = null
             if (session_id !== 'null' ) {
-                console.log("session_id", session_id)
-                console.log("session_id", typeof(session_id))
-                const sessionDetails = await get_session_details(session_id)
+                const sessionData = await get_session_details(session_id)
+                if(sessionData.status == 200){
+                const sessionDetails = sessionData.data
                 const dateObj = new Date(sessionDetails[0].start_time);
                 const dateOnly = dateObj.toISOString().split('T')[0];
                 const payload = { "date": dateOnly , "product" : sessionDetails[0].product.id}
@@ -62,7 +73,12 @@ export default function OneOldBooking() {
                 date = new Date(currentSession.start_time)    
                 setAvailableSessions(sessionsData)
                 setSelectedSession(currentSession)
-                setSelectedDate(date.toISOString().split('T')[0])   
+                setSelectedDate(date.toISOString().split('T')[0])
+                }else{
+                    setAlert(true);
+                    setAlertMessage(sessionData.error);
+                }
+   
             }
             
 
@@ -125,6 +141,7 @@ export default function OneOldBooking() {
 
         // const newState = 'refunded'
         bookingDetails.status = 'refunded'
+        bookingDetails.booking_customer = bookingDetails.booking_customer.id
         await app_put(`booking/${bookingDetails.id}/`,{}, bookingDetails)
 
         await delete_from_inventory({bookingDetails, shiftDetails, subShiftDetails})
@@ -180,7 +197,7 @@ return (
                             branch_name: shiftDetails.branch_name,
                             location_name: shiftDetails.location_name,
                             city: shiftDetails.city,
-                            total_price: bookingDetails.payment.amount,
+                            total_price: bookingDetails?.payment?.amount,
                             first_paid: bookingDetails.payment.amount,
                             first_paid_method: bookingDetails.payment.method,
                             options: bookingDetails?.options?? null,

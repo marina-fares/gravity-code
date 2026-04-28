@@ -9,8 +9,11 @@ export default function AvailableSlots({date, allProducts, selectedProduct, setS
 
 
   useEffect(
+    
     ()=>{
       if((date && selectedProduct) ){
+        console.log("date", date)
+        console.log("selectedProduct", selectedProduct) 
         set_available_slots(date, selectedProduct)
       }
     }

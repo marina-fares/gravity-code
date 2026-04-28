@@ -7,8 +7,8 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis'
 import LoadingFun from '../../components/ui/loading';
 import AlertFun from '../../components/ui/alert';
-import { get_promo_codes, get_session_details, delete_booking_on_error } from './functions_apis';
-import { get_total_price, create_payment_api, create_sales_receipt, add_to_inventory, create_hold_booking, create_booking, delete_hold_booking } from '../../components/logic/booking_functions';
+import { get_promo_codes, get_session_details, delete_booking_on_error, get_all_customers, isRealCustomerName } from './functions_apis';
+import { get_total_price, create_payment_api, create_sales_receipt, add_to_inventory, create_hold_booking, create_booking, delete_hold_booking, create_customer } from '../../components/logic/booking_functions';
 import { InvoicePrint } from '../../components/ui/booking_invoice';
 
 
@@ -35,6 +35,7 @@ export default function Booking() {
     let [selectedCategory, setSelectedCategory] = useState()
     let [numberOfPlayers, setNumberOfPlayers] = useState(1)
     const [subShiftDetails, setSubShiftDetails] = useState();
+    let [ allCustomers, setAllCustomers ] = useState()
     let [ customerName, setCustomerName ] = useState(
     date.getFullYear() + "/" + (Number(date.getMonth())+1) + "/" + date.getDate() + ' ' +
     date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()
@@ -60,17 +61,41 @@ export default function Booking() {
 useEffect(() => {
     const fetchData = async () =>{
         const shiftData = await get_shift()
-        setShiftDetails(shiftData)
-
+        if(shiftData.status === 200){
+            setShiftDetails(shiftData.data);
+        }else{
+            setAlert(true);
+            setAlertMessage(shiftData.error)
+        }
+        
         const subShiftData = await get_sub_shift()
-        setSubShiftDetails(subShiftData)
-
+        if(subShiftData.status === 200){
+            setSubShiftDetails(subShiftData.data);
+        }  else{
+            setAlert(true);
+            setAlertMessage(subShiftData.error)
+        }
+        
         const promoCodesData = await get_promo_codes()
-        setAllPromoCodes(promoCodesData)
+        if(promoCodesData.status === 200){
+            setAllPromoCodes(promoCodesData.data);
+        } else{
+            setAlert(true);
+            setAlertMessage(promoCodesData.error)
+        } 
         
         const sessionData = await get_session_details(session_id)
-        setSessionsDetails(sessionData)
-        setSelectedCategory(`1HR ${sessionData[0].product.nick_name}`)
+        console.log("sessionData", sessionData)
+            if(sessionData.status === 200){ 
+                setSessionsDetails(sessionData.data);
+            }   else{
+                setAlert(true);
+                setAlertMessage(sessionData.error)
+            }
+        setSelectedCategory(`1HR ${sessionData.data[0].product.nick_name}`)
+        const customersData = await get_all_customers()
+        console.log("customersData", customersData)
+        setAllCustomers(customersData.data || [])
 
     }
     fetchData()
@@ -294,10 +319,26 @@ async function Book(){
     const options = orderDetails.line_items
     await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note})
 
-    
+    // check if the Customer is real
+    console.log("customerName", customerName)
+    console.log("isRealCustomerName", isRealCustomerName(customerName))
+    let customerData = null
+    if(isRealCustomerName(customerName)){
+        // create the customer
+        customerData = await create_customer({customerName})
+        if(customerData.error){
+            setAlert(true)
+            setAlertMessage(customerData.error || "error1")
+            return;
+        }
+    }
 
-    setBookingDetails(prev => ({
+    
+    
+    // create the booking in backend
+    await setBookingDetails(prev => ({
         ...prev,
+        booking_customer: isRealCustomerName(customerName) ? customerData.id : null,
         customer_name: customerName,
         options: orderDetails.line_items,
         payment: {
@@ -318,6 +359,7 @@ async function Book(){
         note: (note)?note: null,
         status: "done"
         }));
+        set_localstorage('bookingId', undefined);
 
 }
 
@@ -325,7 +367,7 @@ async function Book(){
 
 return (
     <div>
-        {shiftDetails && sessionsDetails[0] &&
+        {shiftDetails && sessionsDetails[0] && allCustomers &&
         
             <Grid container spacing={2} className="mt-0 w-100 d-flex flex-row justify-content-center" >
                 <LoadingFun open={isLoading} />
@@ -356,6 +398,7 @@ return (
                                     disablePortal
                                     freeSolo
                                     id="combo-box-demo"
+                                    options={allCustomers.map((customer) => customer.identifier || '')} // Ensure no undefined
                                     value={customerName} // Default to empty string
                                     onInputChange={(event, newInputValue) => {
                                     if (newInputValue && newInputValue.trim() !== '') {
@@ -400,7 +443,7 @@ return (
                                     disablePortal
                                     freeSolo
                                     id="Promo Code"
-                                    options={allPromoCodes.map((promo_code)=>  promo_code.code )}
+                                    options={(allPromoCodes?.results).map(promo_code => promo_code.code)}
                                     className="border-0 w-100 p-2"
                                     sx={{ width: 3 }}
                                     onInputChange={(event, newValue) => {

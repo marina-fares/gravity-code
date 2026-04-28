@@ -30,8 +30,23 @@ async function end_shift(shift, sub_shift) {
 	}
 	);
 
+		console.log("Shift end response", response)
     if (!response) {
         const actual_end = new Date().toISOString(); // only used locally
+		let date = new Date().toISOString();
+		let now = new Date();
+		const cairoDate = new Intl.DateTimeFormat('sv-SE', {
+			timeZone: 'Africa/Cairo',
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: false,
+			}).format(now).replace(' ', 'T') + '+03:00';
+		shift.end_time = cairoDate
+		sub_shift.end_time = cairoDate
         await app_post('old_shift/', { payload: shift });
         await app_post('sub_shift_history/', { payload: sub_shift });
         shift.end_time = null;

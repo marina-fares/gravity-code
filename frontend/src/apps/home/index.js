@@ -5,7 +5,7 @@ import HomeInput from './home_input';
 import { useEffect } from 'react';
 import {get_shift} from '../../components/logic/shifts_functions_apis';
 import { get_product } from '../../components/logic/booking_functions';
-
+import AlertFun from '../../components/ui/alert';
 import LoadingFun from '../../components/ui/loading';
 
 export default function Home({shift}){
@@ -15,6 +15,8 @@ export default function Home({shift}){
     let [selectedProduct, setSelectedProduct] = useState();
     const [ShiftDetails, SetShiftDetails] = useState();
     let [ isLoading, setIsLoading ] = useState()
+    let [alert, setAlert] = useState(false);
+    let [alertMessage, setAlertMessage] = useState('');
 
     useEffect(() => {
 		const fetchData = async () => {
@@ -22,8 +24,14 @@ export default function Home({shift}){
 			SetShiftDetails(shiftData);
             
             const productsData = await get_product()
-            setAllProducts(productsData)
-            setSelectedProduct(productsData[0])
+            if(productsData.status == 200){
+                setAllProducts(productsData.data)
+                setSelectedProduct(productsData.data[0])
+            }else{ 
+                setAlert(true);
+                setAlertMessage(productsData.error);
+            }
+            
             setIsLoading(false)
 
         };
@@ -36,6 +44,7 @@ export default function Home({shift}){
         <>
             { ShiftDetails && (ShiftDetails.current_shift_id !== null) && (ShiftDetails.start_time !== null) ? 
             <Grid container spacing={2}>
+                <AlertFun set_open_alert={setAlert} open_alert={alert} message={alertMessage} setLoading={(setIsLoading)} />
                 <LoadingFun open={isLoading} />
                 <Grid item xs={12} md={2} style={{marginTop:85}}>
                 <HomeInput date={date} setDate={setDate} allProducts={allProducts} selectedProduct={selectedProduct} setSelectedProduct={setSelectedProduct}/>

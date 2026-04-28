@@ -49,10 +49,20 @@ export default function Options() {
 	useEffect(() => {
 		const fetchData = async () => {
 			const shiftData = await get_shift();
-			setShiftDetails(shiftData);
+			if(shiftData.status === 200){
+			setShiftDetails(shiftData.data);
+			}	else{
+				setAlert(true);
+				setAlertMessage(shiftData.error)
+			}
 
 			const subShiftData = await get_sub_shift();
-			setSubShiftDetails(subShiftData);
+			if(subShiftData.status === 200){
+			setSubShiftDetails(subShiftData.data);
+			}	else{
+				setAlert(true);
+				setAlertMessage(subShiftData.error)
+			}
 
 			const groupName = await get_current_group();
 			setCurrentGroup(groupName)
@@ -156,13 +166,13 @@ export default function Options() {
 
 		if(paymentMethod === 'cash')
 			{
-				updatedShiftData.shift_money_cash += await parseInt(firstPaid)/100
-				updatedSubShiftData.shift_money_cash += await parseInt(firstPaid)/100
+				updatedShiftData.shift_money_cash = Number(updatedShiftData.shift_money_cash) + parseInt(firstPaid)/100
+				updatedSubShiftData.shift_money_cash = Number(updatedSubShiftData.shift_money_cash) + parseInt(firstPaid)/100
 			}
 			else if(paymentMethod === 'creditcard')
 			{
-				updatedShiftData.shift_money_visa += await parseInt(firstPaid)/100
-				updatedSubShiftData.shift_money_visa += await parseInt(firstPaid)/100
+				updatedShiftData.shift_money_visa = Number(updatedShiftData.shift_money_visa) + parseInt(firstPaid)/100
+				updatedSubShiftData.shift_money_visa = Number(updatedSubShiftData.shift_money_visa) + parseInt(firstPaid)/100
 			}
 		
 			let old_options = await (updatedShiftData.options2)? updatedShiftData.options2 : []
@@ -189,13 +199,12 @@ export default function Options() {
 					"date": today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0'),
 				"line_items": zohoItems,
 				"payment_mode":paymentMethod ,
-				"custom_fields": [{
-				"label": "Product",
-						"value": "Park"
-				},
+
+				"custom_fields": [
+					{"label": "Product","value": "Park"},
 				{
 					"label": "Gravity Branch",
-					"value": currentGroup.name
+					"value": shiftDetails.user.group_name
 				},
 				{
 					"label": "Staff Name",

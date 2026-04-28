@@ -20,7 +20,7 @@ export default function OldBookings() {
 
   const fetchData = async (sessionId) => {
       const bookingsData = await get_old_bookings_for_spesific_session(sessionId)
-      setBookings(bookingsData)
+      setBookings(bookingsData.data)
   }
 
 

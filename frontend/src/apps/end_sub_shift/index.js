@@ -20,10 +20,14 @@ export default function EndShift() {
 	useEffect(() => {
 		const fetchData = async () => {
 			const shiftData = await get_shift();
-			set_shift_details(shiftData);
-
+			if (shiftData.status === 200) {
+				set_shift_details(shiftData.data);
+			}
+			
 			const subShiftData = await get_sub_shift();
-			set_sub_shift_details(subShiftData);
+			if (subShiftData.status === 200) {
+				set_sub_shift_details(subShiftData.data);
+			}
 		};
 		fetchData();
 	}, []);

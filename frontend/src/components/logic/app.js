@@ -19,23 +19,48 @@ function app_post(url, data){
     .then(response => response.json())
 }
 
-function app_get(url, params = {}){
+async function app_get(url, params = {}) {
     let headers = {
         'Content-Type': 'application/json'
-    }
-    let token = get_jwt()
-    if(token){
-        headers['Authorization'] = `Bearer ${token}`
+    };
+
+    let token = get_jwt();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
 
     const queryString = new URLSearchParams(params).toString();
     const fullUrl = APP_BASE_URL + url + (queryString ? `?${queryString}` : '');
 
-    return fetch(fullUrl, {
-        'method': 'get',
-        headers,
-    })
-    .then(response => response.json())
+    try {
+        const response = await fetch(fullUrl, {
+            method: 'GET',
+            headers,
+        });
+
+        // ✅ Check status FIRST
+        if (!response.ok) {
+            const errorText = await response.text(); // sometimes not JSON
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        // ✅ Only parse JSON if success
+        const data = await response.json();
+
+        // optional: return full response info
+        return {
+            status: response.status,
+            data
+        };
+
+    } catch (error) {
+        console.error('GET request failed:', error);
+        return {
+            status: 'error',
+            data: null,
+            error: error.message
+        };
+    }
 }
 
 function app_delete(url, params = {}){

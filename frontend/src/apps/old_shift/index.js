@@ -22,14 +22,17 @@ export default function OldShift(){
       
     const fetchall_shifts = async () => {
         set_is_loading(true)
-        const shifts = await app_get('old_shift/');
-        set_all_shifts(shifts);
+        const shifts = await app_get('old_shift/?date=' + selected_date.toLocaleDateString('en-CA'));
+        console.log("All shifts", selected_date.toLocaleDateString('en-CA'))
+        set_all_shifts(shifts.data || []);
         set_is_loading(false)
     };
       
     useEffect(() => {
+        console.log("Selected date in useEffect", new Date())
+        console.log("Selected date in useEffect", selected_date)
         fetchall_shifts();
-    }, []);
+    }, [selected_date]);
       
 
     return (
@@ -40,7 +43,12 @@ export default function OldShift(){
                 <DatePicker
                 label="Select Date"
                 value={selected_date}
-                onChange={(newDate) => set_selected_date(new Date(newDate))}
+                
+                onChange={(newDate) => {set_selected_date(new Date(newDate))
+                    console.log("selected date", newDate)
+                }
+                    
+                }
                 renderInput={(params) => <TextField {...params} />}
                 />
             </LocalizationProvider>
