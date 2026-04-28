@@ -10,6 +10,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
+# Fail fast at startup if SECRET_KEY is missing or too short.
+# A missing key means Django starts with SECRET_KEY=None — all sessions and
+# CSRF tokens are forgeable. A key under 32 bytes triggers InsecureKeyLengthWarning
+# from PyJWT on every token verification request (visible in container logs).
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not set. "
+        "Add a random 50+ character string to your .env file."
+    )
+if len(SECRET_KEY.encode()) < 32:
+    import warnings
+    warnings.warn(
+        f"SECRET_KEY is only {len(SECRET_KEY.encode())} bytes. "
+        "Django and PyJWT recommend at least 32 bytes (50+ recommended). "
+        "Update SECRET_KEY in your .env file.",
+        stacklevel=2,
+    )
+
 PLATFORM = os.getenv('PLATFORM')
 
 if PLATFORM == 'DEVELOPMENT':
@@ -69,7 +87,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://fodev.gravitycode.me',
     'http://localhost:3000',
     'http://localhost:3001',
-    'http://localhost:8000',    # ADDED — needed for admin login POST from browser
+    'http://localhost:5000',    # ADDED — needed for admin login POST from browser
     'http://127.0.0.1:5000',   # ADDED — needed for admin login POST from browser
 ]
 
@@ -215,3 +233,19 @@ ZOHO_DOMAIN_URL = os.environ.get('ZOHO_DOMAIN_URL')
 ZOHO_REFRESH_TOKEN = os.environ.get('ZOHO_REFRESH_TOKEN')
 ZOHO_CLIENT_ID = os.environ.get('ZOHO_CLIENT_ID')
 ZOHO_CLIENT_SECRET = os.environ.get('ZOHO_CLIENT_SECRET')
+# Log Django errors to stderr so they appear in docker logs
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+        },
+    },
+}
