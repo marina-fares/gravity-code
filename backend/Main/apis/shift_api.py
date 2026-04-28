@@ -1,5 +1,5 @@
-from datetime import datetime
-
+from datetime import datetime, timedelta, time
+from django.utils import timezone
 from django.contrib.auth.models import User
 from rest_framework import generics, permissions
 from rest_framework.response import Response
@@ -74,7 +74,7 @@ class GetOldShiftApi(generics.GenericAPIView):
         if payload.get('end_time') is not None:
             current_user = User.objects.get(username=request.user)
             ProfileHistory.objects.create(
-                date=datetime.now(),
+                date=timezone.now(),
                 profile=current_user,
                 json_data=payload,
             )
@@ -83,10 +83,24 @@ class GetOldShiftApi(generics.GenericAPIView):
     def get(self, request):
         """Return shift history for the current user or group."""
         current_user = request.user
+        date_str = request.GET.get('date')
+        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        start_of_day = datetime.combine(date, time.min)
+        end_of_day = start_of_day + timedelta(days=1)
+        print("----------------------Date filter:", date, start_of_day, end_of_day)
         if current_user.is_superuser:
-            shifts = (ProfileHistory.objects
-                      .select_related("profile")
-                      .order_by("-date")[:200])
+            if date:
+                try:
+                    shifts = (ProfileHistory.objects
+                    .filter(date__range=(start_of_day, end_of_day))
+                    .select_related("profile")
+                    .order_by("-date")[:200])
+                except Exception as e:
+                    print("Error filtering by date:", e)
+            else:
+                shifts = (ProfileHistory.objects
+                        .select_related("profile")
+                        .order_by("-date")[:200])
         elif request.user.has_perm('Main.view_gravityuser'):
             group_names = list(current_user.groups.values_list("name", flat=True))
             shifts = (ProfileHistory.objects

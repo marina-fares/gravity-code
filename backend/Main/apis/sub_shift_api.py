@@ -1,8 +1,9 @@
 from datetime import datetime
+import traceback
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-
+from django.utils import timezone
 from ..models import models_sub_shift, models
 from Main.serializers.sub_shift_serializer import SubShiftSerializer, SubShiftHistorySerializer
 
@@ -45,21 +46,27 @@ class GetOldSubShiftApi(generics.GenericAPIView):
         if not payload:
             return Response({"error": "Missing 'payload'."}, status=status.HTTP_400_BAD_REQUEST)
 
+        print("Received sub-shift history payload:", payload)
         if payload.get('end_time') is not None:
-            current_user = models.User.objects.get(username=request.user)
+            current_user = request.user
             shift = models.Profile.objects.filter(user=request.user).first()
+            print("---------------------shift", shift)
             if shift:
-                models_sub_shift.SubShiftHistory.objects.create(
-                    date=datetime.now(),
-                    cash_amount=payload.get('shift_money_cash'),
-                    visa_amount=payload.get('shift_money_visa'),
-                    sub_shift_round=shift.sub_shift_round,
-                    sub_shift=current_user,
-                    json_data=payload,
-                )
-                models.Profile.objects.filter(user=request.user).update(
-                    sub_shift_round=shift.sub_shift_round + 1
-                )
+                try:
+                    models_sub_shift.SubShiftHistory.objects.create(
+                        date=timezone.now(),
+                        cash_amount=float(payload.get('shift_money_cash')),
+                        visa_amount=float(payload.get('shift_money_visa')),
+                        sub_shift_round=shift.sub_shift_round,
+                        sub_shift=current_user,
+                        json_data=payload,
+                    )
+                    models.Profile.objects.filter(user=request.user).update(
+                        sub_shift_round=shift.sub_shift_round + 1
+                    )
+                except Exception as e:
+                    print("ERROR:", str(e))
+                    traceback.print_exc()
         return Response([])
 
     def get(self, request):
