@@ -134,7 +134,7 @@ export default function OneOldBooking() {
     }
 
     async function delete_booking(){
-        const response = await delete_booking_from_square({bookingDetails, shiftDetails})
+        const response = await delete_booking_from_square({bookingDetails, shiftDetails});
         if(response !== true){
             setAlert(true)
             setAlertMessage(response?.error || response?.errors)
@@ -144,15 +144,18 @@ export default function OneOldBooking() {
         const zohoReceiptID = bookingDetails.zoho_sales_receipt_id
         await delete_booking_from_zoho({zohoReceiptID})
 
-        // const newState = 'refunded'
-        bookingDetails.status = 'refunded'
-        bookingDetails.booking_customer = bookingDetails.booking_customer.id
-        await app_put(`booking/${bookingDetails.id}/`,{}, bookingDetails)
+        // Build a clean payload without mutating React state
+        const payload = {
+            ...bookingDetails,
+            status: 'refunded',
+            booking_customer: bookingDetails.booking_customer?.id ?? bookingDetails.booking_customer,
+        };
+        await app_put(`booking/${bookingDetails.id}/`,{}, payload);
 
         await delete_from_inventory({bookingDetails, shiftDetails, subShiftDetails})
-        setRefundSuccess(true) 
+        setRefundSuccess(true)
         setAlert(true)
-        setAlertMessage("The Booking is deleted refundSuccessfully") 
+        setAlertMessage("The Booking is deleted refundSuccessfully")
     }
 
 
