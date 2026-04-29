@@ -5,6 +5,7 @@ from django.contrib.auth.admin import UserAdmin
 from django import forms
 
 import datetime as datetime
+import zoneinfo
 from django.core.exceptions import ValidationError
 from django.contrib.admin import SimpleListFilter
 from django.utils.translation import gettext_lazy as _
@@ -13,6 +14,8 @@ from rangefilter.filters import DateRangeFilter
 from django.contrib.admin.filters import DateFieldListFilter
 from django.http import HttpResponse ,HttpRequest
 from django.urls import path, reverse
+
+_CAIRO_TZ = zoneinfo.ZoneInfo("Africa/Cairo")
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.utils import timezone
@@ -550,8 +553,19 @@ class CalendarFilter(SimpleListFilter):
         value = request.GET.get(self.parameter_name)
         if value:
             try:
-                date_value = datetime.datetime.strptime(value, "%Y-%m-%d").date()
-                return queryset.filter(start_time__date=date_value)
+                local_date = datetime.datetime.strptime(value, "%Y-%m-%d").date()
+                day_start = datetime.datetime(
+                    local_date.year, local_date.month, local_date.day,
+                    0, 0, 0, tzinfo=_CAIRO_TZ,
+                )
+                day_end = datetime.datetime(
+                    local_date.year, local_date.month, local_date.day,
+                    23, 59, 59, tzinfo=_CAIRO_TZ,
+                )
+                return queryset.filter(
+                    start_time__gte=day_start,
+                    start_time__lte=day_end,
+                )
             except ValueError:
                 pass  # Ignore invalid dates
         return queryset

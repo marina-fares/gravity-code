@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, time
+import zoneinfo
+
 from django.utils import timezone
 from django.contrib.auth.models import User
 from rest_framework import generics, permissions
@@ -6,6 +8,8 @@ from rest_framework.response import Response
 
 from Main.serializers.profile_serializer import ProfileSerializer, ProfileHistorySerializer
 from ..models.models import Profile, ProfileHistory
+
+_CAIRO_TZ = zoneinfo.ZoneInfo("Africa/Cairo")
 
 # Fields the frontend is allowed to write to Profile via the shift endpoint.
 # Anything not in this list is silently stripped — prevents accidental or
@@ -30,7 +34,7 @@ class GetShiftApi(generics.GenericAPIView):
 
         if data.get('end_time') is not None:
             ProfileHistory.objects.create(
-                date=datetime.now(),
+                date=timezone.now(),
                 profile=request.user,
                 json_data=data,
             )
@@ -84,12 +88,20 @@ class GetOldShiftApi(generics.GenericAPIView):
         """Return shift history for the current user or group."""
         current_user = request.user
         date_str = request.GET.get('date')
-        date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        start_of_day = datetime.combine(date, time.min)
-        end_of_day = start_of_day + timedelta(days=1)
-        print("----------------------Date filter:", date, start_of_day, end_of_day)
+        local_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+        # Build Cairo-aware day boundaries so shifts recorded near midnight
+        # UTC are grouped under the correct Cairo local date.
+        start_of_day = datetime(
+            local_date.year, local_date.month, local_date.day,
+            0, 0, 0, tzinfo=_CAIRO_TZ,
+        )
+        end_of_day = datetime(
+            local_date.year, local_date.month, local_date.day,
+            23, 59, 59, tzinfo=_CAIRO_TZ,
+        )
         if current_user.is_superuser:
-            if date:
+            if local_date:
                 try:
                     shifts = (ProfileHistory.objects
                     .filter(date__range=(start_of_day, end_of_day))
