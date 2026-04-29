@@ -81,6 +81,7 @@ class BookingAdmin(admin.ModelAdmin):
         "id",
         "get_session_label",
         "booking_customer",
+        "customer_name",
         "number_of_players",
         "status",
         "creation_agent",

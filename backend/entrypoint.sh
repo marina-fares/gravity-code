@@ -45,7 +45,7 @@ exec gunicorn Config.wsgi:application \
     --workers "${GUNICORN_WORKERS:-4}" \
     --threads "${GUNICORN_THREADS:-2}" \
     --timeout "${GUNICORN_TIMEOUT:-120}" \
-    --reload \
+    # --reload \ # Only for development, not recommended in production
     --keep-alive 5 \
     --max-requests 1000 \
     --max-requests-jitter 100 \
