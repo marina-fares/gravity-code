@@ -30,6 +30,7 @@ Changes from the original
 """
 
 from datetime import datetime
+import zoneinfo
 
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError
@@ -39,6 +40,47 @@ from rest_framework.response import Response
 
 from ..models.models_sessions import Booking, Product, Session
 from Main.serializers.session_serializer import SessionSerializer, SessionWriteSerializer
+
+_CAIRO_TZ = zoneinfo.ZoneInfo("Africa/Cairo")
+
+
+def _cairo_day_boundaries(dt):
+    """
+    Given any aware datetime, return (day_start, day_end) as UTC-aware
+    datetimes covering the full Cairo local day that *dt* falls in.
+
+    Example: dt = 2026-04-29 22:00:00 UTC (= 2026-04-30 01:00 Cairo)
+             → day_start = 2026-04-29 21:00:00 UTC  (midnight Cairo)
+             → day_end   = 2026-04-30 20:59:59 UTC  (23:59:59 Cairo)
+    """
+    local_date = dt.astimezone(_CAIRO_TZ).date()
+    day_start = datetime(
+        local_date.year, local_date.month, local_date.day,
+        0, 0, 0, tzinfo=_CAIRO_TZ,
+    )
+    day_end = datetime(
+        local_date.year, local_date.month, local_date.day,
+        23, 59, 59, tzinfo=_CAIRO_TZ,
+    )
+    return day_start, day_end
+
+
+def _cairo_day_boundaries_from_string(date_string):
+    """
+    Given a Cairo local date string (YYYY-MM-DD) sent from the frontend,
+    return (day_start, day_end) as UTC-aware datetimes.
+    Raises ValueError if the format is wrong.
+    """
+    local_date = datetime.strptime(date_string, "%Y-%m-%d").date()
+    day_start = datetime(
+        local_date.year, local_date.month, local_date.day,
+        0, 0, 0, tzinfo=_CAIRO_TZ,
+    )
+    day_end = datetime(
+        local_date.year, local_date.month, local_date.day,
+        23, 59, 59, tzinfo=_CAIRO_TZ,
+    )
+    return day_start, day_end
 
 
 # ---------------------------------------------------------------------------
@@ -74,11 +116,16 @@ class SessionApi(generics.GenericAPIView):
         except Session.DoesNotExist:
             raise NotFound(detail=f"Session with id '{session_id}' not found.")
 
+        # Convert the anchor session's UTC start_time to Cairo day boundaries
+        # so sessions near midnight UTC are grouped under the correct local date.
+        day_start, day_end = _cairo_day_boundaries(current_session.start_time)
+
         sessions = (
             Session.objects
             .filter(
                 id__gte=session_id,
-                start_time__date=current_session.start_time.date(),
+                start_time__gte=day_start,
+                start_time__lte=day_end,
             )
             .select_related("product")   # prevents N+1 in SessionSerializer
             .order_by("start_time")
@@ -107,7 +154,7 @@ class SessionApi(generics.GenericAPIView):
             )
 
         try:
-            session_date = datetime.strptime(date_string, "%Y-%m-%d").date()
+            day_start, day_end = _cairo_day_boundaries_from_string(date_string)
         except ValueError:
             return Response(
                 {"error": f"Invalid date format '{date_string}'. Expected YYYY-MM-DD."},
@@ -116,7 +163,11 @@ class SessionApi(generics.GenericAPIView):
 
         sessions = (
             Session.objects
-            .filter(product=selected_product, start_time__date=session_date)
+            .filter(
+                product=selected_product,
+                start_time__gte=day_start,
+                start_time__lte=day_end,
+            )
             .select_related("product")   # prevents N+1 in SessionSerializer
             .order_by("start_time")
         )
@@ -156,11 +207,14 @@ class OneSessionApi(generics.GenericAPIView):
         except Session.DoesNotExist:
             raise NotFound(detail=f"Session with id '{session_id}' not found.")
 
+        day_start, day_end = _cairo_day_boundaries(current_session.start_time)
+
         sessions = (
             Session.objects
             .filter(
                 id__gte=session_id,
-                start_time__date=current_session.start_time.date(),
+                start_time__gte=day_start,
+                start_time__lte=day_end,
                 product_id=current_session.product_id,  # FK integer — no extra JOIN
             )
             .select_related("product")
