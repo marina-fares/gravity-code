@@ -48,7 +48,12 @@ export default function OneOldBooking() {
 
             
             const shiftData = await get_shift()
-            setShiftDetails(shiftData)
+            if(shiftData.status == 200){
+            setShiftDetails(shiftData.data)
+            }else{
+                setAlert(true);
+                setAlertMessage(shiftData.error);
+            }
 
             const subShiftData = await get_sub_shift()
             if(subShiftData.status == 200){
