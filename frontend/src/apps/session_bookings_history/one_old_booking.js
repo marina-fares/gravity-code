@@ -235,19 +235,19 @@ return (
     id="sessions"
     options={availableSessions?.map((session) => {
       const datetime = new Date(session.start_time);
-      return `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getUTCHours()).padStart(2, '0')}:${String(datetime.getUTCMinutes()).padStart(2, '0')}`;
+      return `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getHours()).padStart(2, '0')}:${String(datetime.getMinutes()).padStart(2, '0')}`;
     })}
     className="border-0 w-100 p-2"
     sx={{ width: '100%' }}
     value={
       selectedSession?.start_time
-        ? `${new Date(selectedSession.start_time).getFullYear()}-${String(new Date(selectedSession.start_time).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedSession.start_time).getDate()).padStart(2, '0')} ${String(new Date(selectedSession.start_time).getUTCHours()).padStart(2, '0')}:${String(new Date(selectedSession.start_time).getUTCMinutes()).padStart(2, '0')}`
+        ? `${new Date(selectedSession.start_time).getFullYear()}-${String(new Date(selectedSession.start_time).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedSession.start_time).getDate()).padStart(2, '0')} ${String(new Date(selectedSession.start_time).getHours()).padStart(2, '0')}:${String(new Date(selectedSession.start_time).getMinutes()).padStart(2, '0')}`
         : ''
     }
     onInputChange={(event, newValue) => {
       const session = availableSessions.find((session) => {
         const datetime = new Date(session.start_time);
-        const formatted = `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getUTCHours()).padStart(2, '0')}:${String(datetime.getUTCMinutes()).padStart(2, '0')}`;
+        const formatted = `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getHours()).padStart(2, '0')}:${String(datetime.getMinutes()).padStart(2, '0')}`;
         return formatted === newValue;
       });
 
