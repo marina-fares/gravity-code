@@ -44,10 +44,12 @@ class SquareAPI(generics.GenericAPIView):
             now = timezone.now() - timedelta(seconds=30)
             payload['shift']['end_at'] = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        square = SquareApiInterface()
+        square_key = request.user.profile.square_secret
+        square = SquareApiInterface(api_key=square_key)
 
         # FIX 1: SquareApiInterface.__init__ does 'Bearer ' + self.key which
         # raises TypeError if SQUARE_API_KEY is not set in the environment.
+        
         if not square.key:
             return Response(
                 {"error": "Square API key is not configured on the server."},
