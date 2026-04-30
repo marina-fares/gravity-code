@@ -45,7 +45,7 @@ class SquareAPI(generics.GenericAPIView):
             payload['shift']['end_at'] = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         square_key = request.user.profile.square_secret
-        square = SquareApiInterface(api_key=square_key)
+        square = SquareApiInterface(key=square_key)
 
         # FIX 1: SquareApiInterface.__init__ does 'Bearer ' + self.key which
         # raises TypeError if SQUARE_API_KEY is not set in the environment.
