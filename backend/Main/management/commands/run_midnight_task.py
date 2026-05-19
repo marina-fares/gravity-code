@@ -17,9 +17,14 @@ from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from dateutil.relativedelta import relativedelta
 
 from Main.models.models_sessions import Schedule, Product, Session
+
+
+# How far ahead to keep sessions populated. Daily runs mean a slight
+# leap-year drift doesn't matter; 365 days is simpler than pulling in
+# python-dateutil as a dependency.
+LOOKAHEAD_DAYS = 365
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +51,7 @@ def my_midnight_function():
                 continue
 
             start_date = latest_session.end_time.date() + timedelta(days=1)
-            end_date = (timezone.now() + relativedelta(years=1)).date()
+            end_date = (timezone.now() + timedelta(days=LOOKAHEAD_DAYS)).date()
 
             product_created = 0
             while start_date <= end_date:
