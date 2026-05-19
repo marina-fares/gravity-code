@@ -1,0 +1,77 @@
+# docker-compose.yml
+# Removed: version (obsolete), nginx service, image: tag on app
+
+services:
+
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: "gravity-app"
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      TZ: Africa/Cairo
+      PLATFORM: PRODUCTION
+      GUNICORN_WORKERS: 4
+      GUNICORN_THREADS: 2
+      GUNICORN_TIMEOUT: 120
+      LOG_LEVEL: info
+    volumes:
+      - django-static:/usr/src/app/static
+      - ./backend:/usr/src/app
+    ports:
+      - "8000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - gravity_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  db:
+    image: postgres:15-alpine
+    container_name: "gravity-db"
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${PGUSER}"
+      POSTGRES_PASSWORD: "${PGPASSWORD}"
+      POSTGRES_DB: "${PGDATABASE}"
+    env_file:
+      - ./backend/.env 
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - gravity_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "127.0.0.1:5432:5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  db-data:
+  django-static:
+
+networks:
+  gravity_net:
+    driver: bridge
