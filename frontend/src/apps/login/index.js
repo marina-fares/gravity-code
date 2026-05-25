@@ -29,7 +29,10 @@ const handleSubmit = async (event) => {
     } catch (err) {
         set_loading(false)
         set_alert(true)
-        set_error_message('Invalid email or password. Please try again.');
+        console.log('Login error:', err);
+        // err is an Error object — use .message to get the string,
+        // not the object itself (which renders as "[object Object]")
+        set_error_message(err?.message || 'Login failed. Please try again.');
     } finally {
         set_loading(false);
     }
