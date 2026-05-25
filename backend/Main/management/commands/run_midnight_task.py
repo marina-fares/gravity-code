@@ -37,34 +37,54 @@ def my_midnight_function():
 
     for product in products:
         try:
+            # BUG FIX #1: zero duration causes an infinite inner loop.
+            if not product.duration:
+                logger.warning(
+                    "Skipping product %s (%s): duration is zero or unset",
+                    product.id, getattr(product, 'name', '?'),
+                )
+                continue
+
             latest_session = (
                 Session.objects
                 .filter(product_id=product.id)
                 .order_by('-end_time')
                 .first()
             )
+
+            today = timezone.now().date()
+
             if not latest_session:
+                # BUG FIX #2: new products (or products whose sessions were all
+                # deleted) were silently skipped. Start from today instead.
+                start_date = today
+            else:
+                # BUG FIX #3: clamp to today so we never waste time iterating
+                # over past dates when the latest session is old.
+                start_date = max(
+                    latest_session.end_time.date() + timedelta(days=1),
+                    today,
+                )
+
+            end_date = (timezone.now() + timedelta(days=LOOKAHEAD_DAYS)).date()
+
+            if start_date > end_date:
                 logger.info(
-                    "Skipping product %s (%s): no existing session to extend from",
-                    product.id, getattr(product, 'name', '?'),
+                    "Product %s (%s): sessions already populated through %s, nothing to do",
+                    product.id, getattr(product, 'name', '?'), end_date,
                 )
                 continue
-
-            start_date = latest_session.end_time.date() + timedelta(days=1)
-            end_date = (timezone.now() + timedelta(days=LOOKAHEAD_DAYS)).date()
 
             product_created = 0
             while start_date <= end_date:
                 weekday = start_date.strftime('%A')
 
-                # filter().first() — never crash on a missing weekday schedule
                 selected_schedule = Schedule.objects.filter(
                     product__id=product.id,
                     weekday=weekday,
                 ).first()
 
                 if not selected_schedule or not selected_schedule.start_time or not selected_schedule.end_time:
-                    # No schedule for this weekday — skip this day for this product
                     start_date += timedelta(days=1)
                     continue
 
@@ -75,12 +95,18 @@ def my_midnight_function():
                     datetime.combine(start_date, selected_schedule.end_time)
                 )
 
+                # BUG FIX #4: except_hours was never read. The Schedule stores
+                # time strings like "10:00:00" (Python str(time) format) for
+                # slots that should be skipped. Build a set for O(1) lookup.
+                except_hours = set(selected_schedule.except_hours or [])
+
                 while start_dt <= end_dt:
                     session_end = start_dt + product.duration
 
-                    # weekday belongs INSIDE defaults — it should not be a
-                    # lookup field. get_or_create already saves the row, so
-                    # there is no redundant save() call afterward.
+                    if str(start_dt.time()) in except_hours:
+                        start_dt = session_end
+                        continue
+
                     _, created = Session.objects.get_or_create(
                         product=product,
                         start_time=start_dt,
@@ -104,7 +130,6 @@ def my_midnight_function():
             )
 
         except Exception as exc:
-            # Never let one bad product abort the whole midnight job
             total_failed_products += 1
             logger.exception(
                 "Midnight task failed for product %s (%s): %s",

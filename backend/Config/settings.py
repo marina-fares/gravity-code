@@ -59,7 +59,10 @@ INSTALLED_APPS = [
 ]
 
 CRONJOBS = [
+    # 02:00 Cairo — generate sessions for the next 365 days
     ('0 2 * * *', 'django.core.management.call_command', ['run_midnight_task']),
+    # 03:00 Cairo — delete sessions, bookings, and shift history older than 1 year
+    ('0 3 * * *', 'django.core.management.call_command', ['run_cleanup_task']),
 ]
 
 MIDDLEWARE = [
