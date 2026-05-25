@@ -268,7 +268,9 @@ class DefaultSessionAdminForm(forms.ModelForm):
                 # Delete missing sessions
                 for t in default_time_list:
                     if t not in input_time_list:
-                        delete_session(product, t, day_input)
+                        # delete_session signature is
+                        # (product, start_date, end_date, start_time, day)
+                        delete_session(product, start_date, end_date, t, day_input)
 
                 # Create new sessions
                 for t in input_time_list:

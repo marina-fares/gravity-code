@@ -2,7 +2,7 @@
 import { get_jwt } from './users'
 import { safeJson } from './utils' // Importing the safeJson function
 
-const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/';
+const APP_BASE_URL = process.env.REACT_APP_API_URL ;
 
 function app_api_post(url, data) {
     let headers = {

@@ -16,10 +16,15 @@ def _recalculate_session_seats(session):
 
 
 def _get_session_with_lock(session_id):
+    # FIX: Session.product is nullable (null=True), so Django generates a
+    # LEFT OUTER JOIN when select_related("product") is used. PostgreSQL
+    # refuses SELECT FOR UPDATE on the nullable side of an outer join.
+    # of=('self',) locks only the Session row — not the joined Product row —
+    # which is all we need to prevent concurrent seat-count races.
     return (
         Session.objects
         .select_related("product")
-        .select_for_update()
+        .select_for_update(of=('self',))
         .get(pk=session_id)
     )
 

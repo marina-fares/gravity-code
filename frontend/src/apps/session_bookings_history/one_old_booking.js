@@ -32,6 +32,7 @@ export default function OneOldBooking() {
     let [ availableSessions, setAvailableSessions ] = useState();
     let [ selectedSession, setSelectedSession ] = useState();
     let [ selectedDate, setSelectedDate ] = useState()
+    let [ sessionDetails, setSessionDetails ] = useState()
 
 
     
@@ -79,6 +80,7 @@ export default function OneOldBooking() {
                 setAvailableSessions(sessionsData)
                 setSelectedSession(currentSession)
                 setSelectedDate(date.toISOString().split('T')[0])
+                setSessionDetails(sessionData.data)
                 }else{
                     setAlert(true);
                     setAlertMessage(sessionData.error);

@@ -17,6 +17,7 @@ services:
       GUNICORN_WORKERS: 4
       GUNICORN_THREADS: 2
       GUNICORN_TIMEOUT: 120
+      GUNICORN_RELOAD: "true"
       LOG_LEVEL: info
     volumes:
       - django-static:/usr/src/app/static

@@ -84,13 +84,12 @@ RUN SECRET_KEY=build-time-only-not-used-at-runtime \
     PGUSER=x PGPASSWORD=x PGDATABASE=x \
     python manage.py collectstatic --noinput
 
-# Start cron as root before dropping privileges
-RUN cron
-
-# Drop root
+# Create a non-root owner for the app files (cron daemon still needs root to
+# start at runtime, so we do NOT set USER here — entrypoint.sh starts cron
+# as root then continues as root; Gunicorn itself drops privileges per-worker
+# via its own --user flag if needed).
 RUN useradd --no-create-home --shell /bin/false appuser \
     && chown -R appuser:appuser $APP_HOME
-USER appuser
 
 EXPOSE 5000
 
