@@ -1,142 +1,130 @@
-import React, { useState } from "react";
-import { create_order, create_payment_api } from "./functions_api";
-import { useEffect } from "react";
-import { get_shift } from "../../components/logic/shifts_functions_apis";
-import { RadioGroup, FormControlLabel, Radio } from "@mui/material";
-import LoadingFun from "../../components/ui/loading";
-import AlertFun from "../../components/ui/alert";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { create_order, create_payment_api } from './functions_api';
+import { useEffect } from 'react';
+import { get_shift } from '../../components/logic/shifts_functions_apis';
+import { RadioGroup, FormControlLabel, Radio, Typography, Box, Paper, Button } from '@mui/material';
+import LoadingFun from '../../components/ui/loading';
+import AlertFun from '../../components/ui/alert';
+import { useNavigate } from 'react-router-dom';
 
 export default function Keypad() {
-    const navigate = useNavigate();
-    const [input, setInput] = useState("");
-    let [ shiftDetails, setShiftDetails] = useState('')
-    let [ paymentMethod, setPaymentMethod] = useState('cash')
-    let [ isLoading, setIsLoading ] = useState(false)
-    let [ alertMessage, setAlertMessage ] = useState('')
-    let [ alert, setAlert ] = useState(false)
+  const navigate = useNavigate();
+  const [input, setInput] = useState('');
+  let [shiftDetails, setShiftDetails] = useState('');
+  let [paymentMethod, setPaymentMethod] = useState('cash');
+  let [isLoading, setIsLoading] = useState(false);
+  let [alertMessage, setAlertMessage] = useState('');
+  let [alert, setAlert] = useState(false);
 
-    useEffect(()=>{
-        const fetchData = async ()=>{
-          const shiftData = await get_shift()
-          setShiftDetails(shiftData)
-        }
-        fetchData()
-    },[])
+  useEffect(() => {
+    const fetchData = async () => {
+      const shiftData = await get_shift();
+      setShiftDetails(shiftData);
+    };
+    fetchData();
+  }, []);
 
   const handleClick = (val) => {
     if (input.length < 10) setInput((prev) => prev + val);
   };
 
-  const handleClear = () => setInput("");
+  const handleClear = () => setInput('');
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    setInput("");
+    setInput('');
     const amount = input;
-    const orderDetails = await create_order({shiftDetails, amount})
-    if(orderDetails.error)
-    {
-        setAlert(true);
-        setAlertMessage(orderDetails.error);
-        return;
+    const orderDetails = await create_order({ shiftDetails, amount });
+    if (orderDetails.error) {
+      setAlert(true);
+      setAlertMessage(orderDetails.error);
+      setIsLoading(false);
+      return;
     }
-    const response2 = await create_payment_api({shiftDetails, orderDetails, paymentMethod})
-    if(response2.error)
-    {
-        setAlert(true);
-        setAlertMessage(response2.error);
-        return;
+    const response2 = await create_payment_api({ shiftDetails, orderDetails, paymentMethod });
+    if (response2.error) {
+      setAlert(true);
+      setAlertMessage(response2.error);
+      setIsLoading(false);
+      return;
     }
-    navigate('/')
+    navigate('/');
   };
 
   const handleInputChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    const value = e.target.value.replace(/\D/g, '');
     if (value.length <= 10) setInput(value);
   };
 
-  const keys = [
-    1, 2, 3,
-    4, 5, 6,
-    7, 8, 9,
-    "Clear", 0, "Submit"
-  ];
+  const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, 'Clear', 0, 'Submit'];
 
   return (
-    <div style={styles.container}>
-        <LoadingFun open={isLoading} />
-        <AlertFun open_alert={alert} set_open_alert={setAlert} message={alertMessage} setLoading={setIsLoading} />
+    <Box sx={{ maxWidth: 280, mx: 'auto', mt: 6 }}>
+      <LoadingFun open={isLoading} />
+      <AlertFun open_alert={alert} set_open_alert={setAlert} message={alertMessage} setLoading={setIsLoading} />
+
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid var(--gc-border2)' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: 'secondary.main', mb: 2.5, textAlign: 'center' }}>
+          Keypad
+        </Typography>
+
+        {/* ── Display ──────────────────────────────── */}
         <input
-            type="text"
-            value={input}
-            onChange={handleInputChange}
-            style={styles.input}
-            placeholder="Enter number"
+          type="text"
+          value={input}
+          onChange={handleInputChange}
+          className="gc-keypad-input"
+          placeholder="0"
         />
-        <div style={styles.grid}>
-            {keys.map((key, idx) => (
-            <button
-                key={idx}
-                onClick={() => {
-                if (key === "Clear") handleClear();
-                else if (key === "Submit") handleSubmit();
-                else handleClick(key);
-                }}
-                style={{
-                ...styles.button,
-                background: key === "Submit" ? "#4caf50" : key === "Clear" ? "#f44336" : "#e0e0e0"
-                }}
-            >
-                {key}
-            </button>
-            ))}
-        </div>
-        <RadioGroup
-            row
-            aria-labelledby="demo-row-radio-buttons-group-label"
-            name="row-radio-buttons-group"
-            onChange={(e) => {
-                setPaymentMethod(e.target.value)}}
-            defaultValue="cash"
+
+        {/* ── Number grid ──────────────────────────── */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 1,
+            mb: 2.5,
+          }}
         >
-        <FormControlLabel value="cash" control={<Radio />} label="Cash" className="w-50" />
-        <FormControlLabel value="creditcard" control={<Radio />} label="Credit" />
+          {keys.map((key, idx) => {
+            const isSubmit = key === 'Submit';
+            const isClear = key === 'Clear';
+            return (
+              <Button
+                key={idx}
+                variant={isSubmit ? 'contained' : isClear ? 'outlined' : 'outlined'}
+                color={isSubmit ? 'primary' : isClear ? 'error' : 'secondary'}
+                onClick={() => {
+                  if (isClear) handleClear();
+                  else if (isSubmit) handleSubmit();
+                  else handleClick(key);
+                }}
+                sx={{
+                  height: 56,
+                  fontSize: isSubmit || isClear ? '0.85rem' : '1.25rem',
+                  fontWeight: isSubmit || isClear ? 600 : 500,
+                  borderRadius: 2,
+                  minWidth: 0,
+                }}
+              >
+                {key}
+              </Button>
+            );
+          })}
+        </Box>
+
+        {/* ── Payment method ───────────────────────── */}
+        <RadioGroup
+          row
+          name="payment-method"
+          onChange={(e) => setPaymentMethod(e.target.value)}
+          defaultValue="cash"
+          sx={{ justifyContent: 'center', gap: 1 }}
+        >
+          <FormControlLabel value="cash" control={<Radio size="small" />} label="Cash" />
+          <FormControlLabel value="creditcard" control={<Radio size="small" />} label="Credit" />
         </RadioGroup>
-    </div>
+      </Paper>
+    </Box>
   );
 }
-
-const styles = {
-  container: {
-    width: "220px",
-    margin: "30px auto",
-    padding: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "12px",
-    textAlign: "center",
-    fontFamily: "Arial",
-  },
-  input: {
-    width: "100%",
-    padding: "10px",
-    fontSize: "18px",
-    textAlign: "center",
-    marginBottom: "10px",
-    border: "1px solid #888",
-    borderRadius: "6px"
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "8px",
-  },
-button: {
-  height: "60px",
-  fontSize: "20px",
-  border: "none",
-  borderRadius: "6px",
-  cursor: "pointer",
-  backgroundColor: "#e0e0e0",
-}
-};

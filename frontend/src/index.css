@@ -1,13 +1,181 @@
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ── Design Tokens ───────────────────────────────────────────────────────── */
+/* CSS vars are injected by the MUI theme (theme.js → MuiCssBaseline)        */
+/* Changing palette.primary.main in theme.js updates all --gc-* vars here    */
+
+/* ── Base Reset ──────────────────────────────────────────── */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--gc-bg);
+  color: var(--gc-text);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* ── App Layout ─────────────────────────────────────────── */
+.App {
+  min-height: 100vh;
+  background-color: var(--gc-bg);
+}
+
+/* ── Bootstrap Card Overrides ────────────────────────────── */
+.card {
+  border-radius: 12px !important;
+  border: 1px solid var(--gc-border2) !important;
+  box-shadow: var(--gc-shadow) !important;
+  background-color: var(--gc-surface) !important;
+  transition: box-shadow 0.2s ease !important;
+}
+
+.card:hover {
+  box-shadow: 0 4px 20px rgba(0,174,239,0.15) !important;
+}
+
+.card-header {
+  background: linear-gradient(135deg, var(--gc-bg) 0%, var(--gc-bg2) 100%) !important;
+  border-bottom: 1px solid var(--gc-border) !important;
+  color: var(--gc-navy) !important;
+  font-weight: 600;
+  border-radius: 11px 11px 0 0 !important;
+  padding: 12px 18px !important;
+  font-family: 'Inter', sans-serif;
+}
+
+.card-body {
+  padding: 20px !important;
+}
+
+.card-title {
+  color: var(--gc-navy) !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', sans-serif;
+  margin-bottom: 12px !important;
+}
+
+/* ── Bootstrap Table Overrides ───────────────────────────── */
+.table {
+  color: var(--gc-text);
+  font-family: 'Inter', sans-serif;
+}
+
+.table > thead > tr > th {
+  background-color: var(--gc-bg) !important;
+  color: var(--gc-navy) !important;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 2px solid var(--gc-border) !important;
+  padding: 12px 16px !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(0,174,239,0.025) !important;
+  color: var(--gc-text);
+}
+
+.table > tbody > tr:hover > * {
+  background-color: rgba(0,174,239,0.05) !important;
+}
+
+.table > tbody > tr > td {
+  border-color: var(--gc-border2) !important;
+  padding: 10px 16px !important;
+  font-size: 0.875rem;
+}
+
+/* ── Bootstrap List Group Overrides ─────────────────────── */
+.list-group-item {
+  border-color: var(--gc-border2) !important;
+  font-family: 'Inter', sans-serif;
+}
+
+.list-group-item-secondary {
+  background-color: var(--gc-bg) !important;
+  color: var(--gc-navy) !important;
+  border-color: var(--gc-border) !important;
+}
+
+/* ── Typography ─────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  color: var(--gc-navy);
+}
+
+/* ── Links ──────────────────────────────────────────────── */
+a {
+  color: var(--gc-blue);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--gc-navy);
+}
+
+/* ── Keypad component ───────────────────────────────────── */
+.gc-keypad-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  border: 2px solid var(--gc-border);
+  border-radius: 10px;
+  background: var(--gc-surface);
+  color: var(--gc-navy);
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 12px;
+}
+
+.gc-keypad-input:focus {
+  border-color: var(--gc-blue);
+  box-shadow: 0 0 0 3px rgba(0,174,239,0.15);
+}
+
+/* ── Utility Badges ─────────────────────────────────────── */
+.gc-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.gc-badge-primary {
+  background-color: rgba(0,174,239,0.12);
+  color: #0091C7;
+}
+
+.gc-badge-warning {
+  background-color: rgba(247,148,29,0.12);
+  color: #D4780A;
+}
+
+.gc-badge-success {
+  background-color: rgba(16,185,129,0.12);
+  color: #059669;
+}
+
+.gc-badge-error {
+  background-color: rgba(233,30,140,0.12);
+  color: #C4006F;
+}
+
+.gc-badge-navy {
+  background-color: rgba(27,58,107,0.10);
+  color: #1B3A6B;
 }

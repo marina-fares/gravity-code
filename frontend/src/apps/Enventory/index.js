@@ -1,92 +1,92 @@
-import { Button, Grid, InputLabel, TextField } from '@mui/material';
+import { Button, Grid, TextField, Typography, Box, Paper } from '@mui/material';
 import { Fragment, useEffect, useState } from 'react';
-
-import Card from 'react-bootstrap/Card';
-import Input from '@mui/material/Input';
-import { Delete, Add } from '@mui/icons-material';
-import { get_shift, set_shift_fun} from './shifts_functions';
-import { useNavigate } from "react-router-dom";
-
+import { get_shift, set_shift_fun } from './shifts_functions';
+import { useNavigate } from 'react-router-dom';
 
 export default function Inventory() {
-	let [updated_shift, set_updated_shift] = useState({});
-	// let [updated_shift, set_updated_shift] = useState({});
-	let [hide, set_hide] = useState(false);
+  let [updated_shift, set_updated_shift] = useState({});
+  let [hide, set_hide] = useState(false);
 
-	
+  useEffect(() => {
+    let x = get_shift();
+    x.then((x) => {
+      if (x.status === 200) {
+        set_updated_shift(x.data);
+      }
+      x.current_shift_id === null ? set_hide(true) : set_hide(false);
+    });
+  }, []);
 
-	useEffect(() => {
-		let x = get_shift();		
-		x.then((x) => {
-			if(x.status === 200) {
-				set_updated_shift(x.data);
-			}
-			(x.current_shift_id === null)?set_hide(true): set_hide(false)
-		});
-	}, []);
+  function onStartShift() {
+    set_shift_fun(updated_shift);
+  }
 
-	function onStartShift() {
-		set_shift_fun(updated_shift);
-		
-	}
+  function updated_shift_fun(key) {
+    let value = document.getElementById(key).value;
+    updated_shift.inventory[key]['start_shift'] = parseInt(value);
+    set_updated_shift({ ...updated_shift });
+  }
 
+  if (hide) {
+    return (
+      <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: 3, textAlign: 'center', maxWidth: 400, border: '1px solid var(--gc-border2)' }}>
+          <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 600 }}>
+            No Active Shift
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Loading your shift… If you haven't started your shift yet, kindly do so.
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
 
-	function updated_shift_fun(key) {
+  return (
+    <Box sx={{ maxWidth: 960, mx: 'auto', mt: 2 }}>
+      {updated_shift && (
+        <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid var(--gc-border2)' }}>
 
-			let value = document.getElementById(key).value;
-			
-			updated_shift.inventory[key]['start_shift'] = parseInt(value);
-			set_updated_shift({ ...updated_shift });
-			// set_add_hidden(true);
-	}
+          <Box
+            sx={{
+              px: 3, py: 2.5,
+              background: 'linear-gradient(135deg, var(--gc-bg) 0%, var(--gc-bg2) 100%)',
+              borderBottom: '1px solid var(--gc-border)',
+            }}
+          >
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+              Inventory
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Update opening inventory counts for the current shift.
+            </Typography>
+          </Box>
 
-	return (
-		<div>
-		{(!hide)?  updated_shift &&
-			<Card style={{ marginTop: 100 }}>
-			<Card.Body>
-				<Card.Title>Start Shift</Card.Title>
-				<Grid container spacing={2}>
+          <Box sx={{ p: 3 }}>
+            <Grid container spacing={2}>
+              {updated_shift.inventory &&
+                Object.keys(updated_shift.inventory).map((key) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
+                    <TextField
+                      inputMode="numeric"
+                      label={key}
+                      id={key}
+                      value={updated_shift.inventory[key].start_shift || 0}
+                      onChange={() => updated_shift_fun(key)}
+                      fullWidth
+                    />
+                  </Grid>
+                ))}
+            </Grid>
 
-					<Grid item xs={12} md={12}>
-						<Card.Title>Inventory</Card.Title>
-						<Grid container spacing={2}>
-							{updated_shift.inventory &&
-								Object.keys(updated_shift.inventory).map((key, i) => {
-									return (
-									
-										<Grid xs={12} md={6} lg={4} item key={key}>
-											<div className='m-2' style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-												<span style={{ width: 100 }}>{key}</span>
-												<TextField inputMode='numeric' label={key} id={key} value={updated_shift.inventory[key].start_shift || 0} onChange={(e) => {updated_shift_fun(key)}}></TextField>
-											</div>
-										</Grid>
-									);
-								})}
-							{/* {!shift.inventory ||
-								(Object.keys(shift.inventory).length === 0 && (
-									<Grid xs={12} md={12} lg={12} item>
-										<Add onClick={onAdd} hidden={!add_hidden} />
-									</Grid>
-								))} */}
-						</Grid>
-						{/* <Grid xs={12} md={12} lg={12} item hidden={add_hidden}>
-							<TextField id='key' label='Key' />
-							<TextField id='value' label='Value' />
-							<Add onClick={onAdd} />
-						</Grid> */}
-					</Grid>
-				</Grid>
-				<Grid container spacing={2}>
-					<Grid item xs={12} md={12} style={{ display: 'flex', justifyContent: 'right', alignItems: 'right', marginTop:10 }}>
-				<Button variant="outlined" onClick={onStartShift} >Update</Button>
-				   </Grid>
-				</Grid>
-
-			</Card.Body>
-		</Card> : 
-			<div>Loading Your shift..., If you haven't started your shift yet, kindly do so.</div>
-		}
-		</div>
-	);
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
+              <Button variant="contained" size="large" onClick={onStartShift} sx={{ px: 4 }}>
+                Update Inventory
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
+      )}
+    </Box>
+  );
 }

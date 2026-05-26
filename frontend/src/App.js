@@ -80,7 +80,7 @@ function App() {
 	return (
 		<div className="App">
 				{user && <NavBar />}
-				<Container maxWidth="xl">
+				<Container maxWidth="xl" sx={{ pt: 3, pb: 5 }}>
 					<Routes>
 						{user && user.is_staff && (
 							<>
