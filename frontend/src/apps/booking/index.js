@@ -3,8 +3,11 @@ import { useParams } from 'react-router-dom';
 import { get_localstorage, set_localstorage } from '../../components/logic/localstorage';
 import {
   Grid, TextField, Button, Input, FormControl, RadioGroup,
-  FormControlLabel, Radio, Checkbox, Typography, Box, Paper, Divider, Chip
+  FormControlLabel, Radio, Checkbox, Typography, Box, Paper, Divider, Chip,
+  IconButton, InputBase
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import Autocomplete from '@mui/material/Autocomplete';
 import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis';
 import LoadingFun from '../../components/ui/loading';
@@ -153,6 +156,14 @@ export default function Booking() {
       ...selectedOptions,
       [e.target.name]: e.target.value.length === 0 ? 0 : e.target.value,
     }));
+  }
+
+  function handle_addon_change(key, delta) {
+    setSelectedOptions((prev) => {
+      const current = Number(prev[key] || 0);
+      const next = Math.max(0, Math.min(sessionsDetails[0].available_seats, current + delta));
+      return { ...prev, [key]: String(next) };
+    });
   }
 
   function set_options_for_apis() {
@@ -367,13 +378,14 @@ export default function Booking() {
                         renderInput={(params) => <TextField {...params} label="Customer Name" size="small" />}
                         sx={{ flex: 1 }}
                       />
-                      <Input
+                      <TextField
                         value={numberOfPlayers}
                         inputProps={{ min: 1, max: sessionsDetails[0].available_seats }}
                         onChange={(e) => setNumberOfPlayers(Number(e.target.value))}
                         type="number"
-                        sx={{ width: 70, mt: 0.5 }}
-                        placeholder="Qty"
+                        size="small"
+                        label="Players"
+                        sx={{ width: 90 }}
                       />
                       <FormControlLabel
                         control={
@@ -479,24 +491,90 @@ export default function Booking() {
                       Add-Ons
                     </Typography>
 
-                    {[
-                      ...Object.entries(allSquareItems['Add On'] || {}),
-                      ...Object.entries(allSquareItems[sessionsDetails[0].product.nick_name + '+'] || {}),
-                    ].map(([key, value]) => (
-                      <Box key={value} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="body2" sx={{ flex: 1, fontWeight: 500, color: 'text.primary' }}>
-                          {key}
-                        </Typography>
-                        <Input
-                          inputProps={{ min: 0, max: sessionsDetails[0].available_seats }}
-                          onChange={(e) => set_selected_options(e)}
-                          type="number"
-                          name={key}
-                          id={value}
-                          sx={{ width: 70 }}
-                        />
-                      </Box>
-                    ))}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {[
+                        ...Object.entries(allSquareItems['Add On'] || {}),
+                        ...Object.entries(allSquareItems[sessionsDetails[0].product.nick_name + '+'] || {}),
+                      ].map(([key, value]) => {
+                        const qty = Number(selectedOptions[key] || 0);
+                        const isActive = qty > 0;
+                        return (
+                          <Box
+                            key={value}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              px: 1.5,
+                              py: 1,
+                              borderRadius: 2,
+                              border: '1px solid',
+                              borderColor: isActive ? 'primary.main' : 'var(--gc-border2)',
+                              bgcolor: isActive ? 'rgba(var(--gc-blue-rgb), 0.04)' : 'action.hover',
+                              transition: 'border-color 0.15s, background 0.15s',
+                              '&:hover': {
+                                borderColor: 'primary.main',
+                                boxShadow: '0 2px 8px rgba(var(--gc-blue-rgb), 0.10)',
+                              },
+                            }}
+                          >
+                            {/* Label — click to increment */}
+                            <Box
+                              onClick={() => handle_addon_change(key, 1)}
+                              sx={{ cursor: 'pointer', flex: 1, userSelect: 'none', py: 0.5, '&:hover .addon-label': { color: 'primary.main' } }}
+                            >
+                              <Typography
+                                className="addon-label"
+                                variant="body2"
+                                sx={{ fontWeight: 600, color: isActive ? 'primary.main' : 'secondary.main', lineHeight: 1.3, transition: 'color 0.15s' }}
+                              >
+                                {key}
+                              </Typography>
+                            </Box>
+
+                            {/* − value + stepper */}
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                border: '1.5px solid',
+                                borderColor: isActive ? 'primary.main' : 'var(--gc-border2)',
+                                borderRadius: 1.5,
+                                overflow: 'hidden',
+                                bgcolor: 'background.paper',
+                              }}
+                            >
+                              <IconButton
+                                size="small"
+                                onClick={() => handle_addon_change(key, -1)}
+                                disabled={qty === 0}
+                                sx={{ width: 28, height: 28, borderRadius: 0, color: 'primary.main', '&:hover': { bgcolor: 'rgba(var(--gc-blue-rgb), 0.08)' } }}
+                              >
+                                <RemoveIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                              <InputBase
+                                type="number"
+                                value={qty}
+                                onChange={(e) => {
+                                  const val = Math.max(0, Math.min(sessionsDetails[0].available_seats, parseInt(e.target.value) || 0));
+                                  setSelectedOptions((prev) => ({ ...prev, [key]: String(val) }));
+                                }}
+                                inputProps={{ min: 0, max: sessionsDetails[0].available_seats, style: { textAlign: 'center', fontWeight: 700, fontSize: '0.875rem', padding: 0, width: 36, height: 28, color: isActive ? 'var(--gc-blue)' : 'var(--gc-text)' } }}
+                                sx={{ borderLeft: '1.5px solid var(--gc-border2)', borderRight: '1.5px solid var(--gc-border2)' }}
+                              />
+                              <IconButton
+                                size="small"
+                                onClick={() => handle_addon_change(key, 1)}
+                                disabled={qty >= sessionsDetails[0].available_seats}
+                                sx={{ width: 28, height: 28, borderRadius: 0, color: 'primary.main', '&:hover': { bgcolor: 'rgba(var(--gc-blue-rgb), 0.08)' } }}
+                              >
+                                <AddIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                            </Box>
+                          </Box>
+                        );
+                      })}
+                    </Box>
 
                     <Divider sx={{ my: 1 }} />
 

@@ -13,7 +13,7 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
 import logout from '../logic/logout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../../gravity.png';
 import { get_user_and_jwt } from '../logic/users';
 import { get_shift } from '../logic/shifts_functions_apis';
@@ -50,6 +50,16 @@ const NavBar = () => {
   }
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Map each page label to its route path for active detection
+  const pageRoutes = {
+    'Available Sessions': '/home',
+    'Options': '/options',
+    'Inventory': '/inventory',
+    'Shifts History': '/old_shift',
+    'Bookings History': '/bookings_history',
+  };
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -105,19 +115,18 @@ const NavBar = () => {
             <img
               src={logo}
               alt="Gravity Code"
-              style={{ width: 42, height: 42, borderRadius: 8, objectFit: 'contain' }}
+              style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'contain' }}
             />
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                color: '#ffffff',
-                letterSpacing: '0.04em',
-                lineHeight: 1,
-              }}
-            >
-              Gravity Code
-            </Typography>
+            <Box sx={{ lineHeight: 1 }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, lineHeight: 1, letterSpacing: '0.02em' }}
+              >
+                <Box component="span" sx={{ color: 'primary.main' }}>Gravity</Box>
+                {' '}
+                <Box component="span" sx={{ color: 'secondary.main' }}>Code</Box>
+              </Typography>
+            </Box>
           </Box>
 
           {/* ── Hamburger menu (mobile) ────────────────────── */}
@@ -128,7 +137,7 @@ const NavBar = () => {
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={handleOpenNavMenu}
-              sx={{ color: '#ffffff' }}
+              sx={{ color: 'text.secondary' }}
             >
               <MenuIcon />
             </IconButton>
@@ -165,36 +174,46 @@ const NavBar = () => {
             <img
               src={logo}
               alt="Gravity Code"
-              style={{ width: 38, height: 38, borderRadius: 6, objectFit: 'contain' }}
+              style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'contain' }}
             />
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '1rem' }}>
-              Gravity Code
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem' }}>
+              <Box component="span" sx={{ color: 'primary.main' }}>Gravity</Box>
+              {' '}
+              <Box component="span" sx={{ color: 'secondary.main' }}>Code</Box>
             </Typography>
           </Box>
 
           {/* ── Nav links (desktop) ────────────────────────── */}
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 0.5 }}>
-            {pages.map((page) => (
-              <Button
-                key={page}
-                id={page}
-                onClick={handleCloseNavMenu}
-                sx={{
-                  color: 'rgba(255,255,255,0.85)',
-                  fontWeight: 500,
-                  fontSize: '0.85rem',
-                  px: 1.5,
-                  py: 1,
-                  borderRadius: 2,
-                  '&:hover': {
-                    color: '#ffffff',
-                    backgroundColor: 'rgba(var(--gc-blue-rgb), 0.18)',
-                  },
-                }}
-              >
-                {page}
-              </Button>
-            ))}
+            {pages.map((page) => {
+              const isActive = location.pathname === pageRoutes[page] ||
+                (page === 'Available Sessions' && location.pathname === '/');
+              return (
+                <Button
+                  key={page}
+                  id={page}
+                  onClick={handleCloseNavMenu}
+                  sx={{
+                    color: isActive ? '#ffffff' : 'text.secondary',
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: '0.85rem',
+                    px: 2,
+                    py: 0.75,
+                    borderRadius: 50,
+                    backgroundColor: isActive ? 'primary.main' : 'transparent',
+                    textTransform: 'none',
+                    '&:hover': {
+                      color: isActive ? '#ffffff' : 'secondary.main',
+                      backgroundColor: isActive
+                        ? 'primary.dark'
+                        : 'rgba(var(--gc-blue-rgb), 0.08)',
+                    },
+                  }}
+                >
+                  {page}
+                </Button>
+              );
+            })}
           </Box>
 
           {/* ── User avatar / menu ─────────────────────────── */}
@@ -207,8 +226,9 @@ const NavBar = () => {
                     height: 36,
                     fontSize: '0.85rem',
                     fontWeight: 700,
-                    bgcolor: 'primary.main',
-                    border: '2px solid rgba(255,255,255,0.3)',
+                    bgcolor: 'warning.main',
+                    color: '#ffffff',
+                    border: '2px solid var(--gc-border)',
                   }}
                 >
                   {initials}

@@ -60,7 +60,7 @@ const theme = createTheme({
   },
 
   typography: {
-    fontFamily: '"Inter", "Segoe UI", "Roboto", sans-serif',
+    fontFamily: '"Outfit", "Segoe UI", "Roboto", sans-serif',
     h1: { fontWeight: 800, lineHeight: 1.2 },
     h2: { fontWeight: 700, lineHeight: 1.3 },
     h3: { fontWeight: 700, lineHeight: 1.3 },
@@ -106,7 +106,7 @@ const theme = createTheme({
         }
         body {
           background-color: ${t.palette.background.default};
-          font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+          font-family: 'Outfit', 'Segoe UI', 'Roboto', sans-serif;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           color: ${t.palette.text.primary};
@@ -258,11 +258,13 @@ const theme = createTheme({
     MuiAppBar: {
       defaultProps: { elevation: 0 },
       styleOverrides: {
-        root: ({ theme: t }) => ({
-          backgroundColor: t.palette.secondary.main,
-          borderBottom: `3px solid ${t.palette.primary.main}`,
-          boxShadow: '0 2px 12px rgba(var(--gc-navy-rgb), 0.25)',
-        }),
+        root: {
+          backgroundColor: '#ffffff',
+          borderBottom: '1px solid var(--gc-border)',
+          boxShadow: '0 2px 16px rgba(var(--gc-navy-rgb), 0.08)',
+          borderRadius: 16,
+          overflow: 'hidden',
+        },
       },
     },
     MuiToolbar: {

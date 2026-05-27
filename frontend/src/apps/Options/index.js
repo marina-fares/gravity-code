@@ -8,8 +8,10 @@ import * as React from 'react';
 import { get_user_and_jwt } from '../../components/logic/users';
 import {
   Grid, Input, Button, FormControl, TextField, RadioGroup,
-  FormControlLabel, Radio, Typography, Box, Paper, Divider
+  FormControlLabel, Radio, Typography, Box, Paper, Divider, IconButton, InputBase
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import LoadingFun from '../../components/ui/loading';
 import AlertFun from '../../components/ui/alert';
 import { InvoicePrint } from '../../components/ui/booking_invoice';
@@ -275,6 +277,14 @@ export default function Options() {
     }
   };
 
+  function handle_option_change(key, delta) {
+    setOptions((prev) => {
+      const current = Number((prev[key] || [0])[0]);
+      const next = Math.max(0, current + delta);
+      return { ...prev, [key]: [next] };
+    });
+  }
+
   if (!shiftDetails || !shiftDetails.current_shift_id) {
     return (
       <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>
@@ -333,38 +343,92 @@ export default function Options() {
             </Typography>
           </Box>
 
-          <Grid container spacing={2}>
-            {shiftDetails && Object.keys(shiftDetails.inventory).map((key) => (
-              <Grid item xs={12} sm={6} md={4} key={key}>
-                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2.5, border: '1px solid var(--gc-border2)', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleAddInput(key)}
-                    size="small"
-                    fullWidth
-                    sx={{ fontWeight: 600, textAlign: 'left', justifyContent: 'flex-start' }}
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid var(--gc-border2)', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', fontSize: '0.72rem', mb: 0.5, gridColumn: '1 / -1' }}>
+              Inventory Items
+            </Typography>
+            {shiftDetails && Object.keys(shiftDetails.inventory).map((key) => {
+              const qty = Number((options[key] || [0])[0]);
+              const isActive = qty > 0;
+              return (
+                <Box
+                  key={key}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    px: 1.5,
+                    py: 1,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: isActive ? 'primary.main' : 'var(--gc-border2)',
+                    bgcolor: isActive ? 'rgba(var(--gc-blue-rgb), 0.04)' : 'action.hover',
+                    transition: 'border-color 0.15s, background 0.15s',
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 2px 8px rgba(var(--gc-blue-rgb), 0.10)',
+                    },
+                  }}
+                >
+                  {/* Label — click to increment */}
+                  <Typography
+                    variant="body2"
+                    onClick={() => handle_option_change(key, 1)}
+                    sx={{
+                      fontWeight: 600,
+                      color: isActive ? 'primary.main' : 'secondary.main',
+                      cursor: 'pointer',
+                      flex: 1,
+                      userSelect: 'none',
+                      py: 0.5,
+                      '&:hover': { color: 'primary.main' },
+                    }}
                   >
-                    {key} ＋
-                  </Button>
-                  {(options[key] || ['']).map((value, idx) => (
-                    <Input
-                      key={idx}
-                      fullWidth
+                    {key}
+                  </Typography>
+
+                  {/* − value + stepper */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      border: '1.5px solid',
+                      borderColor: isActive ? 'primary.main' : 'var(--gc-border2)',
+                      borderRadius: 1.5,
+                      overflow: 'hidden',
+                      bgcolor: 'background.paper',
+                    }}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={() => handle_option_change(key, -1)}
+                      disabled={qty === 0}
+                      sx={{ width: 28, height: 28, borderRadius: 0, color: 'primary.main', '&:hover': { bgcolor: 'rgba(var(--gc-blue-rgb), 0.08)' } }}
+                    >
+                      <RemoveIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                    <InputBase
                       type="number"
-                      value={value}
-                      label={`${key} ${idx + 1}`}
+                      value={qty}
                       onChange={(e) => {
-                        setOptions((options) => ({
-                          ...options,
-                          [key]: parseInt(e.target.value) > 0 ? [parseInt(e.target.value)] : [0],
-                        }));
+                        const val = Math.max(0, parseInt(e.target.value) || 0);
+                        setOptions((prev) => ({ ...prev, [key]: [val] }));
                       }}
+                      inputProps={{ min: 0, style: { textAlign: 'center', fontWeight: 700, fontSize: '0.875rem', padding: 0, width: 36, height: 28, color: isActive ? 'var(--gc-blue)' : 'var(--gc-text)' } }}
+                      sx={{ borderLeft: '1.5px solid var(--gc-border2)', borderRight: '1.5px solid var(--gc-border2)' }}
                     />
-                  ))}
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+                    <IconButton
+                      size="small"
+                      onClick={() => handle_option_change(key, 1)}
+                      sx={{ width: 28, height: 28, borderRadius: 0, color: 'primary.main', '&:hover': { bgcolor: 'rgba(var(--gc-blue-rgb), 0.08)' } }}
+                    >
+                      <AddIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </Box>
+                </Box>
+              );
+            })}
+          </Paper>
 
           {/* ── Custom item + payment ─────────────── */}
           <Paper elevation={0} sx={{ mt: 3, p: 3, borderRadius: 2.5, border: '1px solid var(--gc-border2)' }}>

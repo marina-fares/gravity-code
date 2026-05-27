@@ -16,6 +16,14 @@ export default function List({ date, availableSessions, selectedProduct }) {
     navigate(`/oldbookings/${session_id}`);
   }
 
+  // ── Detect the current active session ────────────────────
+  const now = new Date();
+  const todayStr = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0');
+  const isToday = date === todayStr;
+  const currentHour = now.getHours();
+
   if (!availableSessions || availableSessions.length === 0) {
     return (
       <Box
@@ -67,6 +75,8 @@ export default function List({ date, availableSessions, selectedProduct }) {
               ? 'warning'
               : 'success';
 
+          const isCurrent = isToday && new Date(item.start_time).getHours() === currentHour;
+
           return (
             <Paper
               key={item.id}
@@ -74,14 +84,22 @@ export default function List({ date, availableSessions, selectedProduct }) {
               onClick={() => list_old_bookings(item.id)}
               sx={{
                 borderRadius: 3,
-                border: '1px solid var(--gc-border2)',
+                border: '1px solid',
+                borderColor: isCurrent ? 'primary.main' : 'var(--gc-border2)',
                 overflow: 'hidden',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
+                background: isCurrent
+                  ? 'linear-gradient(135deg, var(--gc-blue) 0%, var(--gc-blue-dark) 100%)'
+                  : 'background.paper',
+                boxShadow: isCurrent ? '0 8px 28px rgba(var(--gc-blue-rgb), 0.35)' : 'none',
+                transform: isCurrent ? 'scale(1.01)' : 'none',
                 '&:hover': {
-                  boxShadow: '0 6px 24px rgba(var(--gc-blue-rgb), 0.15)',
+                  boxShadow: isCurrent
+                    ? '0 12px 32px rgba(var(--gc-blue-rgb), 0.45)'
+                    : '0 6px 24px rgba(var(--gc-blue-rgb), 0.15)',
                   borderColor: 'primary.main',
-                  transform: 'translateY(-1px)',
+                  transform: isCurrent ? 'scale(1.01) translateY(-1px)' : 'translateY(-1px)',
                 },
               }}
             >
@@ -90,8 +108,8 @@ export default function List({ date, availableSessions, selectedProduct }) {
                 sx={{
                   px: 2.5,
                   py: 1.5,
-                  background: 'linear-gradient(135deg, var(--gc-bg) 0%, var(--gc-bg2) 100%)',
-                  borderBottom: '1px solid var(--gc-border)',
+                  background: isCurrent ? 'transparent' : 'linear-gradient(135deg, var(--gc-bg) 0%, var(--gc-bg2) 100%)',
+                  borderBottom: `1px solid ${isCurrent ? 'rgba(255,255,255,0.2)' : 'var(--gc-border)'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -101,10 +119,17 @@ export default function List({ date, availableSessions, selectedProduct }) {
               >
                 {/* Session label */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: isCurrent ? '#ffffff' : 'secondary.main' }}>
                     {item.product.nick_name}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {isCurrent && (
+                    <Chip
+                      label="Now"
+                      size="small"
+                      sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700, bgcolor: 'rgba(255,255,255,0.25)', color: '#ffffff' }}
+                    />
+                  )}
+                  <Typography variant="body2" sx={{ color: isCurrent ? 'rgba(255,255,255,0.8)' : 'text.secondary' }}>
                     {dateStr} · {timeStr}
                   </Typography>
                 </Box>
@@ -115,14 +140,22 @@ export default function List({ date, availableSessions, selectedProduct }) {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Button
-                    variant="contained"
+                    variant={isCurrent ? 'outlined' : 'contained'}
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/book/${item.id}`);
                     }}
-                    sx={{ px: 2, fontSize: '0.8rem' }}
+                    sx={{
+                      px: 2,
+                      fontSize: '0.8rem',
+                      ...(isCurrent && {
+                        color: '#ffffff',
+                        borderColor: 'rgba(255,255,255,0.6)',
+                        '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.15)' },
+                      }),
+                    }}
                   >
                     Book
                   </Button>
@@ -134,20 +167,36 @@ export default function List({ date, availableSessions, selectedProduct }) {
                       e.stopPropagation();
                       navigate(`/session_capacity/${item.id}`);
                     }}
-                    sx={{ px: 1.5, fontSize: '0.8rem' }}
+                    sx={{
+                      px: 1.5,
+                      fontSize: '0.8rem',
+                      ...(isCurrent && {
+                        color: '#ffffff',
+                        borderColor: 'rgba(255,255,255,0.6)',
+                        '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.15)' },
+                      }),
+                    }}
                   >
                     Capacity
                   </Button>
                   <Button
                     variant="outlined"
                     size="small"
-                    color="warning"
+                    color={isCurrent ? undefined : 'warning'}
                     startIcon={<BlockIcon sx={{ fontSize: 14 }} />}
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/block_seats/${item.id}`);
                     }}
-                    sx={{ px: 1.5, fontSize: '0.8rem' }}
+                    sx={{
+                      px: 1.5,
+                      fontSize: '0.8rem',
+                      ...(isCurrent && {
+                        color: '#ffffff',
+                        borderColor: 'rgba(255,255,255,0.6)',
+                        '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255,255,255,0.15)' },
+                      }),
+                    }}
                   >
                     Block
                   </Button>
@@ -157,26 +206,27 @@ export default function List({ date, availableSessions, selectedProduct }) {
               {/* ── Card Body ────────────────────────────── */}
               <Box sx={{ px: 2.5, py: 1.5, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                 <Chip
-                  icon={<EventSeatOutlinedIcon sx={{ fontSize: '1rem !important' }} />}
+                  icon={<EventSeatOutlinedIcon sx={{ fontSize: '1rem !important', color: isCurrent ? '#ffffff !important' : undefined }} />}
                   label={`${item.available_seats} seats available`}
-                  color={seatColor}
                   size="small"
-                  variant="filled"
+                  variant={isCurrent ? 'outlined' : 'filled'}
+                  color={isCurrent ? undefined : seatColor}
+                  sx={isCurrent ? { borderColor: 'rgba(255,255,255,0.5)', color: '#ffffff', '& .MuiChip-icon': { color: '#ffffff' } } : {}}
                 />
                 {item.block_seats_obj?.number > 0 && (
                   <Chip
                     label={`${item.block_seats_obj.number} blocked — ${item.block_seats_obj.note}`}
-                    color="warning"
                     size="small"
                     variant="outlined"
+                    sx={isCurrent ? { borderColor: 'rgba(255,255,255,0.5)', color: '#ffffff' } : { color: 'warning.main', borderColor: 'warning.main' }}
                   />
                 )}
                 {item.added_seats > 0 && (
                   <Chip
                     label={`+${item.added_seats} added`}
-                    color="primary"
                     size="small"
                     variant="outlined"
+                    sx={isCurrent ? { borderColor: 'rgba(255,255,255,0.5)', color: '#ffffff' } : { color: 'primary.main', borderColor: 'primary.main' }}
                   />
                 )}
               </Box>

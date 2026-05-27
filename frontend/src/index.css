@@ -1,5 +1,5 @@
 /* ── Google Fonts ─────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 /* ── Design Tokens ───────────────────────────────────────────────────────── */
 /* CSS vars are injected by the MUI theme (theme.js → MuiCssBaseline)        */
@@ -8,7 +8,7 @@
 /* ── Base Reset ──────────────────────────────────────────── */
 body {
   margin: 0;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  font-family: 'Outfit', 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--gc-bg);
@@ -49,7 +49,7 @@ code {
   font-weight: 600;
   border-radius: 11px 11px 0 0 !important;
   padding: 12px 18px !important;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 .card-body {
@@ -59,14 +59,14 @@ code {
 .card-title {
   color: var(--gc-navy) !important;
   font-weight: 600 !important;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   margin-bottom: 12px !important;
 }
 
 /* ── Bootstrap Table Overrides ───────────────────────────── */
 .table {
   color: var(--gc-text);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 .table > thead > tr > th {
@@ -98,7 +98,7 @@ code {
 /* ── Bootstrap List Group Overrides ─────────────────────── */
 .list-group-item {
   border-color: var(--gc-border2) !important;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 .list-group-item-secondary {
@@ -109,7 +109,7 @@ code {
 
 /* ── Typography ─────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   color: var(--gc-navy);
 }
 
@@ -134,7 +134,7 @@ a:hover {
   background: var(--gc-surface);
   color: var(--gc-navy);
   outline: none;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   margin-bottom: 12px;
 }
@@ -152,7 +152,7 @@ a:hover {
   border-radius: 6px;
   font-size: 0.78rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
 }
 
 .gc-badge-primary {
