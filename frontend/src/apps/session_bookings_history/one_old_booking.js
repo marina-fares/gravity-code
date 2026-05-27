@@ -190,6 +190,7 @@ export default function OneOldBooking() {
                   discount: bookingDetails.payment ? bookingDetails.payment.promoCode : null,
                   status: bookingDetails.status,
                   creation_agent: bookingDetails.creation_agent,
+                  refunded_by_username: bookingDetails.refunded_by_username,
                 }}
                 note={note}
                 set_note={setNote}

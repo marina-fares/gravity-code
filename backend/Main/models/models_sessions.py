@@ -238,6 +238,14 @@ class Booking(models.Model):
     status = models.CharField(
         null=True, blank=True, choices=STATUS_CHOICES, max_length=100
     )
+    refunded_by = models.ForeignKey(
+        "auth.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="refunded_bookings",
+    )
+    refunded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [

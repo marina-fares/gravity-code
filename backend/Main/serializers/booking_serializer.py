@@ -9,14 +9,14 @@ class BookingSerializer(serializers.ModelSerializer):
 
     Nests CustomerSerializer so the frontend receives the full customer object.
     Every queryset feeding this serializer MUST use:
-        .select_related("booking_customer", "session__product")
+        .select_related("booking_customer", "session__product", "refunded_by")
     Without select_related each booking fires one extra query per nested
     relation — classic N+1.
     """
-    # FIX A: CustomerSerializer was commented out. The import existed but the
-    # field was disabled, so booking_customer returned a bare integer ID instead
-    # of the full customer object. Restored.
     booking_customer = CustomerSerializer(read_only=True)
+    refunded_by_username = serializers.CharField(
+        source="refunded_by.username", read_only=True, default=None
+    )
 
     class Meta:
         model = Booking

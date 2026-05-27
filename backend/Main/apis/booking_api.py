@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
@@ -49,7 +50,7 @@ class BookingApi(generics.GenericAPIView):
                     # FIX G: booking_customer was missing from select_related here.
                     # BookingSerializer nests CustomerSerializer — without this,
                     # every booking in the list fired one extra query for the customer.
-                    .select_related("booking_customer", "session__product")
+                    .select_related("booking_customer", "session__product", "refunded_by")
                     .order_by("id")
                 )
 
@@ -85,7 +86,7 @@ class BookingApi(generics.GenericAPIView):
                             creation_agent__in=group_user_ids,
                         )
                     )
-                    .select_related("booking_customer", "session__product")
+                    .select_related("booking_customer", "session__product", "refunded_by")
                     .distinct()
                     .order_by("-created_at")
                 )
@@ -198,7 +199,7 @@ class BookingApi(generics.GenericAPIView):
 
             result = (
                 Booking.objects
-                .select_related("booking_customer", "session__product")
+                .select_related("booking_customer", "session__product", "refunded_by")
                 .get(pk=session_booking.pk)
             )
             return Response(
@@ -260,6 +261,10 @@ class BookingApi(generics.GenericAPIView):
 
                 data.setdefault("session", current_session.id)
 
+                if data.get("status") == "refunded" and existing_booking.status != "refunded":
+                    data["refunded_by"] = request.user.pk
+                    data["refunded_at"] = timezone.now().isoformat()
+
                 serializer = BookingWriteSerializer(existing_booking, data=data, partial=True)
                 if not serializer.is_valid():
                     return Response(
@@ -282,7 +287,7 @@ class BookingApi(generics.GenericAPIView):
 
             result = (
                 Booking.objects
-                .select_related("booking_customer", "session__product")
+                .select_related("booking_customer", "session__product", "refunded_by")
                 .get(pk=booking_instance.pk)
             )
             return Response(BookingSerializer(result).data, status=status.HTTP_200_OK)
@@ -317,7 +322,7 @@ class OneBookingApi(generics.GenericAPIView):
         try:
             booking = (
                 Booking.objects
-                .select_related("booking_customer", "session__product")
+                .select_related("booking_customer", "session__product", "refunded_by")
                 .get(pk=booking_id)
             )
         except Booking.DoesNotExist:
@@ -359,7 +364,7 @@ class OneBookingApi(generics.GenericAPIView):
 
         result = (
             Booking.objects
-            .select_related("booking_customer", "session__product")
+            .select_related("booking_customer", "session__product", "refunded_by")
             .get(pk=instance.pk)
         )
         return Response(BookingSerializer(result).data, status=status.HTTP_201_CREATED)
@@ -381,6 +386,10 @@ class OneBookingApi(generics.GenericAPIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        if data.get("status") == "refunded" and booking.status != "refunded":
+            data["refunded_by"] = request.user.pk
+            data["refunded_at"] = timezone.now().isoformat()
+
         serializer = BookingWriteSerializer(instance=booking, data=data, partial=True)
         if not serializer.is_valid():
             return Response(
@@ -397,7 +406,7 @@ class OneBookingApi(generics.GenericAPIView):
 
         result = (
             Booking.objects
-            .select_related("booking_customer", "session__product")
+            .select_related("booking_customer", "session__product", "refunded_by")
             .get(pk=instance.pk)
         )
         return Response(BookingSerializer(result).data, status=status.HTTP_200_OK)

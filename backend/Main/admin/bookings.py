@@ -87,15 +87,17 @@ class BookingAdmin(admin.ModelAdmin):
         "creation_agent",
         "square_receipt_number",
         "created_at",
+        "get_refunded_by_username",
+        "refunded_at",
     )
     search_fields = ("id", "square_receipt_number", "booking_customer__identifier")
     list_filter = ("status",)
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
 
-    # Forces list view to join session+product+customer in ONE query
+    # Forces list view to join session+product+customer+refunded_by in ONE query
     # (prevents N+1 per row)
-    list_select_related = ("booking_customer", "session__product")
+    list_select_related = ("booking_customer", "session__product", "refunded_by")
 
     # Default is 100 — halving it halves the rows loaded per page
     list_per_page = 50
@@ -104,7 +106,9 @@ class BookingAdmin(admin.ModelAdmin):
     show_full_result_count = False
 
     # Write-once external IDs — readonly prevents edits and avoids
-    # rendering editable widgets for these fields
+    # rendering editable widgets for these fields.
+    # get_refunded_by_username is a computed readonly that shows the username
+    # instead of the raw FK id.
     readonly_fields = (
         "square_receipt_number",
         "square_order_id",
@@ -112,6 +116,7 @@ class BookingAdmin(admin.ModelAdmin):
         "zoho_sales_receipt_id",
         "zoho_sales_receipt_num",
         "created_at",
+        "get_refunded_by_username",
     )
 
     # ── Custom column ────────────────────────────────────────────────────────
@@ -131,6 +136,15 @@ class BookingAdmin(admin.ModelAdmin):
     get_session_label.short_description = "Session"
     get_session_label.admin_order_field = "session__start_time"
 
+    def get_refunded_by_username(self, obj):
+        """Return the username of the staff member who processed the refund."""
+        if obj.refunded_by_id is None:
+            return "—"
+        return obj.refunded_by.username
+
+    get_refunded_by_username.short_description = "Refunded by"
+    get_refunded_by_username.admin_order_field = "refunded_by__username"
+
     # ── Queryset ─────────────────────────────────────────────────────────────
 
     def get_queryset(self, request):
@@ -143,6 +157,7 @@ class BookingAdmin(admin.ModelAdmin):
         qs = Booking.objects.select_related(
             "session__product",
             "booking_customer",
+            "refunded_by",
         )
         if request.user.is_superuser:
             return qs

@@ -18,6 +18,7 @@ ALLOWED_PROFILE_FIELDS = {
     'start_time', 'end_time', 'start_shift_cash', 'refund_cash', 'refund_visa',
     'shift_money_cash', 'shift_money_visa', 'actual_cash', 'actual_visa',
     'inventory', 'note', 'options', 'options2', 'current_shift_id',
+    'sub_shift_round',
 }
 
 
