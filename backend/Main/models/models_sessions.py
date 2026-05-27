@@ -145,6 +145,10 @@ class Schedule(models.Model):
         indexes = [
             models.Index(fields=["product"], name="schedule_product_idx"),
         ]
+    
+    def __str__(self):
+        product_name = self.product.name if self.product else "—"
+        return f"{product_name} - {self.weekday} {self.start_time} to {self.end_time}"
 
 
 # ---------------------------------------------------------------------------

@@ -46,6 +46,7 @@ export default function BlockSeats() {
       const currentSession = {
         ...currentsessionDetails,
         block_seats_obj: blockSeats,
+        block_seats: blockSeats.number,
         product: currentsessionDetails.product.id,
       };
       await app_put(`session/${session_id}/`, {}, currentSession);

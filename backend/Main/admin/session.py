@@ -662,7 +662,31 @@ class SessionAdmin(admin.ModelAdmin):
 
         return super().changelist_view(request, extra_context=extra_context)
 
+    def save_model(self, request, obj, form, change):
+        if change and obj.product_id:
+            # Keep block_seats_obj.number in sync with the block_seats integer.
+            if not isinstance(obj.block_seats_obj, dict):
+                obj.block_seats_obj = {"number": 0, "note": "none"}
+            obj.block_seats_obj["number"] = obj.block_seats or 0
+
+            # Recalculate available_seats so the change is reflected immediately.
+            obj.available_seats = Booking.calculate_available_seats(obj)
+
+        super().save_model(request, obj, form, change)
+
     get_product_duration.short_description = "Product Duration"
     
-#admin.site.unregister(User)
+class ScheduleAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'product', 'weekday', 'start_time', 'end_time')
+    list_filter = ('product__name', 'weekday')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related('product__group')
+        if request.user.is_superuser:
+            return qs
+        group_names = list(request.user.groups.values_list("name", flat=True))
+        return qs.filter(product__group__name__in=group_names)
+
+
 admin.site.register( Session, SessionAdmin)
+admin.site.register( Schedule, ScheduleAdmin)
