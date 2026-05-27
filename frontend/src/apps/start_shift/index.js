@@ -127,14 +127,15 @@ export default function StartShift() {
           sx={{
             px: 3,
             py: 2.5,
-            background: 'linear-gradient(135deg, var(--gc-bg) 0%, var(--gc-bg2) 100%)',
-            borderBottom: '1px solid var(--gc-border)',
+            background: 'linear-gradient(135deg, #F7941D 0%, #e07d0a 100%)',
+            borderBottom: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 4px 20px rgba(247, 148, 29, 0.4)',
           }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: '#ffffff' }}>
             Start Shift
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography variant="body2" sx={{ mt: 0.5, color: 'rgba(255,255,255,0.85)' }}>
             Enter your opening cash and inventory counts before starting.
           </Typography>
         </Box>
@@ -162,18 +163,29 @@ export default function StartShift() {
                 Opening Inventory
               </Typography>
               <Grid container spacing={2}>
-                {shift_details.inventory &&
-                  Object.keys(shift_details.inventory).map((key) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={key}>
-                      <TextField
-                        inputMode="numeric"
-                        label={key}
-                        defaultValue={shift_details.inventory[key].start_shift || ''}
-                        onChange={(e) => updateInventory(key, e.target.value)}
-                        fullWidth
-                      />
-                    </Grid>
-                  ))}
+                {shift_details.inventory && (() => {
+                  const accentColors = ['#00AEEF', '#F7941D', '#E91E8C'];
+                  return Object.keys(shift_details.inventory).map((key, idx) => {
+                    const accent = accentColors[idx % 3];
+                    return (
+                      <Grid item xs={6} sm={4} md={2} key={key}>
+                        <TextField
+                          inputMode="numeric"
+                          label={key}
+                          defaultValue={shift_details.inventory[key].start_shift || ''}
+                          onChange={(e) => updateInventory(key, e.target.value)}
+                          fullWidth
+                          sx={{
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderLeftWidth: '4px !important',
+                              borderLeftColor: `${accent} !important`,
+                            },
+                          }}
+                        />
+                      </Grid>
+                    );
+                  });
+                })()}
               </Grid>
             </Grid>
 
@@ -185,7 +197,17 @@ export default function StartShift() {
               variant="contained"
               size="large"
               onClick={onStartShift}
-              sx={{ px: 4, fontSize: '0.95rem' }}
+              sx={{
+                px: 4,
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #F7941D 0%, #e07d0a 100%)',
+                boxShadow: '0 4px 20px rgba(247, 148, 29, 0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #e07d0a 0%, #c96d08 100%)',
+                  boxShadow: '0 6px 24px rgba(247, 148, 29, 0.55)',
+                },
+              }}
             >
               Start Shift
             </Button>

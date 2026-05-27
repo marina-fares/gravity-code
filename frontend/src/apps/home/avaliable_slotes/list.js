@@ -56,24 +56,17 @@ export default function List({ date, availableSessions, selectedProduct }) {
         {availableSessions.map((item) => {
           const datetime = new Date(item.start_time);
           const timeStr =
-            String((datetime.getHours() % 12) || 12).padStart(2, '0') +
-            ':' +
-            String(datetime.getMinutes()).padStart(2, '0') +
-            ' ' +
+            String((datetime.getHours() % 12) || 12).padStart(2, '0') + ':' +
+            String(datetime.getMinutes()).padStart(2, '0') + ' ' +
             (datetime.getHours() >= 12 ? 'PM' : 'AM');
           const dateStr =
-            datetime.getFullYear() +
-            '-' +
-            String(datetime.getMonth() + 1).padStart(2, '0') +
-            '-' +
+            datetime.getFullYear() + '-' +
+            String(datetime.getMonth() + 1).padStart(2, '0') + '-' +
             String(datetime.getDate()).padStart(2, '0');
 
           const seatColor =
-            item.available_seats === 0
-              ? 'error'
-              : item.available_seats <= 3
-              ? 'warning'
-              : 'success';
+            item.available_seats === 0 ? 'error' :
+            item.available_seats <= 3 ? 'warning' : 'success';
 
           const isCurrent = isToday && new Date(item.start_time).getHours() === currentHour;
 
@@ -103,7 +96,7 @@ export default function List({ date, availableSessions, selectedProduct }) {
                 },
               }}
             >
-              {/* ── Card Header ──────────────────────────── */}
+              {/* ── Card Header ──────────────────────────────── */}
               <Box
                 sx={{
                   px: 2.5,
@@ -143,10 +136,7 @@ export default function List({ date, availableSessions, selectedProduct }) {
                     variant={isCurrent ? 'outlined' : 'contained'}
                     size="small"
                     startIcon={<AddIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/book/${item.id}`);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/book/${item.id}`); }}
                     sx={{
                       px: 2,
                       fontSize: '0.8rem',
@@ -163,10 +153,7 @@ export default function List({ date, availableSessions, selectedProduct }) {
                     variant="outlined"
                     size="small"
                     startIcon={<PeopleAltOutlinedIcon sx={{ fontSize: 14 }} />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/session_capacity/${item.id}`);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/session_capacity/${item.id}`); }}
                     sx={{
                       px: 1.5,
                       fontSize: '0.8rem',
@@ -184,10 +171,7 @@ export default function List({ date, availableSessions, selectedProduct }) {
                     size="small"
                     color={isCurrent ? undefined : 'warning'}
                     startIcon={<BlockIcon sx={{ fontSize: 14 }} />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/block_seats/${item.id}`);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/block_seats/${item.id}`); }}
                     sx={{
                       px: 1.5,
                       fontSize: '0.8rem',

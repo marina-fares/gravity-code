@@ -12,6 +12,8 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import LocalAtmIcon from '@mui/icons-material/LocalAtm';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 import LoadingFun from '../../components/ui/loading';
 import AlertFun from '../../components/ui/alert';
 import { InvoicePrint } from '../../components/ui/booking_invoice';
@@ -347,9 +349,12 @@ export default function Options() {
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.07em', fontSize: '0.72rem', mb: 0.5, gridColumn: '1 / -1' }}>
               Inventory Items
             </Typography>
-            {shiftDetails && Object.keys(shiftDetails.inventory).map((key) => {
+            {shiftDetails && (() => {
+              const accentColors = ['#00AEEF', '#F7941D', '#E91E8C'];
+              return Object.keys(shiftDetails.inventory).map((key, index) => {
               const qty = Number((options[key] || [0])[0]);
               const isActive = qty > 0;
+              const accent = accentColors[index % 3];
               return (
                 <Box
                   key={key}
@@ -360,13 +365,15 @@ export default function Options() {
                     px: 1.5,
                     py: 1,
                     borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: isActive ? 'primary.main' : 'var(--gc-border2)',
-                    bgcolor: isActive ? 'rgba(var(--gc-blue-rgb), 0.04)' : 'action.hover',
-                    transition: 'border-color 0.15s, background 0.15s',
+                    borderTop: '1px solid var(--gc-border2)',
+                    borderRight: '1px solid var(--gc-border2)',
+                    borderBottom: '1px solid var(--gc-border2)',
+                    borderLeft: `4px solid ${accent}`,
+                    bgcolor: isActive ? 'rgba(var(--gc-blue-rgb), 0.04)' : 'background.paper',
+                    transition: 'background 0.15s, box-shadow 0.15s',
                     '&:hover': {
-                      borderColor: 'primary.main',
-                      boxShadow: '0 2px 8px rgba(var(--gc-blue-rgb), 0.10)',
+                      boxShadow: `0 2px 10px ${accent}33`,
+                      bgcolor: 'rgba(var(--gc-blue-rgb), 0.04)',
                     },
                   }}
                 >
@@ -427,7 +434,8 @@ export default function Options() {
                   </Box>
                 </Box>
               );
-            })}
+              });
+            })()}
           </Paper>
 
           {/* ── Custom item + payment ─────────────── */}
@@ -469,15 +477,44 @@ export default function Options() {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <RadioGroup
-                  row
-                  name="payment-method"
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  defaultValue="cash"
-                >
-                  <FormControlLabel value="cash" control={<Radio />} label="Cash" />
-                  <FormControlLabel value="creditcard" control={<Radio />} label="Credit" />
-                </RadioGroup>
+                <Typography variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', display: 'block', mb: 1 }}>
+                  Payment Method
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  {[
+                    { value: 'cash', label: 'Cash', icon: <LocalAtmIcon sx={{ fontSize: 22 }} />, bg: 'linear-gradient(135deg, #F7941D 0%, #e07d0a 100%)', shadow: 'rgba(247, 148, 29, 0.45)' },
+                    { value: 'creditcard', label: 'Visa', icon: <CreditCardIcon sx={{ fontSize: 22 }} />, bg: 'linear-gradient(135deg, #E91E8C 0%, #c4177a 100%)', shadow: 'rgba(233, 30, 140, 0.45)' },
+                  ].map((method) => {
+                    const isSelected = paymentMethod === method.value;
+                    return (
+                      <Box
+                        key={method.value}
+                        onClick={() => setPaymentMethod(method.value)}
+                        sx={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 1,
+                          py: 1.25,
+                          px: 2,
+                          borderRadius: 2,
+                          background: method.bg,
+                          boxShadow: `0 4px 16px ${method.shadow}`,
+                          opacity: isSelected ? 1 : 0.45,
+                          cursor: 'pointer',
+                          transition: 'all 0.18s ease',
+                          userSelect: 'none',
+                          transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                          '&:hover': { opacity: 1, boxShadow: `0 6px 22px ${method.shadow}`, transform: 'scale(1.03)' },
+                        }}
+                      >
+                        <Box sx={{ color: '#ffffff', display: 'flex' }}>{method.icon}</Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#ffffff' }}>{method.label}</Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
               </Grid>
             </Grid>
 

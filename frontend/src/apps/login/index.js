@@ -127,7 +127,7 @@ function SignIn() {
 
             {/* Brand name */}
             <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.1, textAlign: 'center' }}>
-              <Box component="span" sx={{ color: 'warning.main' }}>Gravity</Box>
+              <Box component="span" sx={{ color: '#ffffff' }}>Gravity</Box>
               {' '}
               <Box component="span" sx={{ color: '#ffffff' }}>Code</Box>
             </Typography>
@@ -137,7 +137,7 @@ function SignIn() {
               variant="body2"
               sx={{ color: 'rgba(255,255,255,0.82)', textAlign: 'center', lineHeight: 1.55, fontSize: '0.82rem' }}
             >
-              Staff Booking<br />Management System
+              Booking System
             </Typography>
 
             <BrandDots light />

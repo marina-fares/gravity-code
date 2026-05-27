@@ -95,18 +95,7 @@ export default function Home() {
               Available Sessions
             </Typography>
             {selectedProduct && (
-              <Typography
-                variant="body2"
-                sx={{
-                  bgcolor: 'action.selected',
-                  color: 'primary.dark',
-                  fontWeight: 600,
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 2,
-                  fontSize: '0.8rem',
-                }}
-              >
+              <Typography variant="body2" sx={{ bgcolor: 'action.selected', color: 'primary.dark', fontWeight: 600, px: 1.5, py: 0.5, borderRadius: 2, fontSize: '0.8rem' }}>
                 {selectedProduct.nick_name}
               </Typography>
             )}

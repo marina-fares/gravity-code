@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Grid, Alert, FormControl, Typography, Box, Paper, TextField } from '@mui/material';
+import { Button, Grid, Alert, FormControl, Typography, Box, Paper, TextField, Chip } from '@mui/material';
+import LocalAtmIcon from '@mui/icons-material/LocalAtm';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { useNavigate } from 'react-router-dom';
 import InvoicePrint from '../../components/ui/InvoicePrint';
 import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis';
@@ -24,6 +26,8 @@ export default function EndSubShift() {
       const subShiftData = await get_sub_shift();
       if (subShiftData.status === 200) {
         set_sub_shift_details(subShiftData.data);
+        setActualCash(subShiftData.data.shift_money_cash - (subShiftData.data.refund_cash || 0));
+        setActualVisa(subShiftData.data.shift_money_visa || 0);
       }
     };
     fetchData();
@@ -144,23 +148,120 @@ export default function EndSubShift() {
                 />
 
                 <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Paper elevation={0} sx={{ p: 2, borderRadius: 2, textAlign: 'center', border: '1px solid var(--gc-border2)' }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        Shift Cash
+                  {/* ── Cash Card ── */}
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 3,
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #F7941D 0%, #e07d0a 100%)',
+                        boxShadow: '0 6px 24px rgba(247,148,29,0.45)',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 48, height: 48, borderRadius: 2,
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <LocalAtmIcon sx={{ color: '#ffffff', fontSize: 26 }} />
+                        </Box>
+                        {sub_shift_details.refund_cash > 0 && (
+                          <Chip
+                            label={`-EGP ${sub_shift_details.refund_cash}`}
+                            size="small"
+                            sx={{
+                              bgcolor: 'rgba(255,255,255,0.25)',
+                              color: '#ffffff',
+                              fontWeight: 700,
+                              fontSize: '0.72rem',
+                              height: 22,
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: 'block',
+                          color: 'rgba(255,255,255,0.8)',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          fontSize: '0.68rem',
+                          mb: 0.5,
+                        }}
+                      >
+                        Cash Total
                       </Typography>
-                      <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 700, mt: 0.5 }}>
-                        {sub_shift_details.shift_money_cash - sub_shift_details.refund_cash} LE
+                      <Typography variant="h4" sx={{ color: '#ffffff', fontWeight: 800, lineHeight: 1.1 }}>
+                        {(sub_shift_details.shift_money_cash - sub_shift_details.refund_cash).toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)' }}>
+                        EGP
                       </Typography>
                     </Paper>
                   </Grid>
-                  <Grid item xs={6}>
-                    <Paper elevation={0} sx={{ p: 2, borderRadius: 2, textAlign: 'center', border: '1px solid var(--gc-border2)' }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        Shift Visa
+
+                  {/* ── Visa Card ── */}
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 3,
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #E91E8C 0%, #c4177a 100%)',
+                        boxShadow: '0 6px 24px rgba(233,30,140,0.45)',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 48, height: 48, borderRadius: 2,
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <CreditCardIcon sx={{ color: '#ffffff', fontSize: 26 }} />
+                        </Box>
+                        {sub_shift_details.refund_visa > 0 && (
+                          <Chip
+                            label={`-EGP ${sub_shift_details.refund_visa}`}
+                            size="small"
+                            sx={{
+                              bgcolor: 'rgba(255,255,255,0.25)',
+                              color: '#ffffff',
+                              fontWeight: 700,
+                              fontSize: '0.72rem',
+                              height: 22,
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: 'block',
+                          color: 'rgba(255,255,255,0.8)',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          fontSize: '0.68rem',
+                          mb: 0.5,
+                        }}
+                      >
+                        Visa Total
                       </Typography>
-                      <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 700, mt: 0.5 }}>
-                        {sub_shift_details.shift_money_visa} LE
+                      <Typography variant="h4" sx={{ color: '#ffffff', fontWeight: 800, lineHeight: 1.1 }}>
+                        {Number(sub_shift_details.shift_money_visa).toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)' }}>
+                        EGP
                       </Typography>
                     </Paper>
                   </Grid>
