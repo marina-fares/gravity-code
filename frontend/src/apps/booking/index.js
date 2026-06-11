@@ -90,7 +90,7 @@ export default function Booking() {
       }
       const promoCodesData = await get_promo_codes();
       if (promoCodesData.status === 200) {
-        setAllPromoCodes(promoCodesData.data);
+        setAllPromoCodes(promoCodesData.data?.results || promoCodesData.data || []);
       } else {
         setAlert(true);
         setAlertMessage(promoCodesData.error, promoCodesData?.detail);
@@ -422,7 +422,7 @@ export default function Booking() {
                       disablePortal
                       freeSolo
                       id="Promo Code"
-                      options={(allPromoCodes?.results || []).map((promo_code) => promo_code.code)}
+                      options={(allPromoCodes || []).map((promo_code) => promo_code.code)}
                       onInputChange={(event, newValue) => {
                         let promo_code = allPromoCodes.find((pc) => pc.code === newValue);
                         if (promo_code) {

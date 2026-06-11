@@ -16,7 +16,7 @@ export async function get_total_price({ shiftDetails, promoCode, selectedSquareI
                 state: 'OPEN',
                 customer_id: shiftDetails.customer_id,
                 discounts: (promoCode && promoCode.square_pre > 0)
-                    ? [{ name: promoCode.name, percentage: promoCode.percentage }]
+                    ? [{ name: promoCode.name, percentage: String(promoCode.percentage) }]
                     : [],
             },
         },
