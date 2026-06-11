@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#F4FBFF;display:flex;gap:36px;justify-content:center;align-items:flex-start;padding:40px 32px}
+
+.panel-label{text-align:center;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#5A7A8F;margin-bottom:8px}
+.panel-label.new{color:#00AEEF}
+
+.card{background:#fff;border:1px solid #E0F3FC;border-radius:14px;padding:20px;width:300px;box-shadow:0 4px 20px rgba(0,174,239,0.08)}
+.card-title{font-size:15px;font-weight:700;color:#1B3A6B;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.badge{font-size:11px;font-weight:600;background:rgba(0,174,239,0.12);color:#0091C7;padding:2px 8px;border-radius:20px}
+
+/* BEFORE */
+.before .row{display:flex;align-items:center;gap:16px;padding:7px 0;border-bottom:1px solid #E0F3FC}
+.before .row:last-child{border-bottom:none}
+.before .name{flex:1;font-size:13.5px;font-weight:500;color:#0D2137}
+.before input{width:68px;border:1px solid #C8E8F8;border-radius:7px;padding:5px 8px;font-size:13px;color:#0D2137;text-align:center}
+
+/* AFTER */
+.after .list{display:flex;flex-direction:column;gap:7px}
+.after .row{display:flex;align-items:center;justify-content:space-between;background:#F4FBFF;border:1px solid #E0F3FC;border-radius:9px;padding:9px 12px}
+.after .name{font-size:13.5px;font-weight:600;color:#1B3A6B;line-height:1.3}
+.after .sub{font-size:11px;color:#5A7A8F;margin-top:1px}
+.stepper{display:flex;align-items:center;border:1.5px solid #C8E8F8;border-radius:7px;overflow:hidden;background:#fff}
+.stepper button{width:26px;height:26px;border:none;background:transparent;color:#00AEEF;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sval{width:28px;text-align:center;font-size:13px;font-weight:600;color:#0D2137;border-left:1.5px solid #E0F3FC;border-right:1.5px solid #E0F3FC;height:26px;line-height:26px}
+.after .row.active{border-color:#00AEEF;background:rgba(0,174,239,0.05)}
+.after .row.active .stepper{border-color:#00AEEF}
+.after .row.active .name{color:#0091C7}
+</style>
+</head>
+<body>
+
+<div>
+  <div class="panel-label">Current</div>
+  <div class="card before">
+    <div class="card-title">Add-Ons <span class="badge">5 items</span></div>
+    <div class="row"><span class="name">Extra Socks</span><input type="number" value="0"/></div>
+    <div class="row"><span class="name">Grip Gloves</span><input type="number" value="0"/></div>
+    <div class="row"><span class="name">Locker Rental</span><input type="number" value="0"/></div>
+    <div class="row"><span class="name">Harness</span><input type="number" value="0"/></div>
+    <div class="row"><span class="name">Climbing Shoes</span><input type="number" value="2"/></div>
+  </div>
+</div>
+
+<div>
+  <div class="panel-label new">✦ Redesigned</div>
+  <div class="card after">
+    <div class="card-title">Add-Ons <span class="badge">5 items</span></div>
+    <div class="list">
+      <div class="row">
+        <div><div class="name">Extra Socks</div><div class="sub">per person</div></div>
+        <div class="stepper"><button>−</button><span class="sval">0</span><button>+</button></div>
+      </div>
+      <div class="row">
+        <div><div class="name">Grip Gloves</div><div class="sub">per person</div></div>
+        <div class="stepper"><button>−</button><span class="sval">0</span><button>+</button></div>
+      </div>
+      <div class="row">
+        <div><div class="name">Locker Rental</div><div class="sub">per session</div></div>
+        <div class="stepper"><button>−</button><span class="sval">0</span><button>+</button></div>
+      </div>
+      <div class="row">
+        <div><div class="name">Harness</div><div class="sub">per person</div></div>
+        <div class="stepper"><button>−</button><span class="sval">0</span><button>+</button></div>
+      </div>
+      <div class="row active">
+        <div><div class="name">Climbing Shoes</div><div class="sub">per person</div></div>
+        <div class="stepper"><button>−</button><span class="sval">2</span><button>+</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

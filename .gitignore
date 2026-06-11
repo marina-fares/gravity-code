@@ -27,3 +27,4 @@ yarn-error.log*
 
 *.env
 *.sqlite3
+backend/Main/models/models_sessions.py
