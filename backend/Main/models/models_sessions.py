@@ -296,61 +296,29 @@ class Booking(models.Model):
             .aggregate(total=Sum("number_of_players"))
         )["total"] or 0
 
-        return (
+        return max(
+            0,
             (session.added_seats or 0)
             + (session.product.max_num or 0)
             - active_sum
             - (session.block_seats or 0)
         )
 
-    _SEAT_SENSITIVE_FIELDS = frozenset(
-        {"number_of_players", "session", "session_id", "status"}
-    )
-
     def save(self, *args, **kwargs):
         """
-        Seat accounting on save().
+        Plain save — seat accounting is handled entirely by the API layer
+        (booking_api.py) AFTER the booking is committed to the database.
 
-        New booking  → atomic F() decrement (no extra SELECT).
-        Existing booking, seat-sensitive field changed → full recalculation.
-        Existing booking, metadata-only change → skip recalculation entirely.
+        Doing seat maths here was unreliable because:
+        - For new bookings the row doesn't exist in the DB yet, so
+          calculate_available_seats() cannot include it.
+        - For updates (e.g. status → refunded) the old value is still in the
+          DB when save() runs, so calculate_available_seats() returns the
+          pre-change count.
+        Both cases produced wrong available_seats values.
+        The API calls _recalculate_session_seats() after every save(), which
+        runs calculate_available_seats() against the fully committed state.
         """
-        update_fields = kwargs.get("update_fields")
-
-        if self.pk:
-            should_recalculate = (
-                update_fields is None
-                or bool(self._SEAT_SENSITIVE_FIELDS.intersection(update_fields))
-            )
-
-            if should_recalculate:
-                try:
-                    old = (
-                        Booking.objects
-                        .select_related("session__product")
-                        .only(
-                            "session_id",
-                            "number_of_players",
-                            "session__added_seats",
-                            "session__block_seats",
-                            "session__product__max_num",
-                        )
-                        .get(pk=self.pk)
-                    )
-                except Booking.DoesNotExist:
-                    old = None
-
-                if old and old.session_id and old.number_of_players is not None:
-                    new_available = Booking.calculate_available_seats(old.session)
-                    Session.objects.filter(pk=old.session_id).update(
-                        available_seats=new_available
-                    )
-
-        elif self.session_id and self.number_of_players:
-            Session.objects.filter(pk=self.session_id).update(
-                available_seats=F("available_seats") - self.number_of_players
-            )
-
         super().save(*args, **kwargs)
 
     def __str__(self):

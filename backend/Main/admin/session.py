@@ -728,8 +728,10 @@ class SessionAdmin(admin.ModelAdmin):
                 obj.block_seats_obj = {"number": 0, "note": "none"}
             obj.block_seats_obj["number"] = obj.block_seats or 0
 
-            # Recalculate available_seats so the change is reflected immediately.
-            obj.available_seats = Booking.calculate_available_seats(obj)
+            # Only recalculate available_seats if the admin did NOT manually
+            # change it. If they explicitly set a value, respect it.
+            if 'available_seats' not in form.changed_data:
+                obj.available_seats = Booking.calculate_available_seats(obj)
 
         super().save_model(request, obj, form, change)
 

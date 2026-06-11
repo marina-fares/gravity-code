@@ -160,20 +160,23 @@ class BookingApi(generics.GenericAPIView):
                 available_seats = Booking.calculate_available_seats(current_session)
 
                 if not (booking_id and existing_booking):
+                    if available_seats <= 0:
+                        return Response(
+                            {"error": "There are no available seats for this session."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
                     new_available = available_seats - number_of_players
                     if new_available < 0:
                         return Response(
                             {
-                                "error": "Not enough available seats.",
-                                "available_seats": available_seats,
-                                "requested": number_of_players,
+                                "error": f"Not enough available seats. "
+                                         f"Available: {available_seats}, requested: {number_of_players}.",
                             },
                             status=status.HTTP_400_BAD_REQUEST,
                         )
-                    Session.objects.filter(pk=current_session.pk).update(
-                        available_seats=new_available
-                    )
-                    current_session.available_seats = new_available
+                    # NOTE: do NOT update available_seats here — Booking.save()
+                    # already decrements via F("available_seats") - number_of_players
+                    # for new bookings. Updating here as well causes a double decrement.
 
                 if booking_id and existing_booking:
                     serializer = BookingWriteSerializer(existing_booking, data=data, partial=True)
@@ -184,7 +187,6 @@ class BookingApi(generics.GenericAPIView):
                         )
                     session_booking = serializer.save()
                     created = False
-                    _recalculate_session_seats(current_session)
                 else:
                     data.pop("id", None)
                     data["options"] = None
@@ -196,6 +198,10 @@ class BookingApi(generics.GenericAPIView):
                         )
                     session_booking = serializer.save()
                     created = True
+
+                # Recalculate AFTER the booking is fully committed so
+                # calculate_available_seats() sees the correct DB state.
+                _recalculate_session_seats(current_session)
 
             result = (
                 Booking.objects
@@ -338,7 +344,7 @@ class OneBookingApi(generics.GenericAPIView):
         return Response(BookingSerializer(booking).data, status=status.HTTP_200_OK)
 
     def post(self, request, booking_id=None):
-        """Create a hold booking. No seat count change."""
+        """Create a booking (e.g. hold). Checks seat availability and recalculates after save."""
         data = request.data.copy()
         if booking_id:
             data["id"] = booking_id
@@ -349,8 +355,43 @@ class OneBookingApi(generics.GenericAPIView):
                 {"error": "Invalid booking data.", "detail": serializer.errors},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        session_id = data.get("session")
+        current_session = None
+
         try:
-            instance = serializer.save()
+            with transaction.atomic():
+                if session_id:
+                    try:
+                        current_session = _get_session_with_lock(session_id)
+                    except Session.DoesNotExist:
+                        return Response(
+                            {"error": f"Session with id '{session_id}' not found."},
+                            status=status.HTTP_404_NOT_FOUND,
+                        )
+
+                    number_of_players = serializer.validated_data.get("number_of_players") or 0
+                    if number_of_players > 0:
+                        available_seats = Booking.calculate_available_seats(current_session)
+                        if available_seats <= 0:
+                            return Response(
+                                {"error": "There are no available seats for this session."},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                        if available_seats - number_of_players < 0:
+                            return Response(
+                                {
+                                    "error": f"Not enough available seats. "
+                                             f"Available: {available_seats}, requested: {number_of_players}.",
+                                },
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+
+                instance = serializer.save()
+
+                if current_session:
+                    _recalculate_session_seats(current_session)
+
         except IntegrityError as exc:
             return Response(
                 {"error": "A booking with this ID already exists.", "detail": str(exc)},
@@ -397,7 +438,19 @@ class OneBookingApi(generics.GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            instance = serializer.save()
+            with transaction.atomic():
+                instance = serializer.save()
+
+                # Recalculate after any seat-sensitive field change (status,
+                # number_of_players, session). This covers refunds made via
+                # this endpoint — the booking is fully committed before
+                # calculate_available_seats() runs, so refunded bookings are
+                # correctly excluded from the count.
+                _SEAT_SENSITIVE = {"number_of_players", "session", "session_id", "status"}
+                if booking.session_id and _SEAT_SENSITIVE.intersection(data.keys()):
+                    session = Session.objects.select_related("product").get(pk=booking.session_id)
+                    _recalculate_session_seats(session)
+
         except DatabaseError as exc:
             return Response(
                 {"error": "A database error occurred.", "detail": str(exc)},
