@@ -4,6 +4,7 @@ import { Fragment } from 'react';
 import Card from 'react-bootstrap/Card';
 import { useNavigate } from 'react-router-dom';
 import { set_localstorage } from '../../../components/logic/localstorage';
+import { sessionDisplayDate } from '../../../components/logic/utils';
 
 export default function List({ date, availableSessions, selectedProduct, add_block_seats }) {
 	const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function List({ date, availableSessions, selectedProduct, add_blo
 		<Fragment>
 				<Mulist className="m-5" >
 					{availableSessions && availableSessions.map((item) => {
-							let datetime = new Date(item.start_time)
+							let datetime = sessionDisplayDate(item.start_time)
 
 							return (
 								<div key={item.id} style={{ marginBottom: '25px' }}>

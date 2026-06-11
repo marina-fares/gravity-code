@@ -8,6 +8,7 @@ import { get_shift, get_sub_shift } from '../../components/logic/shifts_function
 import { Row, Col } from 'react-bootstrap';
 import { InvoicePrint } from '../../components/ui/booking_invoice'
 import LoadingFun from '../../components/ui/loading'
+import { sessionDisplayDate } from '../../components/logic/utils';
 import AlertFun from '../../components/ui/alert';
 import { 
     delete_booking_from_zoho, get_booking_details, 
@@ -217,19 +218,19 @@ return (
     freeSolo
     id="sessions"
     options={availableSessions?.map((session) => {
-      const datetime = new Date(session.start_time);
+      const datetime = sessionDisplayDate(session.start_time);
       return `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getUTCHours()).padStart(2, '0')}:${String(datetime.getUTCMinutes()).padStart(2, '0')}`;
     })}
     className="border-0 w-100 p-2"
     sx={{ width: '100%' }}
     value={
       selectedSession?.start_time
-        ? `${new Date(selectedSession.start_time).getFullYear()}-${String(new Date(selectedSession.start_time).getMonth() + 1).padStart(2, '0')}-${String(new Date(selectedSession.start_time).getDate()).padStart(2, '0')} ${String(new Date(selectedSession.start_time).getUTCHours()).padStart(2, '0')}:${String(new Date(selectedSession.start_time).getUTCMinutes()).padStart(2, '0')}`
+        ? (() => { const d = sessionDisplayDate(selectedSession.start_time); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`; })()
         : ''
     }
     onInputChange={(event, newValue) => {
       const session = availableSessions.find((session) => {
-        const datetime = new Date(session.start_time);
+        const datetime = sessionDisplayDate(session.start_time);
         const formatted = `${datetime.getFullYear()}-${String(datetime.getMonth() + 1).padStart(2, '0')}-${String(datetime.getDate()).padStart(2, '0')} ${String(datetime.getUTCHours()).padStart(2, '0')}:${String(datetime.getUTCMinutes()).padStart(2, '0')}`;
         return formatted === newValue;
       });
