@@ -21,6 +21,7 @@ from django.contrib import messages
 from django.utils import timezone
 
 from Main.admin.create_new_sessions import create_session, delete_session
+from Main.management.commands.repair_sessions import repair_sessions_for_range
 
 class ProductNameFilter(SimpleListFilter):
     title = 'Product'  # The label shown in the filter
@@ -615,8 +616,66 @@ class SessionAdmin(admin.ModelAdmin):
         custom_urls = [
             path('create-custom/', self.admin_site.admin_view(self.create_custom_session), name='create_custom_session'),
             path('create-new/', self.admin_site.admin_view(self.create_default_session), name='create_default_session'),
+            path('repair-sessions/', self.admin_site.admin_view(self.repair_sessions_view), name='repair_sessions_tool'),
         ]
         return custom_urls + urls
+
+    def repair_sessions_view(self, request):
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Repair Sessions',
+            'products': Product.objects.all().order_by('name'),
+            'result': None,
+            'dry_run': False,
+        }
+
+        if request.method == 'POST':
+            start_raw = request.POST.get('start_date', '').strip()
+            end_raw = request.POST.get('end_date', '').strip()
+            product_id = request.POST.get('product_id', '').strip()
+            dry_run = request.POST.get('dry_run') == 'on'
+
+            errors = []
+
+            try:
+                start_date = datetime.date.fromisoformat(start_raw)
+            except ValueError:
+                errors.append(f"Invalid start date: '{start_raw}'")
+                start_date = None
+
+            try:
+                end_date = datetime.date.fromisoformat(end_raw)
+            except ValueError:
+                errors.append(f"Invalid end date: '{end_raw}'")
+                end_date = None
+
+            if start_date and end_date and start_date > end_date:
+                errors.append("Start date must be on or before end date.")
+
+            if errors:
+                for msg in errors:
+                    messages.error(request, msg)
+            else:
+                product_ids = [int(product_id)] if product_id else None
+                result = repair_sessions_for_range(
+                    start_date=start_date,
+                    end_date=end_date,
+                    product_ids=product_ids,
+                    dry_run=dry_run,
+                )
+                context['result'] = result
+                context['dry_run'] = dry_run
+                context['start_date'] = start_raw
+                context['end_date'] = end_raw
+
+                label = " [DRY RUN]" if dry_run else ""
+                messages.success(
+                    request,
+                    f"Repair complete{label}: {result['created']} created, "
+                    f"{result['deleted']} deleted, {result['errors']} errors.",
+                )
+
+        return render(request, 'admin/Main/session/repair_sessions.html', context)
 
     def create_custom_session(self, request):
         # Redirect to the default add page with a custom form
