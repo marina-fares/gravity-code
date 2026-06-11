@@ -79,21 +79,21 @@ export default function Booking() {
         setShiftDetails(shiftData.data);
       } else {
         setAlert(true);
-        setAlertMessage(shiftData.error);
+        setAlertMessage(shiftData?.error, shiftData?.detail);
       }
       const subShiftData = await get_sub_shift();
       if (subShiftData.status === 200) {
         setSubShiftDetails(subShiftData.data);
       } else {
         setAlert(true);
-        setAlertMessage(subShiftData.error);
+        setAlertMessage(subShiftData?.error, shiftData?.detail);
       }
       const promoCodesData = await get_promo_codes();
       if (promoCodesData.status === 200) {
         setAllPromoCodes(promoCodesData.data);
       } else {
         setAlert(true);
-        setAlertMessage(promoCodesData.error);
+        setAlertMessage(promoCodesData.error, promoCodesData?.detail);
       }
       const sessionData = await get_session_details(session_id);
       console.log('sessionData', sessionData);
@@ -101,7 +101,7 @@ export default function Booking() {
         setSessionsDetails(sessionData.data);
       } else {
         setAlert(true);
-        setAlertMessage(sessionData.error);
+        setAlertMessage(sessionData?.error, sessionData?.detail);
       }
       setSelectedCategory(`1HR ${sessionData.data[0].product.nick_name}`);
       const customersData = await get_all_customers();
@@ -137,7 +137,7 @@ export default function Booking() {
           let zohoReceiptID = salesReceiptDetails?.id;
           delete_booking_error({ paymentData, zohoReceiptID });
           setAlert(true);
-          setAlertMessage(result.error);
+          setAlertMessage(result?.error, result?.detail);
         } else {
           setBookingSuccess(true);
         }
@@ -220,7 +220,7 @@ export default function Booking() {
     let result = await get_total_price({ shiftDetails, promoCode, selectedSquareItems });
     if (result.error) {
       setAlert(true);
-      setAlertMessage(result.error);
+      setAlertMessage(result?.error, result?.detail);
       return;
     } else {
       setOrderDetails(result);
@@ -228,7 +228,7 @@ export default function Booking() {
     const result2 = await create_hold_booking({ bookingDetails, session_id, numberOfPlayers });
     if (result2.error) {
       setAlert(true);
-      setAlertMessage(result2.error);
+      setAlertMessage(result2?.error, result2?.detail);
       return;
     } else {
       set_localstorage('bookingId', result2.id);
@@ -251,7 +251,7 @@ export default function Booking() {
     let create_payment_api_result = await create_payment_api({ shiftDetails, orderDetails, paymentMethod });
     if (create_payment_api_result.error) {
       setAlert(true);
-      setAlertMessage(create_payment_api_result.error);
+      setAlertMessage(create_payment_api_result?.error, create_payment_api_result?.detail);
       return;
     }
     if (create_payment_api_result.errors) {
