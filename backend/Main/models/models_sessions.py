@@ -234,6 +234,9 @@ class Booking(models.Model):
     square_payment_id = models.CharField(null=True, blank=True, max_length=100)
     zoho_sales_receipt_id = models.CharField(null=True, blank=True, max_length=100)
     zoho_sales_receipt_num = models.CharField(null=True, blank=True, max_length=50)
+    # Zoho line items as sent to /salesreceipts. Stored so a failed Zoho post
+    # can be retried later (End Shift page) with the exact original payload.
+    zoho_line_items = models.JSONField(default=None, null=True, blank=True)
     note = models.CharField(null=True, blank=True, max_length=100)
     status = models.CharField(
         null=True, blank=True, choices=STATUS_CHOICES, max_length=100

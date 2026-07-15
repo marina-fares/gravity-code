@@ -264,13 +264,15 @@ export default function Booking() {
     if (selectedZohoItems && selectedZohoItems.length > 0) {
       let result2 = await create_sales_receipt({ shiftDetails, orderDetails, paymentData, selectedZohoItems });
       if (result2.code !== 0) {
-        delete_booking_error({ paymentData });
-        setAlert(true);
-        setAlertMessage('This error from zoho: ' + result2.message);
-        return;
+        // Zoho failed (e.g. transient 502) — do NOT roll back the booking.
+        // Proceed without a receipt ID; the booking will be listed on the
+        // End Shift page as "not posted to Zoho" for manual follow-up.
+        console.warn('Zoho sales receipt failed:', result2?.message || result2?.error);
+        salesReceiptData = null;
+      } else {
+        salesReceiptData = result2;
+        setSalesReceiptDetails(salesReceiptData);
       }
-      salesReceiptData = await result2;
-      setSalesReceiptDetails(salesReceiptData);
     }
     const options = orderDetails.line_items;
     await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note });
@@ -303,8 +305,10 @@ export default function Booking() {
       square_receipt_number: paymentData.receipt_number,
       square_payment_id: paymentData.id,
       square_order_id: orderDetails.id,
-      zoho_sales_receipt_id: salesReceiptData ? salesReceiptData?.sales_receipt_details?.sales_receipt_id : null,
-      zoho_sales_receipt_num: salesReceiptData ? salesReceiptData?.sales_receipt_details?.receipt_number : null,
+      zoho_sales_receipt_id: salesReceiptData?.sales_receipt_details?.sales_receipt_id ?? null,
+      zoho_sales_receipt_num: salesReceiptData?.sales_receipt_details?.receipt_number ?? null,
+      // Keep the exact Zoho payload so a failed post can be retried from the End Shift page
+      zoho_line_items: selectedZohoItems?.length ? selectedZohoItems : null,
       note: note ? note : null,
       status: 'done',
     }));

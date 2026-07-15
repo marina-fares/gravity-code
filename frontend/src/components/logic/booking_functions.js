@@ -1,7 +1,7 @@
 import { app_api_get, app_api_put } from './apis';
 import { set_shift, set_sub_shift } from './shifts_functions_apis';
 import { app_post, app_delete, app_get, app_put } from './app';
-import { set_localstorage } from './localstorage';
+import { set_localstorage, get_localstorage } from './localstorage';
 
 // ─── Square / Zoho order helpers ─────────────────────────────────────────────
 
@@ -156,6 +156,92 @@ export async function delete_hold_booking({ bookingId }) {
 
 export async function get_booking_details(booking_id) {
     return app_get(`booking/${booking_id}/`, {});
+}
+
+// Bookings of the current shift that were never posted to Zoho
+export async function get_unposted_zoho_bookings() {
+    return app_get('bookings/', { unposted_zoho: 1 });
+}
+
+// Rebuild Zoho line items for bookings created before zoho_line_items was
+// stored: match the booking's square line items (options) against the
+// zohoItems mapping in localStorage.
+function rebuild_zoho_line_items(booking) {
+    let allZohoItems;
+    try {
+        allZohoItems = JSON.parse(get_localstorage('zohoItems')) || {};
+    } catch {
+        return null;
+    }
+    const lineItems = [];
+    for (const item of booking.options || []) {
+        const mapping = allZohoItems[item.name];
+        if (mapping) {
+            lineItems.push({
+                item_id: mapping[0],
+                quantity: item.quantity,
+                rate: mapping[1],
+                tax_id: '5118629000000088105',
+            });
+        } else if (item.base_price_money?.amount > 0) {
+            // Custom item — no catalog mapping; send name + net rate
+            lineItems.push({
+                name: item.name,
+                quantity: item.quantity,
+                rate: item.base_price_money.amount / 100 / 1.14,
+                tax_id: '5118629000000088105',
+            });
+        }
+    }
+    return lineItems.length > 0 ? lineItems : null;
+}
+
+// Retry posting a booking's sales receipt to Zoho (End Shift page).
+// On success, saves the receipt IDs on the booking and returns the updated booking.
+export async function repost_booking_to_zoho({ booking, shiftDetails }) {
+    const lineItems = booking.zoho_line_items?.length
+        ? booking.zoho_line_items
+        : rebuild_zoho_line_items(booking);
+    if (!lineItems) {
+        return { error: 'No Zoho line items stored for this booking and they could not be rebuilt.' };
+    }
+
+    const created = new Date(booking.created_at);
+    const dateStr = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}-${String(created.getDate()).padStart(2, '0')}`;
+    const dateTimeStr = `${dateStr} ${String(created.getHours()).padStart(2, '0')}:${String(created.getMinutes()).padStart(2, '0')}:${String(created.getSeconds()).padStart(2, '0')}`;
+
+    const result = await app_api_get('zoho/', {
+        request_type: 'post',
+        url: '/salesreceipts',
+        payload: {
+            is_generic_customer: true,
+            customer_name: 'Walk-in Customer',
+            date: dateStr,
+            line_items: lineItems,
+            payment_mode: booking.payment?.method === 'cash' ? 'cash' : 'creditcard',
+            custom_fields: [
+                { label: 'Product',               value: 'Park' },
+                { label: 'Gravity Branch',         value: shiftDetails.user.group_name },
+                { label: 'Staff Name',             value: booking.creation_agent || shiftDetails.user.username },
+                { label: 'Date and Time',          value: dateTimeStr },
+                { label: 'Square receipt number',  value: booking.square_receipt_number },
+            ],
+        },
+    });
+
+    if (result.code !== 0) {
+        return { error: result?.message || result?.error || 'Unknown Zoho error' };
+    }
+
+    try {
+        const updated = await app_put(`booking/${booking.id}/`, {}, {
+            zoho_sales_receipt_id: result.sales_receipt_details?.sales_receipt_id,
+            zoho_sales_receipt_num: result.sales_receipt_details?.receipt_number,
+        });
+        return { booking: updated };
+    } catch (err) {
+        return { error: `Receipt created in Zoho but saving it on the booking failed: ${err.message}` };
+    }
 }
 
 export async function update_booking_details({ bookingDetails, new_session_id }) {

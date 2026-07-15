@@ -37,8 +37,30 @@ class BookingApi(generics.GenericAPIView):
     def get(self, request, session_id=None):
         try:
             search_field = request.query_params.get("tt", "").strip()
+            unposted_zoho = request.query_params.get("unposted_zoho", "").strip()
 
-            if session_id:
+            if unposted_zoho:
+                # Bookings of the current shift that were never posted to Zoho
+                # (sales receipt creation failed, e.g. Zoho returned 502).
+                profile = getattr(request.user, "profile", None)
+                if profile is None or not profile.start_time:
+                    return Response([], status=status.HTTP_200_OK)
+                bookings = (
+                    Booking.objects
+                    .filter(
+                        creation_agent=request.user.username,
+                        created_at__gte=profile.start_time,
+                        status="done",
+                    )
+                    .filter(
+                        Q(zoho_sales_receipt_id__isnull=True)
+                        | Q(zoho_sales_receipt_id="")
+                    )
+                    .select_related("booking_customer", "session__product", "refunded_by")
+                    .order_by("created_at")
+                )
+
+            elif session_id:
                 if not Session.objects.filter(pk=session_id).exists():
                     return Response(
                         {"error": f"Session with id '{session_id}' not found."},

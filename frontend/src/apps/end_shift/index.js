@@ -5,6 +5,7 @@ import CreditCardIcon from '@mui/icons-material/CreditCard';
 import InvoicePrint from '../../components/ui/InvoicePrint';
 import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis';
 import { end_shift } from '../../components/logic/shifts_functions';
+import { get_unposted_zoho_bookings, repost_booking_to_zoho } from '../../components/logic/booking_functions';
 import LoadingFun from '../../components/ui/loading';
 import AlertFun from '../../components/ui/alert';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +20,8 @@ export default function EndShift() {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+  const [unpostedZohoBookings, setUnpostedZohoBookings] = useState([]);
+  const [repostingId, setRepostingId] = useState(null);
   const navigate = useNavigate();
   const printRef = useRef();
 
@@ -30,6 +33,10 @@ export default function EndShift() {
       } else {
         setAlert(true);
         setAlertMessage(shiftData.error);
+      }
+      const unpostedData = await get_unposted_zoho_bookings();
+      if (unpostedData.status === 200) {
+        setUnpostedZohoBookings(unpostedData.data || []);
       }
       const subShiftData = await get_sub_shift();
       if (subShiftData.status === 200) {
@@ -46,6 +53,18 @@ export default function EndShift() {
     };
     fetchData();
   }, []);
+
+  async function repost_to_zoho(booking) {
+    setRepostingId(booking.id);
+    const result = await repost_booking_to_zoho({ booking, shiftDetails: shift_details });
+    setRepostingId(null);
+    if (result.error) {
+      setAlert(true);
+      setAlertMessage(`Repost to Zoho failed: ${result.error}`);
+    } else {
+      setUnpostedZohoBookings((prev) => prev.filter((b) => b.id !== booking.id));
+    }
+  }
 
   async function end_shift_fun() {
     setLoading(true);
@@ -339,6 +358,54 @@ export default function EndShift() {
             Inventory Summary
           </Typography>
           {renderInventoryTable()}
+
+          {unpostedZohoBookings.length > 0 && (
+            <>
+              <Divider sx={{ my: 3 }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'error.main', mb: 1 }}>
+                Bookings Not Posted to Zoho ({unpostedZohoBookings.length})
+              </Typography>
+              <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                These bookings were completed but their Zoho sales receipt failed to create.
+                Post them to Zoho manually before ending the shift.
+              </Alert>
+              <table className="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Booking ID</th>
+                    <th>Customer</th>
+                    <th>Created At</th>
+                    <th>Amount (EGP)</th>
+                    <th>Method</th>
+                    <th>Square Receipt</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {unpostedZohoBookings.map((booking) => (
+                    <tr key={booking.id}>
+                      <td>{booking.id}</td>
+                      <td>{booking.customer_name || booking.booking_customer?.identifier || '—'}</td>
+                      <td>{booking.created_at ? new Date(booking.created_at).toLocaleString() : '—'}</td>
+                      <td>{booking.payment?.amount ?? '—'}</td>
+                      <td>{booking.payment?.method ?? '—'}</td>
+                      <td>{booking.square_receipt_number || '—'}</td>
+                      <td>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          disabled={repostingId !== null}
+                          onClick={() => repost_to_zoho(booking)}
+                        >
+                          {repostingId === booking.id ? 'Reposting…' : 'Repost to Zoho'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
             <Button

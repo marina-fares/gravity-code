@@ -44,7 +44,12 @@ class SquareAPI(generics.GenericAPIView):
             now = timezone.now() - timedelta(seconds=30)
             payload['shift']['end_at'] = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        square_key = request.user.profile.square_secret
+        # Per-user key from Profile.square_secret; fall back to the global
+        # SQUARE_API_KEY from .env when the profile has none. Without this
+        # fallback, key=None overrides the interface default and every
+        # request fails with "not configured".
+        from Config.settings import SQUARE_API_KEY
+        square_key = request.user.profile.square_secret or SQUARE_API_KEY
         square = SquareApiInterface(key=square_key)
 
         # FIX 1: SquareApiInterface.__init__ does 'Bearer ' + self.key which
