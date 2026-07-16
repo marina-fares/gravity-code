@@ -73,8 +73,14 @@ class ZohoApiInterface(json.JSONEncoder):
             logger.info("Zoho access token updated in database and cache.")
         except Exception as exc:
             logger.error("Failed to save Zoho token to database: %s", exc)
+            # Keep the fresh token in the per-worker memory cache even if the
+            # DB save failed. Invalidating here caused a token refresh on EVERY
+            # request (expired env token → 401 → refresh), which tripped
+            # Zoho's rate limit on token generation and took the whole
+            # integration down with 400s.
             self.access_key = new_access_token
-            _invalidate_token_cache()
+            _TOKEN_CACHE["access_key"] = new_access_token
+            _TOKEN_CACHE["expires_at"] = time.monotonic() + _TOKEN_TTL
 
     def refresh_access_token(self, group_name, request_type, url, payload):
         logger.info("Refreshing Zoho access token...")
