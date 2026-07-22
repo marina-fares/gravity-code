@@ -441,7 +441,7 @@ export default function Booking() {
                     <TextField
                       required
                       label="Total (read-only — click 'Get Total' to update)"
-                      value={parseInt(paid)}
+                      value={paid}
                       InputProps={{ readOnly: true }}
                       size="small"
                       fullWidth

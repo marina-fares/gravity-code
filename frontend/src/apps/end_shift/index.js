@@ -67,6 +67,11 @@ export default function EndShift() {
   }
 
   async function end_shift_fun() {
+    if (unpostedZohoBookings.length > 0) {
+      setAlert(true);
+      setAlertMessage('Repost all bookings to Zoho before ending the shift.');
+      return;
+    }
     setLoading(true);
     const response = await end_shift(shift_details, sub_shift_details);
     if (response) {
@@ -407,12 +412,18 @@ export default function EndShift() {
             </>
           )}
 
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, mt: 3 }}>
+            {unpostedZohoBookings.length > 0 && (
+              <Typography variant="body2" sx={{ color: 'error.main', fontWeight: 600 }}>
+                Repost all bookings to Zoho before ending the shift.
+              </Typography>
+            )}
             <Button
               variant="contained"
               color="error"
               size="large"
               onClick={() => end_shift_fun()}
+              disabled={unpostedZohoBookings.length > 0}
               sx={{ px: 4 }}
             >
               End Shift
