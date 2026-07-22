@@ -139,7 +139,7 @@ export default function Options() {
     }
   }
 
-  async function update_inventory(payment_result) {
+  async function update_inventory(payment_result, receipt) {
     let updatedShiftData = await shiftDetails;
     let updatedSubShiftData = await subShiftDetails;
     await orderDetails.line_items.forEach((item) => {
@@ -159,14 +159,21 @@ export default function Options() {
     updatedShiftData.options2 = await [...old_options, ...new_options];
     await set_shift(updatedShiftData);
     await set_sub_shift(updatedSubShiftData);
-    await create_booking_in_backend(payment_result);
+    await create_booking_in_backend(payment_result, receipt);
     set_bookingsuccess(true);
     setIsLoading(false);
   }
 
-  function create_sales_receipt({ payment_result }) {
+  // Returns { id, num } on success, or null on failure. Must be awaited so the
+  // booking is not saved before Zoho responds. Do NOT rely on React state for
+  // the result — state updates are async and won't be visible to the caller in
+  // the same tick.
+  async function create_sales_receipt({ payment_result }) {
+    if (!zohoItems || zohoItems.length === 0) {
+      return null;
+    }
     const today = new Date();
-    app_api_get('zoho/', {
+    const response = await app_api_get('zoho/', {
       request_type: 'post',
       url: '/salesreceipts',
       payload: {
@@ -202,14 +209,20 @@ export default function Options() {
           { label: 'Square receipt number', value: payment_result.receipt_number },
         ],
       },
-    }).then((response) => {
-      if (response.code === 0) {
-        set_zoho_sales_receipt_id(response.sales_receipt_details.sales_receipt_id);
-        set_zoho_sales_receipt_number(response.sales_receipt_details.receipt_number);
-      } else {
-        set_zoho_sales_receipt_id(true);
-      }
     });
+
+    if (response && response.code === 0) {
+      const id = response.sales_receipt_details.sales_receipt_id;
+      const num = response.sales_receipt_details.receipt_number;
+      set_zoho_sales_receipt_id(id);
+      set_zoho_sales_receipt_number(num);
+      return { id, num };
+    }
+    // Zoho failed (e.g. transient 502) — do NOT block the booking. Return null
+    // so it is saved without a receipt ID and shows up on the End Shift page
+    // for a manual repost.
+    console.warn('Zoho sales receipt failed (Options page):', response?.message || response?.error);
+    return null;
   }
 
   function startOrder() {
@@ -220,7 +233,10 @@ export default function Options() {
         ...squareLineItems,
         { quantity: String(value), catalog_object_id: shiftDetails.inventory[key].id },
       ]);
-      if (value[0] !== 0) {
+      // Guard: a selected option may not exist in the zohoItems mapping.
+      // Without this check zohoAllItems[key][0] throws, leaving zohoItems
+      // empty/partial and the Zoho receipt would be rejected.
+      if (value[0] !== 0 && zohoAllItems && zohoAllItems[key]) {
         setZohoItems((zohoItems) => [
           ...zohoItems,
           { quantity: value.toString(), item_id: zohoAllItems[key][0], rate: zohoAllItems[key][1], tax_id: '5118629000000088105' },
@@ -236,7 +252,7 @@ export default function Options() {
     }
   }
 
-  async function create_booking_in_backend(payment_result) {
+  async function create_booking_in_backend(payment_result, receipt) {
     let data = {
       options: orderDetails.line_items,
       payment: {
@@ -251,8 +267,13 @@ export default function Options() {
       square_receipt_number: payment_result.receipt_number,
       square_payment_id: payment_result.id,
       square_order_id: orderDetails.id,
-      zoho_sales_receipt_id: zoho_sales_receipt_id,
-      zoho_sales_receipt_num: zoho_sales_receipt_number,
+      // Use the receipt returned by create_sales_receipt (null on failure),
+      // NOT React state — state is not yet updated in this closure.
+      zoho_sales_receipt_id: receipt?.id ?? null,
+      zoho_sales_receipt_num: receipt?.num ?? null,
+      // Keep the exact Zoho payload so a failed post can be reposted from the
+      // End Shift page.
+      zoho_line_items: zohoItems?.length ? zohoItems : null,
       status: 'done',
     };
     await app_post('booking/', data);
@@ -266,8 +287,14 @@ export default function Options() {
   async function compelete_order() {
     setIsLoading(true);
     let payment_result = await create_payment_api();
-    await create_sales_receipt({ payment_result });
-    await update_inventory(payment_result);
+    // Payment failed — create_payment_api already showed the alert. Stop here
+    // so we don't create a receipt/booking for a payment that never happened.
+    if (!payment_result) {
+      setIsLoading(false);
+      return;
+    }
+    const receipt = await create_sales_receipt({ payment_result });
+    await update_inventory(payment_result, receipt);
   }
 
   const handleAddInput = (key) => {
