@@ -123,13 +123,88 @@ export async function delete_from_inventory({ bookingDetails, shiftDetails, subS
 
 export async function create_booking({ sessionsDetails, bookingDetails, round }) {
     if (round > 0) {
-        delete bookingDetails.id;
-        return app_post('booking/', bookingDetails);
+        // Drop the id WITHOUT mutating bookingDetails — it is React state and
+        // the same object is reused across retries / promo rounds. Mutating it
+        // with `delete` corrupted later rounds and any retry attempt.
+        const { id, ...rest } = bookingDetails;
+        return app_post('booking/', rest);
     }
     if (bookingDetails.id) {
         return app_put(`booking/${bookingDetails.id}/`, {}, bookingDetails);
     }
     return app_post('booking/', bookingDetails);
+}
+
+// A booking write is only a real success when the server returns a row with a
+// real id. A missing id, an `.error` field, or a thrown network error all mean
+// the row was NOT persisted.
+function is_real_booking(res) {
+    return !!(res && !res.error && res.id);
+}
+
+// Retry a single booking write a few times on transient failures (throttle,
+// network blip, 5xx). The Square payment already went through by this point, so
+// we try hard to get the row written rather than losing it.
+export async function create_booking_with_retry({ sessionsDetails, bookingDetails, round, retries = 2 }) {
+    let last = null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const res = await create_booking({ sessionsDetails, bookingDetails, round });
+            if (is_real_booking(res)) {
+                return res;
+            }
+            last = res || { error: 'Empty response from the server.' };
+        } catch (err) {
+            last = { error: err?.message || 'Network error while saving the booking.' };
+        }
+        if (attempt < retries) {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+    }
+    return last;
+}
+
+// ─── Failed-booking recovery ─────────────────────────────────────────────────
+// When Square charged the customer but the booking row could not be written,
+// we do NOT roll back the payment. Instead the booking payload is stored locally
+// so it can be re-saved automatically the next time the Booking page loads.
+
+const FAILED_BOOKINGS_KEY = 'failedBookings';
+
+export function get_failed_bookings() {
+    try {
+        return JSON.parse(get_localstorage(FAILED_BOOKINGS_KEY)) || [];
+    } catch {
+        return [];
+    }
+}
+
+export function save_failed_booking(record) {
+    const list = get_failed_bookings();
+    list.push({ ...record, saved_at: new Date().toISOString() });
+    set_localstorage(FAILED_BOOKINGS_KEY, JSON.stringify(list));
+}
+
+export async function resave_failed_bookings() {
+    const list = get_failed_bookings();
+    if (!list.length) return 0;
+
+    const remaining = [];
+    let recovered = 0;
+    for (const record of list) {
+        const res = await create_booking_with_retry({
+            bookingDetails: record.bookingDetails,
+            round: record.round ?? 0,
+            retries: 1,
+        });
+        if (is_real_booking(res)) {
+            recovered += 1;
+        } else {
+            remaining.push(record);
+        }
+    }
+    set_localstorage(FAILED_BOOKINGS_KEY, JSON.stringify(remaining));
+    return recovered;
 }
 
 export async function create_hold_booking({ bookingDetails, session_id, numberOfPlayers }) {

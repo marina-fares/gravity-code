@@ -15,7 +15,32 @@ function app_post(url, data){
         headers,
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(async (response) => {
+        // Parse the body defensively — an error response may be empty or
+        // non-JSON (e.g. a 502 HTML page from a proxy).
+        let payload = null;
+        try {
+            const text = await response.text();
+            payload = text ? JSON.parse(text) : null;
+        } catch (e) {
+            payload = null;
+        }
+
+        // Previously this returned response.json() for ANY status, so a failed
+        // request (throttle 429, expired token 401/403, 500) was handed back as
+        // if it succeeded. DRF returns those errors under `detail`, not `error`,
+        // so callers checking `result.error` treated them as success — a booking
+        // POST could "succeed" on the client while no row was written.
+        // Normalise every failure to always expose `.error`.
+        if (!response.ok) {
+            return {
+                error: (payload && (payload.error || payload.detail)) || `HTTP ${response.status}`,
+                detail: payload && payload.detail,
+                status: response.status,
+            };
+        }
+        return payload;
+    })
 }
 
 async function app_get(url, params = {}) {

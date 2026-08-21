@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { get_localstorage, set_localstorage } from '../../components/logic/localstorage';
 import {
@@ -15,12 +15,13 @@ import { get_shift, get_sub_shift } from '../../components/logic/shifts_function
 import LoadingFun from '../../components/ui/loading';
 import AlertFun from '../../components/ui/alert';
 import {
-  get_promo_codes, get_session_details, delete_booking_on_error,
+  get_promo_codes, get_session_details,
   get_all_customers, isRealCustomerName
 } from './functions_apis';
 import {
   get_total_price, create_payment_api, create_sales_receipt, add_to_inventory,
-  create_hold_booking, create_booking, delete_hold_booking, create_customer
+  create_hold_booking, create_booking_with_retry, save_failed_booking,
+  resave_failed_bookings, create_customer
 } from '../../components/logic/booking_functions';
 import { InvoicePrint } from '../../components/ui/booking_invoice';
 
@@ -70,6 +71,21 @@ export default function Booking() {
     quantity: '1',
     base_price_money: { amount: 0, currency: 'EGP' },
   });
+
+  // Guards against the booking effect firing more than once concurrently
+  // (its deps are set one after another inside Book()).
+  const bookingInProgress = useRef(false);
+
+  // ── Recover bookings that were charged in Square but never saved ──
+  useEffect(() => {
+    const recover = async () => {
+      const recovered = await resave_failed_bookings();
+      if (recovered > 0) {
+        console.log(`Recovered ${recovered} previously unsaved booking(s).`);
+      }
+    };
+    recover();
+  }, []);
 
   // ── Data fetching ─────────────────────────────────────────
   useEffect(() => {
@@ -125,22 +141,44 @@ export default function Booking() {
 
   useEffect(() => {
     const handleBooking = async () => {
-      if (bookingDetails?.type_of_players && !bookingSuccess) {
-        let result = await null;
+      if (!bookingDetails?.type_of_players || bookingSuccess || bookingInProgress.current) {
+        return;
+      }
+      bookingInProgress.current = true;
+      try {
         const times = promoCode?.duration || 1;
-        for (let i = 0; i < times; i++) {
-          let round = i;
-          result = await create_booking({ sessionsDetails, bookingDetails, round });
+        let failure = null;
+        let failedRound = 0;
+
+        for (let round = 0; round < times; round++) {
+          const res = await create_booking_with_retry({ sessionsDetails, bookingDetails, round });
+          // A write only counts as success when a real row (with id) comes back.
+          if (!res || res.error || !res.id) {
+            failure = res || { error: 'Empty response from the server.' };
+            failedRound = round;
+            break;
+          }
         }
-        if (result.error) {
-          let paymentData = paymentDetails;
-          let zohoReceiptID = salesReceiptDetails?.id;
-          delete_booking_error({ paymentData, zohoReceiptID });
+
+        if (failure) {
+          // Square already charged the customer. Per the desired behaviour we do
+          // NOT roll back the payment or the Zoho receipt. Instead we persist the
+          // un-saved booking(s) so they are recovered automatically next time the
+          // Booking page loads, and we warn the staff member NOT to re-charge.
+          for (let round = failedRound; round < times; round++) {
+            save_failed_booking({ bookingDetails, round });
+          }
           setAlert(true);
-          setAlertMessage(result?.error, result?.detail);
+          setAlertMessage(
+            'تم الدفع في Square بنجاح، لكن تعذّر حفظ الحجز في النظام. تم حفظه مؤقتًا وسيُعاد حفظه تلقائيًا. برجاء عدم تكرار الدفع.',
+            failure?.error || failure?.detail
+          );
+          setIsLoading(false);
         } else {
           setBookingSuccess(true);
         }
+      } finally {
+        bookingInProgress.current = false;
       }
     };
     handleBooking();
@@ -235,14 +273,6 @@ export default function Booking() {
     }
     setBookingDetails(result2);
     setIsLoading(false);
-  }
-
-  async function delete_booking_error({ paymentData, zohoReceiptID }) {
-    delete_booking_on_error({ paymentData, shiftDetails, zohoReceiptID });
-    let bookingId = get_localstorage('bookingId');
-    if (bookingId) {
-      delete_hold_booking({ bookingId });
-    }
   }
 
   async function Book() {
