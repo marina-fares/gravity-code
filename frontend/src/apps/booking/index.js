@@ -209,9 +209,10 @@ export default function Booking() {
   function set_options_for_apis() {
     let zohoItemsList = [];
     let squareIdsList = [];
+    console.log('customItem', customItem);
     if (customItem.base_price_money.amount > 0 && customItem.name !== '') {
       squareIdsList.push(customItem);
-      zohoItemsList.push({ name: customItem.name, quantity: 1, rate: customItem.base_price_money.amount / 1.14, tax_id: '5118629000000088105' });
+      zohoItemsList.push({ name: customItem.name, quantity: 1, rate: customItem.base_price_money.amount / 114, tax_id: '5118629000000088105' });
     }
     const baseRate = allZohoItems[selectedCategory][1];
     const discountedRate =

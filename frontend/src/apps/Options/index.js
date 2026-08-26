@@ -247,7 +247,7 @@ export default function Options() {
       setSquareLineItems((prev) => [...prev, customItem]);
       setZohoItems((prev) => [
         ...prev,
-        { name: customItem.name, quantity: 1, rate: customItem.base_price_money.amount / 1.14, tax_id: '5118629000000088105' },
+        { name: customItem.name, quantity: 1, rate: customItem.base_price_money.amount / 114, tax_id: '5118629000000088105' },
       ]);
     }
   }
