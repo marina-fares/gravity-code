@@ -6,9 +6,16 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs from 'dayjs';
+import PasswordDialog from '../../components/ui/password_dialog';
+
+// Dates before today are locked behind this password
+const PAST_DATE_PASSWORD = 'gCaV@2026';
 
 export default function HomeInput({ date, setDate, allProducts, selectedProduct, setSelectedProduct }) {
   const [selectedProductId, setSelectedProductId] = useState();
+  // Past date the user picked that is waiting for password confirmation
+  const [pendingPastDate, setPendingPastDate] = useState(null);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   var today = new Date();
   var todayDate =
@@ -29,6 +36,23 @@ export default function HomeInput({ date, setDate, allProducts, selectedProduct,
     const productDetails = allProducts.find((item) => item.id === selectedProductId);
     setSelectedProductId(productDetails.id);
     setSelectedProduct(productDetails);
+  }
+
+  function handleDateChange(newValue) {
+    if (!newValue || !newValue.isValid()) return;
+    const formatted = newValue.format('YYYY-MM-DD');
+    if (newValue.isBefore(dayjs(), 'day')) {
+      // Don't apply the date yet - ask for the password first
+      setPendingPastDate(formatted);
+      setPasswordDialogOpen(true);
+    } else {
+      setDate(formatted);
+    }
+  }
+
+  function unlockPastDate() {
+    setDate(pendingPastDate);
+    setPasswordDialogOpen(false);
   }
 
   // Parse the string date (or Date object) into a dayjs value for the picker
@@ -63,11 +87,7 @@ export default function HomeInput({ date, setDate, allProducts, selectedProduct,
         <DatePicker
           label="Date"
           value={dayjsValue}
-          onChange={(newValue) => {
-            if (newValue && newValue.isValid()) {
-              setDate(newValue.format('YYYY-MM-DD'));
-            }
-          }}
+          onChange={handleDateChange}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -165,6 +185,17 @@ export default function HomeInput({ date, setDate, allProducts, selectedProduct,
           ))}
         </Select>
       </FormControl>
+
+      <PasswordDialog
+        open={passwordDialogOpen}
+        title="Past Date Locked"
+        message={`Viewing sessions for ${
+          pendingPastDate ? dayjs(pendingPastDate).format('DD MMM YYYY') : 'a past date'
+        } requires a password.`}
+        password={PAST_DATE_PASSWORD}
+        onSuccess={unlockPastDate}
+        onCancel={() => setPasswordDialogOpen(false)}
+      />
     </Paper>
   );
 }
