@@ -21,6 +21,7 @@ import BlockSeats from './apps/block_seats';
 import SessionCapacity from './apps/session_capacity';
 import KeyPad from './apps/keypad';
 import BookingsHistory from './apps/all_bookings_history';
+import RequireShift from './components/ui/require_shift';
 
 function App() {
 	const [user, set_user] = useState(get_user_and_jwt().user);
@@ -84,19 +85,22 @@ function App() {
 					<Routes>
 						{user && user.is_staff && (
 							<>
-								<Route path="/end-shift" element={<EndShit />} />
-								<Route path="/end_sub_shift" element={<EndSubShit />} />
-								<Route path="/inventory" element={<Inventory />} />
-								<Route path="/options" element={<Options />} />
-								<Route path="/home" element={<Home />} />
-								<Route path="/oldbookings/:session_id" element={<OldBookings />} />
-								<Route path="/book/:session_id" element={<Booking />} />
-								<Route path="/booking/:session_id/:booking_id" element={<OneOldBooking />} />
-								<Route path="/block_seats/:session_id" element={<BlockSeats />} />
-								<Route path="/session_capacity/:session_id" element={<SessionCapacity />} />
-								<Route path="/keypad" element={<KeyPad />} />
-								<Route path="/bookings_history" element={<BookingsHistory />} />
-								
+								{/* All operational pages require a live shift (Square shift id +
+								    start_time). Without one, RequireShift redirects to "/" (Start
+								    Shift), so no bookings can be created against a non-existent shift. */}
+								<Route path="/end-shift" element={<RequireShift><EndShit /></RequireShift>} />
+								<Route path="/end_sub_shift" element={<RequireShift><EndSubShit /></RequireShift>} />
+								<Route path="/inventory" element={<RequireShift><Inventory /></RequireShift>} />
+								<Route path="/options" element={<RequireShift><Options /></RequireShift>} />
+								<Route path="/home" element={<RequireShift><Home /></RequireShift>} />
+								<Route path="/oldbookings/:session_id" element={<RequireShift><OldBookings /></RequireShift>} />
+								<Route path="/book/:session_id" element={<RequireShift><Booking /></RequireShift>} />
+								<Route path="/booking/:session_id/:booking_id" element={<RequireShift><OneOldBooking /></RequireShift>} />
+								<Route path="/block_seats/:session_id" element={<RequireShift><BlockSeats /></RequireShift>} />
+								<Route path="/session_capacity/:session_id" element={<RequireShift><SessionCapacity /></RequireShift>} />
+								<Route path="/keypad" element={<RequireShift><KeyPad /></RequireShift>} />
+								<Route path="/bookings_history" element={<RequireShift><BookingsHistory /></RequireShift>} />
+
 							</>
 						)}
 						{user ? (

@@ -63,43 +63,88 @@ export default function StartShift() {
 
   const onStartShift = async () => {
     setOpen(true);
-    app_api_post('square/', {
-      request_type: 'post',
-      url: '/labor/shifts',
-      payload: {
-        shift: {
-          wage: {},
-          status: 'OPEN',
-          location_id: shift_details.square_location_id,
-          team_member_id: shift_details.square_team_member_id,
+    try {
+      const res = await app_api_post('square/', {
+        request_type: 'post',
+        url: '/labor/shifts',
+        payload: {
+          shift: {
+            wage: {},
+            status: 'OPEN',
+            location_id: shift_details.square_location_id,
+            team_member_id: shift_details.square_team_member_id,
+          },
         },
-      },
-    }).then((res) => {
-      if (res.errors) {
+      });
+
+      // Square returned an explicit error.
+      if (res && res.errors) {
         setOpen(false);
         setAlert(true);
         set_error_message(`${res.errors[0].detail} ${res.errors[0].field}`);
-      } else {
-        const actual_start = res?.shift?.start_at;
-        updateShiftData(res, actual_start);
-        navigate('/home');
-        setOpen(false);
+        return;
       }
-    });
+
+      // A missing/empty/non-JSON response (timeout, 502/504, expired token,
+      // HTML error page) comes back as {} — no `errors`, but no shift either.
+      // Do NOT treat that as success: without a shift id + start time the
+      // shift is never persisted, yet we'd have navigated away and let the
+      // user create bookings against a shift that doesn't exist.
+      const shift_id = res?.shift?.id;
+      const actual_start = res?.shift?.start_at;
+      if (!shift_id || !actual_start) {
+        setOpen(false);
+        setAlert(true);
+        set_error_message(
+          'Could not start the shift — Square did not return a shift. ' +
+          'Please check your connection and try again.'
+        );
+        return;
+      }
+
+      // Persist and confirm the write succeeded BEFORE navigating.
+      const saved = await updateShiftData(shift_id, actual_start);
+      if (!saved) {
+        setOpen(false);
+        setAlert(true);
+        set_error_message(
+          'The shift started on Square but could not be saved. ' +
+          'Please try again before creating any bookings.'
+        );
+        return;
+      }
+
+      navigate('/home');
+      setOpen(false);
+    } catch (err) {
+      setOpen(false);
+      setAlert(true);
+      set_error_message(`Could not start the shift: ${err?.message || err}`);
+    }
   };
 
-  const updateShiftData = async (res, date) => {
+  const updateShiftData = async (shift_id, date) => {
+    // Write the opening shift state into the profile: the Square shift id, the
+    // start time, and the opening inventory + cash entered on this page.
+    shift_details.current_shift_id = shift_id;
     shift_details.start_time = date;
-    shift_details.sub_shift_round = 1;
     shift_details.end_time = null;
-    shift_details.current_shift_id = res?.shift?.id;
+    shift_details.sub_shift_round = 1;
+    shift_details.inventory = shift_details.inventory || {};
 
+    sub_shift_details.current_shift_id = shift_id;
     sub_shift_details.start_time = date;
     sub_shift_details.end_time = null;
-    sub_shift_details.current_shift_id = res?.shift?.id;
+    sub_shift_details.start_shift_cash = shift_details.start_shift_cash;
 
-    set_shift({ ...shift_details });
-    set_sub_shift({ ...sub_shift_details });
+    // { ...shift_details } carries inventory + start_shift_cash alongside the
+    // Square shift id, so all opening data is persisted in one write.
+    const shift_res = await set_shift({ ...shift_details });
+    const sub_shift_res = await set_sub_shift({ ...sub_shift_details });
+
+    // set_shift/set_sub_shift go through app_post, which surfaces failures as
+    // `.error`. Only report success when neither write errored.
+    return !shift_res?.error && !sub_shift_res?.error;
   };
 
   const updateMoney = (money) => {

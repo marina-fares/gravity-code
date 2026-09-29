@@ -1,5 +1,5 @@
 import { app_api_get, app_api_put } from './apis';
-import { set_shift, set_sub_shift } from './shifts_functions_apis';
+import { set_shift_money, set_sub_shift_money } from './shifts_functions_apis';
 import { app_post, app_delete, app_get, app_put } from './app';
 import { set_localstorage, get_localstorage } from './localstorage';
 
@@ -94,8 +94,9 @@ export async function add_to_inventory({ shiftDetails, subShiftDetails, paymentD
         subShiftDetails.note = { ...subShiftDetails.note, ...newNote };
     }
 
-    await set_shift(shiftDetails);
-    await set_sub_shift(subShiftDetails);
+    // Money/inventory only — must not touch current_shift_id / start_time.
+    await set_shift_money(shiftDetails);
+    await set_sub_shift_money(subShiftDetails);
     return true;
 }
 
@@ -115,8 +116,9 @@ export async function delete_from_inventory({ bookingDetails, shiftDetails, subS
         subShiftDetails.refund_visa += amount;
     }
 
-    await set_shift(shiftDetails);
-    await set_sub_shift(subShiftDetails);
+    // Refund of money/inventory only — must not touch current_shift_id / start_time.
+    await set_shift_money(shiftDetails);
+    await set_sub_shift_money(subShiftDetails);
 }
 
 // ─── Booking CRUD ─────────────────────────────────────────────────────────────

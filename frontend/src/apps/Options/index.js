@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { app_api_get } from '../../components/logic/apis';
 import { get_localstorage } from '../../components/logic/localstorage';
 import { useNavigate } from 'react-router-dom';
-import { get_shift, get_sub_shift, set_shift, set_sub_shift, get_current_group } from '../../components/logic/shifts_functions_apis';
+import { get_shift, get_sub_shift, set_shift_money, set_sub_shift_money, get_current_group } from '../../components/logic/shifts_functions_apis';
 import * as React from 'react';
 import { get_user_and_jwt } from '../../components/logic/users';
 import {
@@ -157,8 +157,9 @@ export default function Options() {
     let old_options = await (updatedShiftData.options2 ? updatedShiftData.options2 : []);
     let new_options = await [{ [payment_result.receipt_number]: orderDetails.id }];
     updatedShiftData.options2 = await [...old_options, ...new_options];
-    await set_shift(updatedShiftData);
-    await set_sub_shift(updatedSubShiftData);
+    // Money/inventory only — must not touch current_shift_id / start_time.
+    await set_shift_money(updatedShiftData);
+    await set_sub_shift_money(updatedSubShiftData);
     await create_booking_in_backend(payment_result, receipt);
     set_bookingsuccess(true);
     setIsLoading(false);
