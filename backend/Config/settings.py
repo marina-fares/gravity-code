@@ -37,6 +37,7 @@ else:
     DEBUG = False
     ALLOWED_HOSTS = [
         'fobook.gravitycode.me',
+        'fodev.gravitycode.me',
         'localhost',
         '127.0.0.1',
         'gravity-app',

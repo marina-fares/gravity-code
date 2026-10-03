@@ -3,6 +3,7 @@ import traceback
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from django.db import transaction
 from django.utils import timezone
 from ..models import models_sub_shift, models
 from Main.serializers.sub_shift_serializer import SubShiftSerializer, SubShiftHistorySerializer
@@ -20,7 +21,16 @@ class GetSubShiftApi(generics.GenericAPIView):
     serializer_class = SubShiftSerializer
 
     def get(self, request):
-        return Response(SubShiftSerializer(request.user.subshift).data)
+        # request.user.subshift raises SubShift.DoesNotExist (→ unhandled 500)
+        # for a user that has no sub-shift row yet; return a clean 404 instead.
+        try:
+            subshift = request.user.subshift
+        except models_sub_shift.SubShift.DoesNotExist:
+            return Response(
+                {"error": "No sub-shift found for the current user."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(SubShiftSerializer(subshift).data)
 
     def post(self, request):
         """Update the current user's sub-shift state."""
@@ -30,9 +40,35 @@ class GetSubShiftApi(generics.GenericAPIView):
 
         # SECURITY FIX: whitelist only allowed SubShift fields.
         safe_data = {k: v for k, v in payload.items() if k in ALLOWED_SUBSHIFT_FIELDS}
-        if safe_data:
-            models_sub_shift.SubShift.objects.filter(user=request.user).update(**safe_data)
-        subshift = models_sub_shift.SubShift.objects.get(user=request.user)
+
+        # A failed write here is what desyncs the Sub Shift totals from the End
+        # Shift totals (a booking's money lands on the Profile row but not the
+        # SubShift row). Run the update + read-back atomically and surface any
+        # failure as a 500 with detail so the frontend can block / retry instead
+        # of silently treating the booking as fully recorded.
+        try:
+            with transaction.atomic():
+                if safe_data:
+                    updated = (models_sub_shift.SubShift.objects
+                               .filter(user=request.user)
+                               .update(**safe_data))
+                    if not updated:
+                        return Response(
+                            {"error": "No sub-shift found for the current user to update."},
+                            status=status.HTTP_404_NOT_FOUND,
+                        )
+                subshift = models_sub_shift.SubShift.objects.get(user=request.user)
+        except models_sub_shift.SubShift.DoesNotExist:
+            return Response(
+                {"error": "No sub-shift found for the current user."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            traceback.print_exc()
+            return Response(
+                {"error": "Failed to update sub-shift.", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         return Response(SubShiftSerializer(subshift).data)
 
 
