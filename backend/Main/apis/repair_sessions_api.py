@@ -74,12 +74,20 @@ class RepairSessionsApi(APIView):
         product_ids = data.get('product_ids') or None
         dry_run = bool(data.get('dry_run', False))
 
-        result = repair_sessions_for_range(
-            start_date=start_date,
-            end_date=end_date,
-            product_ids=product_ids,
-            dry_run=dry_run,
-        )
+        # The repair routine touches many sessions/bookings; an unexpected
+        # failure mid-run previously surfaced as an unhandled 500 with no detail.
+        try:
+            result = repair_sessions_for_range(
+                start_date=start_date,
+                end_date=end_date,
+                product_ids=product_ids,
+                dry_run=dry_run,
+            )
+        except Exception as exc:
+            return Response(
+                {"error": "Session repair failed.", "detail": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         result['dry_run'] = dry_run
         return Response(result, status=status.HTTP_200_OK)
