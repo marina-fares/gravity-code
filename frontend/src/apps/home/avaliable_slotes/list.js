@@ -65,17 +65,9 @@ export default function List({ date, availableSessions, selectedProduct }) {
             String(datetime.getMonth() + 1).padStart(2, '0') + '-' +
             String(datetime.getDate()).padStart(2, '0');
 
-<<<<<<< HEAD
-	return (
-		<Fragment>
-				<Mulist className="m-5" >
-					{availableSessions && availableSessions.map((item) => {
-							let datetime = sessionDisplayDate(item.start_time)
-=======
           const seatColor =
             item.available_seats === 0 ? 'error' :
             item.available_seats <= 3 ? 'warning' : 'success';
->>>>>>> main-upgrade
 
           const isCurrent = isToday && new Date(item.start_time).getHours() === currentHour;
 
