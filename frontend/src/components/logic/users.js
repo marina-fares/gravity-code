@@ -48,9 +48,15 @@ function login(username, password) {
     .then(data => {
         if (data.access) {
             set_jwt(data.access);
-            return get_and_store_user(); // return this Promise
+            return get_and_store_user();
         } else {
-            throw new Error('Invalid login credentials');
+            // data is an object like {"detail": "No active account found..."}
+            // Passing an object to new Error() produces "[object Object]" as the
+            // message. Extract the human-readable detail string instead.
+            const message = data?.detail
+                || (Array.isArray(data?.non_field_errors) ? data.non_field_errors[0] : null)
+                || 'Invalid login credentials';
+            throw new Error(message);
         }
     });
 }

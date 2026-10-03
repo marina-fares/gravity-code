@@ -1,16 +1,3 @@
-import { app_get,app_post } from '../../components/logic/app.js';
-
-function get_shift() {
-	return app_get('shift/',{});
-}
-
-function set_shift_fun(payload) {
-	return app_post('shift/', {
-		payload
-	}).then((response) => {
-		console.log(response);
-	})
-		
-}
-
-export { get_shift, set_shift_fun };
+// Thin re-export — Enventory/index.js imports from here.
+// All actual logic lives in the shared shifts_functions_apis module.
+export { get_shift, set_shift as set_shift_fun } from '../../components/logic/shifts_functions_apis';

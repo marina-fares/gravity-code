@@ -4,6 +4,7 @@ import { Row, Col } from 'react-bootstrap';
 import { get_user_and_jwt } from '../logic/users';
 
 import { Input } from '@mui/material';
+import Booking from '../../apps/booking';
 const PaperRow = ({ right, right_bold, left, left_bold }) => {
 	if (right_bold) {
 		right = <b>{right}</b>;
@@ -52,7 +53,7 @@ const Invoice = React.forwardRef(({shift, note}, ref) => {
 
 const today = new Date(shift?.dateTime || '') 
 	return shift && <div ref={ref} style={{ width: '80mm' }}>
-				{shift.status && shift.status == 'refunded' && <span><strong> This Booking is refunded </strong></span>}
+				{shift.status && shift.status == 'refunded' && <span><strong> This Booking is refunded by {shift.refunded_by_username} </strong></span>}
 				<PageHeader title={shift.branch_name} />
 				<PaperRow key={`${shift.location_name} - ${today.toLocaleString('default', { month: 'long' })}`  } right={`${shift.location_name}`} left={`${today.toLocaleString('default', { month: 'long' })} ${today.getDate()}, ${today.getFullYear()}`} />
 				<PaperRow key={shift.city} right={`${shift.city}`} left={`${today.getHours() % 12 || 12}:${today.getMinutes()} ${(today.getHours()>= 12)? 'PM' : 'AM'}`} />

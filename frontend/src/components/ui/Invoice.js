@@ -42,11 +42,9 @@ const Invoice = forwardRef(({ shift, sub_shift, calculated_cash, calculated_visa
   const endDate = (source.end_time)?new Date(source.end_time): new Date();
   calculated_cash = calculated_cash?calculated_cash:source.actual_cash
   calculated_visa = calculated_visa?calculated_visa:source.actual_visa
-
-  const expectedDrawer = source.start_shift_cash + source.shift_money_cash - source.refund_cash;
+  const expectedDrawer = Number(source.start_shift_cash) + Number(source.shift_money_cash) - Number(source.refund_cash);
   const differenceCash = calculated_cash - expectedDrawer;
-
-  const expectedVisa = source.shift_money_visa - source.refund_visa;
+  const expectedVisa = Number(source.shift_money_visa) - Number(source.refund_visa);
   const differenceVisa = calculated_visa - expectedVisa;
 
   return (

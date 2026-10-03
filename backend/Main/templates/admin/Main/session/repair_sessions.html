@@ -1,0 +1,113 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Repair Sessions{% endblock %}
+
+{% block content %}
+<h1>Repair Sessions</h1>
+
+<p>
+  Reviews sessions for the selected date range against the active schedules.<br>
+  <strong>Creates</strong> any missing sessions and <strong>deletes</strong> any sessions
+  that fall outside the current schedule hours.<br>
+  Sessions with active bookings are never deleted.
+</p>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="messagelist">
+      <p class="{{ message.tags }}">{{ message }}</p>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<form method="post" style="max-width: 480px;">
+  {% csrf_token %}
+
+  <div class="form-row">
+    <label for="start_date"><strong>Start Date</strong></label>
+    <input
+      type="date"
+      id="start_date"
+      name="start_date"
+      value="{{ start_date|default:'' }}"
+      required
+      style="width: 100%; padding: 6px; margin-top: 4px;"
+    >
+  </div>
+
+  <div class="form-row" style="margin-top: 12px;">
+    <label for="end_date"><strong>End Date</strong></label>
+    <input
+      type="date"
+      id="end_date"
+      name="end_date"
+      value="{{ end_date|default:'' }}"
+      required
+      style="width: 100%; padding: 6px; margin-top: 4px;"
+    >
+  </div>
+
+  <div class="form-row" style="margin-top: 12px;">
+    <label for="product_id"><strong>Product</strong> <em>(leave blank for all products)</em></label>
+    <select id="product_id" name="product_id" style="width: 100%; padding: 6px; margin-top: 4px;">
+      <option value="">— All Products —</option>
+      {% for product in products %}
+        <option value="{{ product.id }}">{{ product.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-row" style="margin-top: 16px;">
+    <label>
+      <input type="checkbox" name="dry_run">
+      &nbsp;<strong>Dry Run</strong> — preview changes without saving to the database
+    </label>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <input type="submit" value="Run Repair" class="button default">
+    &nbsp;
+    <a href="{% url 'admin:Main_session_changelist' %}" class="button">Cancel</a>
+  </div>
+</form>
+
+{% if result is not None %}
+  <hr style="margin-top: 30px;">
+  <h2>Result {% if dry_run %}<span style="color: #e07a00;">[DRY RUN — no changes saved]</span>{% endif %}</h2>
+  <table style="border-collapse: collapse; min-width: 260px;">
+    <thead>
+      <tr style="background: #f8f8f8;">
+        <th style="padding: 8px 16px; border: 1px solid #ddd; text-align: left;">Action</th>
+        <th style="padding: 8px 16px; border: 1px solid #ddd; text-align: right;">Count</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding: 8px 16px; border: 1px solid #ddd;">Sessions created</td>
+        <td style="padding: 8px 16px; border: 1px solid #ddd; text-align: right; color: {% if result.created %}green{% else %}inherit{% endif %};">
+          {{ result.created }}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 16px; border: 1px solid #ddd;">Sessions deleted</td>
+        <td style="padding: 8px 16px; border: 1px solid #ddd; text-align: right; color: {% if result.deleted %}#c0392b{% else %}inherit{% endif %};">
+          {{ result.deleted }}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 16px; border: 1px solid #ddd;">Errors</td>
+        <td style="padding: 8px 16px; border: 1px solid #ddd; text-align: right; color: {% if result.errors %}red{% else %}inherit{% endif %};">
+          {{ result.errors }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  {% if result.errors %}
+    <p style="color: red; margin-top: 8px;">
+      Check the server logs for details on the errors.
+    </p>
+  {% endif %}
+{% endif %}
+
+{% endblock %}

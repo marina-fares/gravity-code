@@ -23,6 +23,8 @@ yarn-debug.log*
 yarn-error.log*
 *.pyc
 */node_modules/*
-backend/static/*
+
+
 *.env
 *.sqlite3
+backend/Main/models/models_sessions.py

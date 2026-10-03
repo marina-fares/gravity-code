@@ -1,146 +1,303 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Grid, InputLabel, Input, Alert, FormControl } from '@mui/material';
+import { Button, Grid, Alert, FormControl, Typography, Box, Paper, TextField, Chip } from '@mui/material';
+import LocalAtmIcon from '@mui/icons-material/LocalAtm';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { useNavigate } from 'react-router-dom';
-import Card from 'react-bootstrap/Card';
 import InvoicePrint from '../../components/ui/InvoicePrint';
 import { get_shift, get_sub_shift } from '../../components/logic/shifts_functions_apis';
 import { split_shift } from '../../components/logic/shifts_functions';
 
-export default function EndShift() {
-	const [shift_details, set_shift_details] = useState(null);
-	const [sub_shift_details, set_sub_shift_details] = useState(null);
-	const [passwordValid, setPasswordValid] = useState(false);
-	const [showAlert, setShowAlert] = useState(false);
-	const [actualCash, setActualCash] = useState(0);
-	const [actualVisa, setActualVisa] = useState(0);
+export default function EndSubShift() {
+  const [shift_details, set_shift_details] = useState(null);
+  const [sub_shift_details, set_sub_shift_details] = useState(null);
+  const [passwordValid, setPasswordValid] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [actualCash, setActualCash] = useState(0);
+  const [actualVisa, setActualVisa] = useState(0);
+  const printRef = useRef();
+  const navigate = useNavigate();
 
-	const printRef = useRef();
-	const navigate = useNavigate();
+  useEffect(() => {
+    const fetchData = async () => {
+      const shiftData = await get_shift();
+      if (shiftData.status === 200) {
+        set_shift_details(shiftData.data);
+      }
+      const subShiftData = await get_sub_shift();
+      if (subShiftData.status === 200) {
+        set_sub_shift_details(subShiftData.data);
+        setActualCash(subShiftData.data.shift_money_cash - (subShiftData.data.refund_cash || 0));
+        setActualVisa(subShiftData.data.shift_money_visa || 0);
+      }
+    };
+    fetchData();
+  }, []);
 
-	useEffect(() => {
-		const fetchData = async () => {
-			const shiftData = await get_shift();
-			set_shift_details(shiftData);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (shift_details?.endshift_page_password === e.target.password.value) {
+      setShowAlert(false);
+      setPasswordValid(true);
+    } else {
+      setShowAlert(true);
+    }
+  };
 
-			const subShiftData = await get_sub_shift();
-			set_sub_shift_details(subShiftData);
-		};
-		fetchData();
-	}, []);
+  async function split_shift_fun() {
+    const response = await split_shift(shift_details, sub_shift_details);
+    navigate('/');
+  }
 
-	const handleSubmit = (e) => {
-		e.preventDefault();
-		if (shift_details?.endshift_page_password === e.target.password.value) {
-			setShowAlert(false);
-			setPasswordValid(true);
-		} else {
-			setShowAlert(true);
-		}
-	};
+  if (!shift_details?.current_shift_id) {
+    return (
+      <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: 3, textAlign: 'center', maxWidth: 400, border: '1px solid var(--gc-border2)' }}>
+          <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 600 }}>
+            No Active Shift
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Loading your shift… If you haven't started your shift yet, kindly do so.
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
 
-	async function split_shift_fun(){
-		const response = await split_shift(shift_details, sub_shift_details)
-		navigate('/')
-	}
-	
-	if (!(shift_details)?.current_shift_id) {
-		return <div>Loading your shift... If you haven't started your shift yet, kindly do so.</div>;
-	}
+  if (!passwordValid) {
+    return (
+      <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8 }}>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: 3, border: '1px solid var(--gc-border2)' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'secondary.main', mb: 3 }}>
+            Sub-Shift Authentication
+          </Typography>
+          {showAlert && (
+            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+              Incorrect password
+            </Alert>
+          )}
+          <FormControl component="form" onSubmit={handleSubmit} fullWidth>
+            <TextField
+              id="password"
+              label="Enter Password"
+              type="password"
+              name="password"
+              fullWidth
+              size="medium"
+              sx={{ mb: 2 }}
+            />
+            <Button type="submit" fullWidth variant="contained" size="large">
+              Submit
+            </Button>
+          </FormControl>
+        </Paper>
+      </Box>
+    );
+  }
 
-	if (!passwordValid) {
-		return (
-			<FormControl component="form" onSubmit={handleSubmit} className="m-5">
-				{showAlert && <Alert severity="error">Incorrect password</Alert>}
-				<InputLabel htmlFor="password">Enter Password</InputLabel>
-				<Input id="password" type="password" />
-				<Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
-					Submit
-				</Button>
-			</FormControl>
-		);
-	}
+  return (
+    <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 4 }}>
+      <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid var(--gc-border2)' }}>
+        <Box
+          sx={{
+            px: 3, py: 2.5,
+            background: 'linear-gradient(135deg, var(--gc-bg) 0%, var(--gc-bg2) 100%)',
+            borderBottom: '1px solid var(--gc-border)',
+          }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+            Sub Shift {shift_details.sub_shift_round}
+          </Typography>
+        </Box>
 
-	return (
-		<>
-			<Card style={{ marginTop: 100 }}>
-				<Card.Body>
-					<Card.Title>Sub Shift {shift_details.sub_shift_round}</Card.Title>
-					<div className='d-flex flex-row'>
-						<div className='d-flex flex-column w-50'>
-							<InvoicePrint sub_shift={sub_shift_details} shift={shift_details} calculated_cash={actualCash} calculated_visa={actualVisa} />
-						</div>
-						<div className='d-flex flex-column align-items-center w-50'>	
-							<label style={{ margin: '10px' }} className='d-flex flex-column w-50'>Actual Cash in Drawer</label>
-							<Input
-								className='form-control d-flex flex-column w-50'
-								type="number"
-								value={actualCash}
-								onChange={(e) => {
-									setActualCash(e.target.value)
-									set_sub_shift_details(prev => ({...prev,
-										actual_cash: Number(e.target.value)})
-									)
-								}}
-							/>
+        <Box sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <InvoicePrint
+                sub_shift={sub_shift_details}
+                shift={shift_details}
+                calculated_cash={actualCash}
+                calculated_visa={actualVisa}
+              />
+            </Grid>
 
-							<label style={{ margin: '10px' }} className='d-flex flex-column w-50'>Actual Visa in Drawer</label>
-							<Input
-								className='form-control d-flex flex-column w-50'
-								type="number"
-								value={actualVisa}
-								onChange={(e) => {
-									setActualVisa(e.target.value)
-									set_sub_shift_details(prev => ({...prev,
-										actual_visa: Number(e.target.value)})
-									)
-								}}
-							/>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-							<div className=' d-flex flex-row justify-content-center w-100'>
-								<Card className="m-3">
-									<Card.Title className="m-3">Shift Cash</Card.Title>
-									<Card.Body>
-										<h3>{ sub_shift_details.shift_money_cash - sub_shift_details.refund_cash} LE</h3>
-									</Card.Body>
-								</Card>
+                <TextField
+                  label="Actual Cash in Drawer"
+                  type="number"
+                  value={actualCash}
+                  onChange={(e) => {
+                    setActualCash(e.target.value);
+                    set_sub_shift_details((prev) => ({ ...prev, actual_cash: Number(e.target.value) }));
+                  }}
+                  fullWidth
+                  size="medium"
+                />
 
-								<Card className="m-3">
-									<Card.Title className="m-3">Shift Visa</Card.Title>
-									<Card.Body>
-										<h3>{sub_shift_details.shift_money_visa} LE</h3>
-									</Card.Body>
-								</Card>
-							</div>
-							<Card className="m-3 w-75">
-								<Card.Title className="m-3">Waffarha Codes</Card.Title>
-								<Card.Body>
-									<p>Note: {JSON.stringify(sub_shift_details.note)}</p>
-								</Card.Body>
-							</Card>
-							</div>
-						</div>
-					<Grid container spacing={2} justifyContent="center" ref={printRef}>
+                <TextField
+                  label="Actual Visa in Drawer"
+                  type="number"
+                  value={actualVisa}
+                  onChange={(e) => {
+                    setActualVisa(e.target.value);
+                    set_sub_shift_details((prev) => ({ ...prev, actual_visa: Number(e.target.value) }));
+                  }}
+                  fullWidth
+                  size="medium"
+                />
 
-						<Grid item xs={12} style={{ marginTop: 50 }}>
+                <Grid container spacing={2}>
+                  {/* ── Cash Card ── */}
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 3,
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #F7941D 0%, #e07d0a 100%)',
+                        boxShadow: '0 6px 24px rgba(247,148,29,0.45)',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 48, height: 48, borderRadius: 2,
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <LocalAtmIcon sx={{ color: '#ffffff', fontSize: 26 }} />
+                        </Box>
+                        {sub_shift_details.refund_cash > 0 && (
+                          <Chip
+                            label={`-EGP ${sub_shift_details.refund_cash}`}
+                            size="small"
+                            sx={{
+                              bgcolor: 'rgba(255,255,255,0.25)',
+                              color: '#ffffff',
+                              fontWeight: 700,
+                              fontSize: '0.72rem',
+                              height: 22,
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: 'block',
+                          color: 'rgba(255,255,255,0.8)',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          fontSize: '0.68rem',
+                          mb: 0.5,
+                        }}
+                      >
+                        Cash Total
+                      </Typography>
+                      <Typography variant="h4" sx={{ color: '#ffffff', fontWeight: 800, lineHeight: 1.1 }}>
+                        {(sub_shift_details.shift_money_cash - sub_shift_details.refund_cash).toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)' }}>
+                        EGP
+                      </Typography>
+                    </Paper>
+                  </Grid>
 
-						<Button variant="contained" className='p-2 m-2' onClick={() => {
-										// <InvoicePrint shift={updated_shift} sub_shift={sub_shift}/>
-										// end_shift(updated_shift, sub_shift);
-										
-										navigate("/end-shift");
-									}}>
-										End Shift Page
-									</Button>
-									<Button variant="contained" className='p-2 m-2' onClick={() => {
-										split_shift_fun();
-									
-									}}>
-										Split Shift
-									</Button>
-						</Grid>
-					</Grid>
-				</Card.Body>
-			</Card>
-		</>
-	);
+                  {/* ── Visa Card ── */}
+                  <Grid item xs={12} sm={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 3,
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #E91E8C 0%, #c4177a 100%)',
+                        boxShadow: '0 6px 24px rgba(233,30,140,0.45)',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 48, height: 48, borderRadius: 2,
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <CreditCardIcon sx={{ color: '#ffffff', fontSize: 26 }} />
+                        </Box>
+                        {sub_shift_details.refund_visa > 0 && (
+                          <Chip
+                            label={`-EGP ${sub_shift_details.refund_visa}`}
+                            size="small"
+                            sx={{
+                              bgcolor: 'rgba(255,255,255,0.25)',
+                              color: '#ffffff',
+                              fontWeight: 700,
+                              fontSize: '0.72rem',
+                              height: 22,
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: 'block',
+                          color: 'rgba(255,255,255,0.8)',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          fontSize: '0.68rem',
+                          mb: 0.5,
+                        }}
+                      >
+                        Visa Total
+                      </Typography>
+                      <Typography variant="h4" sx={{ color: '#ffffff', fontWeight: 800, lineHeight: 1.1 }}>
+                        {Number(sub_shift_details.shift_money_visa).toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)' }}>
+                        EGP
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+
+                <Paper elevation={0} sx={{ p: 2, borderRadius: 2, border: '1px solid var(--gc-border2)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'secondary.main', mb: 1 }}>
+                    Waffarha Codes
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {JSON.stringify(sub_shift_details.note)}
+                  </Typography>
+                </Paper>
+
+              </Box>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }} ref={printRef}>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate('/end-shift')}
+            >
+              End Shift Page
+            </Button>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => split_shift_fun()}
+            >
+              Split Shift
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
+    </Box>
+  );
 }

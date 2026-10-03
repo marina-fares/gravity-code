@@ -5,6 +5,7 @@ from django.contrib.auth.admin import UserAdmin
 from django import forms
 
 import datetime as datetime
+import zoneinfo
 from django.core.exceptions import ValidationError
 from django.contrib.admin import SimpleListFilter
 from django.utils.translation import gettext_lazy as _
@@ -13,11 +14,14 @@ from rangefilter.filters import DateRangeFilter
 from django.contrib.admin.filters import DateFieldListFilter
 from django.http import HttpResponse ,HttpRequest
 from django.urls import path, reverse
+
+_CAIRO_TZ = zoneinfo.ZoneInfo("Africa/Cairo")
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.utils import timezone
 
 from Main.admin.create_new_sessions import create_session, delete_session
+from Main.management.commands.repair_sessions import repair_sessions_for_range
 
 class ProductNameFilter(SimpleListFilter):
     title = 'Product'  # The label shown in the filter
@@ -265,7 +269,9 @@ class DefaultSessionAdminForm(forms.ModelForm):
                 # Delete missing sessions
                 for t in default_time_list:
                     if t not in input_time_list:
-                        delete_session(product, t, day_input)
+                        # delete_session signature is
+                        # (product, start_date, end_date, start_time, day)
+                        delete_session(product, start_date, end_date, t, day_input)
 
                 # Create new sessions
                 for t in input_time_list:
@@ -550,8 +556,19 @@ class CalendarFilter(SimpleListFilter):
         value = request.GET.get(self.parameter_name)
         if value:
             try:
-                date_value = datetime.datetime.strptime(value, "%Y-%m-%d").date()
-                return queryset.filter(start_time__date=date_value)
+                local_date = datetime.datetime.strptime(value, "%Y-%m-%d").date()
+                day_start = datetime.datetime(
+                    local_date.year, local_date.month, local_date.day,
+                    0, 0, 0, tzinfo=_CAIRO_TZ,
+                )
+                day_end = datetime.datetime(
+                    local_date.year, local_date.month, local_date.day,
+                    23, 59, 59, tzinfo=_CAIRO_TZ,
+                )
+                return queryset.filter(
+                    start_time__gte=day_start,
+                    start_time__lte=day_end,
+                )
             except ValueError:
                 pass  # Ignore invalid dates
         return queryset
@@ -583,15 +600,13 @@ class SessionAdmin(admin.ModelAdmin):
 
 
     def get_queryset(self, request):
-
-        current_user = request.user
-        if current_user.is_superuser:
-            return Session.objects.all()
-        else:
-            current_user_groups = current_user.groups.all()
-            current_user_group_names = [
-                group.name for group in current_user_groups]
-            return Session.objects.filter(groups__name__in=current_user_group_names)
+        qs = super().get_queryset(request).select_related("product__group")
+        if request.user.is_superuser:
+            return qs
+        # FIX: Session has no direct 'groups' field. Must traverse via product.
+        # Also replaced Python loop with values_list() — one query not two.
+        group_names = list(request.user.groups.values_list("name", flat=True))
+        return qs.filter(product__group__name__in=group_names)
 
     def get_product_duration(self, obj):
         return obj.product.duration if obj.product else "N/A"
@@ -601,8 +616,66 @@ class SessionAdmin(admin.ModelAdmin):
         custom_urls = [
             path('create-custom/', self.admin_site.admin_view(self.create_custom_session), name='create_custom_session'),
             path('create-new/', self.admin_site.admin_view(self.create_default_session), name='create_default_session'),
+            path('repair-sessions/', self.admin_site.admin_view(self.repair_sessions_view), name='repair_sessions_tool'),
         ]
         return custom_urls + urls
+
+    def repair_sessions_view(self, request):
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Repair Sessions',
+            'products': Product.objects.all().order_by('name'),
+            'result': None,
+            'dry_run': False,
+        }
+
+        if request.method == 'POST':
+            start_raw = request.POST.get('start_date', '').strip()
+            end_raw = request.POST.get('end_date', '').strip()
+            product_id = request.POST.get('product_id', '').strip()
+            dry_run = request.POST.get('dry_run') == 'on'
+
+            errors = []
+
+            try:
+                start_date = datetime.date.fromisoformat(start_raw)
+            except ValueError:
+                errors.append(f"Invalid start date: '{start_raw}'")
+                start_date = None
+
+            try:
+                end_date = datetime.date.fromisoformat(end_raw)
+            except ValueError:
+                errors.append(f"Invalid end date: '{end_raw}'")
+                end_date = None
+
+            if start_date and end_date and start_date > end_date:
+                errors.append("Start date must be on or before end date.")
+
+            if errors:
+                for msg in errors:
+                    messages.error(request, msg)
+            else:
+                product_ids = [int(product_id)] if product_id else None
+                result = repair_sessions_for_range(
+                    start_date=start_date,
+                    end_date=end_date,
+                    product_ids=product_ids,
+                    dry_run=dry_run,
+                )
+                context['result'] = result
+                context['dry_run'] = dry_run
+                context['start_date'] = start_raw
+                context['end_date'] = end_raw
+
+                label = " [DRY RUN]" if dry_run else ""
+                messages.success(
+                    request,
+                    f"Repair complete{label}: {result['created']} created, "
+                    f"{result['deleted']} deleted, {result['errors']} errors.",
+                )
+
+        return render(request, 'admin/Main/session/repair_sessions.html', context)
 
     def create_custom_session(self, request):
         # Redirect to the default add page with a custom form
@@ -648,7 +721,33 @@ class SessionAdmin(admin.ModelAdmin):
 
         return super().changelist_view(request, extra_context=extra_context)
 
+    def save_model(self, request, obj, form, change):
+        if change and obj.product_id:
+            # Keep block_seats_obj.number in sync with the block_seats integer.
+            if not isinstance(obj.block_seats_obj, dict):
+                obj.block_seats_obj = {"number": 0, "note": "none"}
+            obj.block_seats_obj["number"] = obj.block_seats or 0
+
+            # Only recalculate available_seats if the admin did NOT manually
+            # change it. If they explicitly set a value, respect it.
+            if 'available_seats' not in form.changed_data:
+                obj.available_seats = Booking.calculate_available_seats(obj)
+
+        super().save_model(request, obj, form, change)
+
     get_product_duration.short_description = "Product Duration"
     
-#admin.site.unregister(User)
+class ScheduleAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'product', 'weekday', 'start_time', 'end_time')
+    list_filter = ('product__name', 'weekday')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related('product__group')
+        if request.user.is_superuser:
+            return qs
+        group_names = list(request.user.groups.values_list("name", flat=True))
+        return qs.filter(product__group__name__in=group_names)
+
+
 admin.site.register( Session, SessionAdmin)
+admin.site.register( Schedule, ScheduleAdmin)

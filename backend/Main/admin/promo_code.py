@@ -1,21 +1,21 @@
 from django.contrib import admin
 from ..models.models import PromoCode
-from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
 
 
 class PromoCodeAdmin(admin.ModelAdmin):
     list_filter = ('group',)
-    search_fields = ('name',)
+    search_fields = ('name', 'code')
+    list_select_related = ('group',)
+    list_per_page = 50
+    show_full_result_count = False
+
     def get_queryset(self, request):
-        current_user = request.user
-        if current_user.is_superuser:
-            return PromoCode.objects.all()
-        else:
-            current_user_groups = current_user.groups.all()
-            current_user_group_names = [
-                group.name for group in current_user_groups]
-            return PromoCode.objects.filter(group__name__in=current_user_group_names)
+        qs = super().get_queryset(request).select_related('group')
+        if request.user.is_superuser:
+            return qs
+        # FIX: replaced Python list comprehension with values_list()
+        group_names = list(request.user.groups.values_list("name", flat=True))
+        return qs.filter(group__name__in=group_names)
 
 
 admin.site.register(PromoCode, PromoCodeAdmin)

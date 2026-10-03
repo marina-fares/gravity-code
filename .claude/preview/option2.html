@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gravity Code — Option 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  /* Exact logo palette */
+  --blue:    #00AEEF;   /* GRAVITY text */
+  --navy:    #1B3A6B;   /* CODE text    */
+  --orange:  #F7941D;   /* triangle     */
+  --pink:    #E91E8C;   /* dot          */
+
+  /* Blue-tinted surfaces */
+  --bg:      #F4FBFF;
+  --bg2:     #E8F6FD;
+  --surface: #FFFFFF;
+  --border:  #C8E8F8;
+  --border2: #E0F3FC;
+
+  /* Text */
+  --text:    #0D2137;
+  --muted:   #5A7A8F;
+
+  /* Utility */
+  --success: #10B981;
+  --error:   #EF4444;
+  --warn:    #F59E0B;
+
+  --shadow-sm: 0 1px 4px rgba(0,174,239,.10);
+  --shadow:    0 4px 16px rgba(0,174,239,.14);
+  --shadow-lg: 0 8px 32px rgba(0,174,239,.20);
+  --shadow-xl: 0 16px 48px rgba(0,174,239,.25);
+}
+
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+
+/* ── PAGE HEADER ───────────────────────────────────── */
+.page-header{
+  background:linear-gradient(135deg,var(--blue) 0%,#0090CC 60%,#006FA3 100%);
+  text-align:center;padding:30px 16px 26px;
+  box-shadow:0 4px 20px rgba(0,174,239,.35);
+}
+.page-header h1{color:#fff;font-size:22px;font-weight:800;letter-spacing:.2px;}
+.page-header h1 span{color:#FFF176;}
+.page-header p{color:rgba(255,255,255,.8);font-size:13px;margin-top:5px;}
+.option-badge{
+  display:inline-block;background:rgba(255,255,255,.2);
+  color:#fff;border:1px solid rgba(255,255,255,.4);
+  padding:3px 12px;border-radius:20px;font-size:11px;
+  font-weight:700;letter-spacing:.5px;margin-top:8px;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+.wrapper{max-width:1200px;margin:0 auto;padding:32px 24px 64px;}
+.section{margin-bottom:48px;}
+.label{
+  font-size:11px;font-weight:700;letter-spacing:1.4px;
+  text-transform:uppercase;color:var(--muted);
+  margin-bottom:16px;padding-bottom:8px;
+  border-bottom:2px solid var(--border2);
+  display:flex;align-items:center;gap:8px;
+}
+.label::before{
+  content:'';width:3px;height:14px;border-radius:2px;
+  background:linear-gradient(var(--blue),var(--pink));
+}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+/* ── PALETTE ─────────────────────────────────────────── */
+.swatches{display:flex;gap:12px;flex-wrap:wrap;}
+.swatch{width:110px;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+.swatch-color{height:70px;}
+.swatch-info{background:#fff;padding:8px 10px;}
+.swatch-name{font-size:12px;font-weight:700;color:var(--text);}
+.swatch-hex{font-size:10px;color:var(--muted);font-family:monospace;margin-top:1px;}
+.swatch-role{font-size:10px;color:var(--blue);font-weight:600;margin-top:2px;}
+
+/* ── NAVBAR ──────────────────────────────────────────── */
+.navbar{
+  background:#fff;
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--border2);
+  overflow:hidden;
+}
+.navbar-top{
+  background:linear-gradient(90deg,var(--blue),#0095CC);
+  height:3px;
+}
+.navbar-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;height:58px;
+}
+.navbar-brand{display:flex;align-items:center;gap:10px;}
+.brand-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--blue),#0080BF);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:#fff;font-size:14px;
+  box-shadow:0 3px 10px rgba(0,174,239,.35);
+}
+.brand-text{font-weight:800;font-size:16px;color:var(--navy);}
+.brand-text em{color:var(--blue);font-style:normal;}
+.nav-pills{display:flex;gap:2px;}
+.nav-pill{
+  padding:6px 16px;border-radius:8px;font-size:13px;
+  font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.nav-pill.active{
+  background:var(--blue);color:#fff;
+  box-shadow:0 2px 10px rgba(0,174,239,.35);
+  font-weight:600;
+}
+.nav-pill:hover:not(.active){background:var(--bg2);color:var(--navy);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.notif-btn{
+  width:34px;height:34px;border-radius:9px;
+  background:var(--bg2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;position:relative;
+}
+.notif-dot{
+  position:absolute;top:6px;right:7px;
+  width:7px;height:7px;border-radius:50%;
+  background:var(--orange);border:2px solid #fff;
+}
+.avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--orange),var(--pink));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;font-size:13px;
+  box-shadow:0 2px 8px rgba(247,148,29,.3);cursor:pointer;
+}
+
+/* ── HERO BANNER ─────────────────────────────────────── */
+.hero{
+  background:linear-gradient(135deg,var(--blue) 0%,#0090CC 100%);
+  border-radius:16px;padding:24px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:var(--shadow-xl);position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;right:-40px;top:-40px;
+  width:200px;height:200px;border-radius:50%;
+  background:rgba(255,255,255,.06);
+}
+.hero::after{
+  content:'';position:absolute;right:60px;bottom:-60px;
+  width:140px;height:140px;border-radius:50%;
+  background:rgba(255,255,255,.04);
+}
+.hero-text h2{color:#fff;font-size:20px;font-weight:800;}
+.hero-text p{color:rgba(255,255,255,.75);font-size:13px;margin-top:5px;}
+.hero-pills{display:flex;gap:8px;margin-top:12px;}
+.hero-pill{
+  background:rgba(255,255,255,.15);color:#fff;
+  border:1px solid rgba(255,255,255,.25);
+  padding:4px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;backdrop-filter:blur(4px);
+}
+.hero-pill.orange{background:rgba(247,148,29,.3);border-color:rgba(247,148,29,.5);}
+.hero-pill.pink  {background:rgba(233,30,140,.25);border-color:rgba(233,30,140,.4);}
+.hero-stat{
+  background:rgba(255,255,255,.15);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:12px;padding:14px 20px;text-align:center;
+  min-width:100px;
+}
+.hero-stat-num{color:#fff;font-size:24px;font-weight:900;}
+.hero-stat-lbl{color:rgba(255,255,255,.7);font-size:11px;margin-top:2px;font-weight:500;}
+
+/* ── SESSION CARDS ───────────────────────────────────── */
+.s-card{
+  background:#fff;border-radius:14px;
+  border:1.5px solid var(--border2);
+  padding:14px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:var(--shadow-sm);transition:all .2s;
+  position:relative;overflow:hidden;
+}
+.s-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:var(--blue);border-radius:3px 0 0 3px;
+}
+.s-card.warn::before{background:var(--orange);}
+.s-card.full::before{background:var(--error);}
+.s-card:hover{box-shadow:var(--shadow);transform:translateX(2px);}
+.s-time{font-weight:800;font-size:17px;color:var(--navy);}
+.s-product{font-size:12px;color:var(--muted);margin-top:2px;}
+.s-right{display:flex;align-items:center;gap:10px;}
+.badge{
+  padding:4px 10px;border-radius:20px;
+  font-size:11px;font-weight:700;
+}
+.b-avail {background:#E0F8EE;color:#0A6640;}
+.b-fill  {background:#FFF4E0;color:#92550A;}
+.b-full  {background:#FDE8E8;color:#9B1C1C;}
+.seats{text-align:right;}
+.seats-num{font-size:17px;font-weight:800;color:var(--navy);}
+.seats-lbl{font-size:11px;color:var(--muted);}
+.s-btns{display:flex;gap:6px;}
+.s-btn{
+  width:30px;height:30px;border-radius:8px;border:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;transition:all .15s;
+  font-weight:700;
+}
+.s-btn-add{
+  background:var(--blue);color:#fff;
+  box-shadow:0 2px 8px rgba(0,174,239,.35);
+}
+.s-btn-add:hover{background:#0095CC;transform:scale(1.08);}
+.s-btn-o{
+  background:var(--orange);color:#fff;
+  box-shadow:0 2px 6px rgba(247,148,29,.3);
+}
+.s-btn-ghost{background:var(--bg2);color:var(--muted);border:1px solid var(--border);}
+.s-btn-ghost:hover{background:var(--border);color:var(--navy);}
+
+/* ── HOME LAYOUT ─────────────────────────────────────── */
+.home-wrap{display:grid;grid-template-columns:210px 1fr;gap:16px;height:390px;}
+.sidebar{
+  background:#fff;border-radius:14px;
+  border:1.5px solid var(--border2);
+  padding:16px 12px;box-shadow:var(--shadow-sm);
+  overflow:hidden;
+}
+.sidebar-head{
+  background:linear-gradient(135deg,var(--blue),#0090CC);
+  border-radius:10px;padding:14px;margin-bottom:14px;
+}
+.sidebar-head-lbl{color:rgba(255,255,255,.7);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;}
+.sidebar-head-val{color:#fff;font-size:15px;font-weight:800;margin-top:3px;}
+.sidebar-select{
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  border-radius:8px;padding:7px 10px;margin-top:8px;
+  color:#fff;font-size:12px;font-weight:600;
+}
+.sidebar-nav-lbl{
+  font-size:10px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--muted);
+  padding:0 8px;margin-bottom:6px;
+}
+.s-nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:9px;
+  font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;transition:all .15s;margin-bottom:2px;
+}
+.s-nav-item.active{
+  background:rgba(0,174,239,.1);color:var(--blue);font-weight:600;
+}
+.s-nav-item:hover:not(.active){background:var(--bg2);}
+.s-nav-icon{font-size:14px;width:20px;text-align:center;}
+
+.home-right{display:flex;flex-direction:column;gap:10px;overflow:hidden;}
+
+/* ── STAT CARDS ──────────────────────────────────────── */
+.stat{
+  background:#fff;border-radius:14px;
+  padding:18px;border:1.5px solid var(--border2);
+  box-shadow:var(--shadow-sm);
+}
+.stat-header{display:flex;align-items:flex-start;justify-content:space-between;}
+.stat-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;
+}
+.ic-blue  {background:rgba(0,174,239,.12);color:var(--blue);}
+.ic-orange{background:rgba(247,148,29,.12);color:var(--orange);}
+.ic-pink  {background:rgba(233,30,140,.12);color:var(--pink);}
+.ic-navy  {background:rgba(27,58,107,.1);  color:var(--navy);}
+.stat-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-top:12px;}
+.stat-val{font-size:26px;font-weight:900;color:var(--navy);margin-top:3px;letter-spacing:-.5px;}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.stat-trend{
+  font-size:11px;font-weight:700;padding:3px 8px;
+  border-radius:20px;
+}
+.trend-up  {background:#E0F8EE;color:#0A6640;}
+.trend-down{background:#FDE8E8;color:#9B1C1C;}
+
+/* ── FORM ────────────────────────────────────────────── */
+.card{
+  background:#fff;border-radius:16px;
+  padding:22px;border:1.5px solid var(--border2);
+  box-shadow:var(--shadow-sm);
+}
+.card-title{
+  font-size:14px;font-weight:800;color:var(--navy);
+  margin-bottom:18px;display:flex;align-items:center;gap:8px;
+}
+.card-title-bar{width:3px;height:16px;border-radius:2px;background:var(--blue);}
+.form-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block;}
+.form-inp{
+  width:100%;padding:10px 13px;border-radius:10px;
+  border:1.5px solid var(--border);
+  font-family:'Inter',sans-serif;font-size:13px;color:var(--text);
+  outline:none;transition:all .15s;background:var(--bg);
+}
+.form-inp:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,174,239,.1);}
+.pay-opts{display:flex;gap:8px;}
+.pay-opt{
+  flex:1;padding:9px;border-radius:10px;
+  border:1.5px solid var(--border);
+  text-align:center;font-size:12px;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:all .15s;background:var(--bg);
+}
+.pay-opt.sel{
+  border-color:var(--blue);background:rgba(0,174,239,.07);
+  color:var(--blue);
+}
+.form-group{margin-bottom:14px;}
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 20px;border-radius:10px;border:none;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all .2s;letter-spacing:.1px;
+}
+.btn-blue{
+  background:var(--blue);color:#fff;
+  box-shadow:0 3px 12px rgba(0,174,239,.35);
+}
+.btn-blue:hover{background:#0097D4;box-shadow:0 5px 18px rgba(0,174,239,.45);transform:translateY(-1px);}
+.btn-orange{
+  background:var(--orange);color:#fff;
+  box-shadow:0 3px 10px rgba(247,148,29,.35);
+}
+.btn-orange:hover{background:#E07F0A;box-shadow:0 5px 16px rgba(247,148,29,.45);transform:translateY(-1px);}
+.btn-pink{
+  background:var(--pink);color:#fff;
+  box-shadow:0 3px 10px rgba(233,30,140,.3);
+}
+.btn-pink:hover{transform:translateY(-1px);}
+.btn-navy{background:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(27,58,107,.25);}
+.btn-outline-blue{
+  background:transparent;color:var(--blue);
+  border:1.5px solid var(--blue);
+}
+.btn-outline-blue:hover{background:rgba(0,174,239,.07);}
+.btn-outline-navy{background:transparent;color:var(--navy);border:1.5px solid var(--border);}
+.btn-outline-navy:hover{background:var(--bg2);}
+.btn-ghost{background:var(--bg2);color:var(--muted);border:1.5px solid var(--border);}
+.btn-danger{background:var(--error);color:#fff;}
+.btn-sm{padding:6px 14px;font-size:12px;}
+.btn-lg{padding:13px 30px;font-size:15px;}
+.btn-full{width:100%;}
+
+/* ── STATUS CHIPS ────────────────────────────────────── */
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 11px;border-radius:20px;font-size:12px;font-weight:700;
+}
+.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.ch-done    {background:#E0F8EE;color:#0A6640;}  .ch-done .chip-dot{background:#10B981;}
+.ch-pending {background:#FFF4E0;color:#92550A;}  .ch-pending .chip-dot{background:var(--orange);}
+.ch-hold    {background:#EDE9FE;color:#5B21B6;}  .ch-hold .chip-dot{background:#8B5CF6;}
+.ch-refund  {background:#FDE8E8;color:#9B1C1C;}  .ch-refund .chip-dot{background:var(--error);}
+.ch-cash    {background:rgba(0,174,239,.1);color:#005F8A;} .ch-cash .chip-dot{background:var(--blue);}
+.ch-visa    {background:rgba(27,58,107,.1);color:var(--navy);} .ch-visa .chip-dot{background:var(--navy);}
+.ch-pink    {background:rgba(233,30,140,.1);color:#9B0E5A;} .ch-pink .chip-dot{background:var(--pink);}
+
+/* ── LOGIN ───────────────────────────────────────────── */
+.login-wrap{
+  border-radius:16px;overflow:hidden;
+  box-shadow:var(--shadow-xl);
+  display:flex;height:370px;
+  border:1.5px solid var(--border2);
+}
+.login-left{
+  width:44%;
+  background:linear-gradient(160deg,var(--blue) 0%,#0070AA 70%,#004F80 100%);
+  padding:36px 28px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;
+  position:relative;overflow:hidden;
+}
+.login-left::before{
+  content:'';position:absolute;bottom:-50px;left:-50px;
+  width:180px;height:180px;border-radius:50%;
+  background:rgba(255,255,255,.06);
+}
+.login-left::after{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(247,148,29,.15);
+}
+.login-logo{
+  width:68px;height:68px;border-radius:18px;
+  background:rgba(255,255,255,.15);
+  backdrop-filter:blur(10px);
+  border:2px solid rgba(255,255,255,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;font-weight:900;color:#fff;
+  box-shadow:0 8px 24px rgba(0,0,0,.2);
+  position:relative;z-index:1;
+}
+.login-brand{color:#fff;font-size:22px;font-weight:900;position:relative;z-index:1;}
+.login-brand em{color:#FFF176;font-style:normal;}
+.login-sub{color:rgba(255,255,255,.65);font-size:12px;text-align:center;line-height:1.5;position:relative;z-index:1;}
+.login-accent-dots{display:flex;gap:8px;position:relative;z-index:1;}
+.login-accent-dots span{width:8px;height:8px;border-radius:50%;}
+.login-right{
+  flex:1;background:#fff;padding:36px 32px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.login-title{font-size:22px;font-weight:900;color:var(--navy);}
+.login-title em{color:var(--blue);font-style:normal;}
+.login-title-sub{font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:24px;}
+.login-footer{
+  margin-top:16px;padding-top:14px;
+  border-top:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.login-footer-dot{width:7px;height:7px;border-radius:50%;}
+
+/* ── KEYPAD ──────────────────────────────────────────── */
+.keypad{
+  background:#fff;border-radius:16px;
+  padding:20px;box-shadow:var(--shadow);
+  border:1.5px solid var(--border2);
+}
+.kp-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;}
+.kp-display{
+  background:var(--bg);border:1.5px solid var(--border);
+  border-radius:12px;padding:12px 16px;
+  font-size:28px;font-weight:900;color:var(--navy);
+  text-align:right;margin-bottom:10px;
+  letter-spacing:.5px;
+}
+.kp-display span{color:var(--muted);font-size:13px;font-weight:500;margin-right:4px;}
+.kp-pay{display:flex;gap:8px;margin-bottom:12px;}
+.kp-pay-opt{
+  flex:1;padding:7px;border-radius:9px;
+  border:1.5px solid var(--border);
+  font-size:12px;font-weight:600;text-align:center;
+  color:var(--muted);cursor:pointer;
+}
+.kp-pay-opt.sel{
+  border-color:var(--blue);background:rgba(0,174,239,.07);
+  color:var(--blue);
+}
+.kp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.key{
+  height:50px;border-radius:10px;border:none;
+  font-family:'Inter',sans-serif;font-size:18px;font-weight:700;
+  cursor:pointer;transition:all .12s;display:flex;
+  align-items:center;justify-content:center;
+}
+.k-num{
+  background:var(--bg2);color:var(--navy);
+  border:1.5px solid var(--border);
+}
+.k-num:hover{background:rgba(0,174,239,.1);border-color:var(--blue);color:var(--blue);transform:scale(1.05);}
+.k-clr{background:#FDE8E8;color:var(--error);border:1.5px solid #FECACA;}
+.k-clr:hover{background:#FCCFCF;}
+.k-ok{
+  background:var(--orange);color:#fff;border:none;
+  box-shadow:0 3px 10px rgba(247,148,29,.35);
+}
+.k-ok:hover{background:#E07F0A;transform:scale(1.05);}
+
+/* ── TABLE ───────────────────────────────────────────── */
+.tbl-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm);border:1.5px solid var(--border2);}
+.tbl-head{background:var(--navy);}
+.tbl-head th{padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.65);}
+.tbl-head th:first-child{color:var(--blue);}
+.tbl-row td{padding:12px 16px;font-size:13px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+.tbl-row:last-child td{border-bottom:none;}
+.tbl-row:hover td{background:var(--bg2);}
+.tbl-num{font-family:monospace;font-size:12px;color:var(--muted);font-weight:600;}
+
+/* ── ORANGE ACCENT CARD ──────────────────────────────── */
+.accent-card{
+  border-radius:14px;padding:20px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:var(--shadow);
+}
+.ac-orange{background:linear-gradient(135deg,var(--orange),#E07F0A);}
+.ac-pink  {background:linear-gradient(135deg,var(--pink),#C0156F);}
+.ac-navy  {background:linear-gradient(135deg,var(--navy),#0D2245);}
+.ac-title{color:#fff;font-size:15px;font-weight:800;}
+.ac-sub  {color:rgba(255,255,255,.7);font-size:12px;margin-top:3px;}
+.ac-value{color:#fff;font-size:28px;font-weight:900;text-align:right;}
+.ac-value-lbl{color:rgba(255,255,255,.7);font-size:11px;text-align:right;margin-top:2px;}
+.ac-icon{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-header">
+  <h1><span>Gravity Code</span> — Theme Option 2</h1>
+  <p>Logo-exact colors · Blue-dominant · Light surfaces · Orange/Pink accents</p>
+  <div class="option-badge">OPTION 2</div>
+</div>
+
+<div class="wrapper">
+
+  <!-- PALETTE -->
+  <div class="section">
+    <div class="label">Color Palette — Extracted directly from logo</div>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#00AEEF"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Sky Blue</div>
+          <div class="swatch-hex">#00AEEF</div>
+          <div class="swatch-role">★ Primary</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1B3A6B"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Deep Navy</div>
+          <div class="swatch-hex">#1B3A6B</div>
+          <div class="swatch-role">Text / Dark</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#F7941D"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Orange</div>
+          <div class="swatch-hex">#F7941D</div>
+          <div class="swatch-role">CTA / Confirm</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#E91E8C"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Magenta</div>
+          <div class="swatch-hex">#E91E8C</div>
+          <div class="swatch-role">Highlight</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#F4FBFF"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Blue Tint</div>
+          <div class="swatch-hex">#F4FBFF</div>
+          <div class="swatch-role">Background</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <div class="section">
+    <div class="label">Navigation Bar — White with Blue accent</div>
+    <div class="navbar">
+      <div class="navbar-top"></div>
+      <div class="navbar-inner">
+        <div class="navbar-brand">
+          <div class="brand-icon">GC</div>
+          <div class="brand-text"><em>Gravity</em> Code</div>
+        </div>
+        <div class="nav-pills">
+          <div class="nav-pill active">Sessions</div>
+          <div class="nav-pill">Inventory</div>
+          <div class="nav-pill">History</div>
+          <div class="nav-pill">Bookings</div>
+        </div>
+        <div class="nav-right">
+          <div class="notif-btn">🔔<div class="notif-dot"></div></div>
+          <div class="avatar">A</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="section">
+    <div class="label">Home — Sessions View</div>
+    <div class="home-wrap">
+      <div class="sidebar">
+        <div class="sidebar-head">
+          <div class="sidebar-head-lbl">Selected Date</div>
+          <div class="sidebar-head-val">Mon, May 26</div>
+          <div class="sidebar-select">1HR Park ▾</div>
+        </div>
+        <div class="sidebar-nav-lbl" style="margin-bottom:8px;">Pages</div>
+        <div class="s-nav-item active"><span class="s-nav-icon">📅</span>Sessions</div>
+        <div class="s-nav-item"><span class="s-nav-icon">📦</span>Inventory</div>
+        <div class="s-nav-item"><span class="s-nav-icon">🕐</span>Shift History</div>
+        <div class="s-nav-item"><span class="s-nav-icon">🔍</span>Bookings</div>
+      </div>
+      <div class="home-right">
+        <div class="hero">
+          <div class="hero-text">
+            <h2>Monday — May 26, 2026</h2>
+            <p>12 sessions scheduled · 3 fully booked · 2 seats remaining</p>
+            <div class="hero-pills">
+              <div class="hero-pill">1HR Park</div>
+              <div class="hero-pill orange">3 Full</div>
+              <div class="hero-pill pink">2 Seats left</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <div class="hero-stat"><div class="hero-stat-num">12</div><div class="hero-stat-lbl">Sessions</div></div>
+            <div class="hero-stat"><div class="hero-stat-num">24</div><div class="hero-stat-lbl">Bookings</div></div>
+          </div>
+        </div>
+        <div class="s-card">
+          <div><div class="s-time">09:00 AM</div><div class="s-product">1HR Park · 60 min</div></div>
+          <div class="s-right">
+            <span class="badge b-avail">● Available</span>
+            <div class="seats"><div class="seats-num">8</div><div class="seats-lbl">seats left</div></div>
+            <div class="s-btns">
+              <button class="s-btn s-btn-add">＋</button>
+              <button class="s-btn s-btn-ghost">⊟</button>
+              <button class="s-btn s-btn-ghost">⋯</button>
+            </div>
+          </div>
+        </div>
+        <div class="s-card warn">
+          <div><div class="s-time">10:00 AM</div><div class="s-product">1HR Park · 60 min</div></div>
+          <div class="s-right">
+            <span class="badge b-fill">● Filling Up</span>
+            <div class="seats"><div class="seats-num">2</div><div class="seats-lbl">seats left</div></div>
+            <div class="s-btns">
+              <button class="s-btn s-btn-add">＋</button>
+              <button class="s-btn s-btn-ghost">⊟</button>
+              <button class="s-btn s-btn-ghost">⋯</button>
+            </div>
+          </div>
+        </div>
+        <div class="s-card full">
+          <div><div class="s-time">11:00 AM</div><div class="s-product">1HR Park · 60 min</div></div>
+          <div class="s-right">
+            <span class="badge b-full">● Full</span>
+            <div class="seats"><div class="seats-num">0</div><div class="seats-lbl">seats left</div></div>
+            <div class="s-btns">
+              <button class="s-btn s-btn-ghost">⊟</button>
+              <button class="s-btn s-btn-ghost">⋯</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOOKING + STATS -->
+  <div class="section">
+    <div class="label">Booking Form + Shift Stats</div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-bar"></div>
+          New Booking — 09:00 AM
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Customer Name</label>
+          <input class="form-inp" value="Ahmed Mohamed"/>
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Number of Players</label>
+          <input class="form-inp" type="number" value="3"/>
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Activity Type</label>
+          <input class="form-inp" value="1HR Park"/>
+        </div>
+        <div class="form-group">
+          <label class="form-lbl">Payment Method</label>
+          <div class="pay-opts">
+            <div class="pay-opt sel">💵 Cash</div>
+            <div class="pay-opt">💳 Visa</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button class="btn btn-orange btn-full">✓ Confirm Booking</button>
+          <button class="btn btn-ghost">✕</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="g2" style="gap:12px;">
+          <div class="stat">
+            <div class="stat-header">
+              <div class="stat-icon ic-blue">💵</div>
+              <span class="stat-trend trend-up">+EGP 160</span>
+            </div>
+            <div class="stat-lbl">Cash Total</div>
+            <div class="stat-val">2,400</div>
+            <div class="stat-sub">EGP · 14 transactions</div>
+          </div>
+          <div class="stat">
+            <div class="stat-header">
+              <div class="stat-icon ic-orange">💳</div>
+              <span class="stat-trend trend-up">+EGP 320</span>
+            </div>
+            <div class="stat-lbl">Visa Total</div>
+            <div class="stat-val">960</div>
+            <div class="stat-sub">EGP · 6 transactions</div>
+          </div>
+        </div>
+        <div class="g3" style="gap:12px;">
+          <div class="accent-card ac-orange">
+            <div><div class="ac-icon">🎯</div><div class="ac-title" style="margin-top:8px;">Bookings</div><div class="ac-sub">Today</div></div>
+            <div><div class="ac-value">24</div><div class="ac-value-lbl">sessions</div></div>
+          </div>
+          <div class="accent-card ac-pink">
+            <div><div class="ac-icon">⚡</div><div class="ac-title" style="margin-top:8px;">Revenue</div><div class="ac-sub">Total</div></div>
+            <div><div class="ac-value" style="font-size:20px;">3,360</div><div class="ac-value-lbl">EGP</div></div>
+          </div>
+          <div class="accent-card ac-navy">
+            <div><div class="ac-icon">👤</div><div class="ac-title" style="margin-top:8px;">Agent</div><div class="ac-sub">admin2</div></div>
+            <div><div class="ac-value" style="font-size:18px;">4h 32m</div><div class="ac-value-lbl">shift time</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN + KEYPAD -->
+  <div class="section">
+    <div class="label">Login Page + Quick Payment Keypad</div>
+    <div class="g2">
+      <div class="login-wrap">
+        <div class="login-left">
+          <div class="login-logo">GC</div>
+          <div class="login-brand"><em>Gravity</em> Code</div>
+          <div class="login-sub">Staff Booking Management<br/>System</div>
+          <div class="login-accent-dots">
+            <span style="background:rgba(255,255,255,.6)"></span>
+            <span style="background:var(--orange)"></span>
+            <span style="background:var(--pink)"></span>
+          </div>
+        </div>
+        <div class="login-right">
+          <div class="login-title">Sign <em>In</em></div>
+          <div class="login-title-sub">Enter your credentials to continue</div>
+          <div class="form-group">
+            <label class="form-lbl">Username</label>
+            <input class="form-inp" placeholder="Enter username…"/>
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Password</label>
+            <input class="form-inp" type="password" placeholder="••••••••"/>
+          </div>
+          <button class="btn btn-blue btn-full" style="margin-top:4px;">Sign In →</button>
+          <div class="login-footer">
+            <div class="login-footer-dot" style="background:var(--blue)"></div>
+            <div class="login-footer-dot" style="background:var(--orange)"></div>
+            <div class="login-footer-dot" style="background:var(--pink)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="keypad">
+        <div class="kp-title">Quick Payment</div>
+        <div class="kp-display"><span>EGP</span>160</div>
+        <div class="kp-pay">
+          <div class="kp-pay-opt sel">💵 Cash</div>
+          <div class="kp-pay-opt">💳 Visa</div>
+        </div>
+        <div class="kp-grid">
+          <button class="key k-num">1</button>
+          <button class="key k-num">2</button>
+          <button class="key k-num">3</button>
+          <button class="key k-num">4</button>
+          <button class="key k-num">5</button>
+          <button class="key k-num">6</button>
+          <button class="key k-num">7</button>
+          <button class="key k-num">8</button>
+          <button class="key k-num">9</button>
+          <button class="key k-clr">⌫</button>
+          <button class="key k-num">0</button>
+          <button class="key k-ok">✓</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHIPS + BUTTONS -->
+  <div class="section">
+    <div class="label">Status Chips & Button Variants</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+      <span class="chip ch-done"><span class="chip-dot"></span>Done</span>
+      <span class="chip ch-pending"><span class="chip-dot"></span>Pending</span>
+      <span class="chip ch-hold"><span class="chip-dot"></span>Hold</span>
+      <span class="chip ch-refund"><span class="chip-dot"></span>Refunded</span>
+      <span class="chip ch-cash"><span class="chip-dot"></span>Cash</span>
+      <span class="chip ch-visa"><span class="chip-dot"></span>Visa</span>
+      <span class="chip ch-pink"><span class="chip-dot"></span>Special</span>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-blue">Blue Primary</button>
+      <button class="btn btn-orange">Confirm Payment</button>
+      <button class="btn btn-pink">Highlight</button>
+      <button class="btn btn-navy">Dark</button>
+      <button class="btn btn-outline-blue">Outlined</button>
+      <button class="btn btn-outline-navy">Ghost</button>
+      <button class="btn btn-danger btn-sm">Delete</button>
+      <button class="btn btn-orange btn-lg">Book Now →</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="section">
+    <div class="label">Bookings History Table</div>
+    <div class="tbl-wrap">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead class="tbl-head">
+          <tr>
+            <th>#</th><th>Customer</th><th>Session</th><th>Players</th><th>Amount</th><th>Payment</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="tbl-row">
+            <td class="tbl-num">Z6rI</td>
+            <td style="font-weight:600;">Ahmed Mohamed</td>
+            <td style="color:var(--muted);">09:00 AM · 1HR Park</td>
+            <td>3</td>
+            <td style="font-weight:800;color:var(--navy);">EGP 480</td>
+            <td><span class="chip ch-cash" style="font-size:11px;padding:3px 9px;"><span class="chip-dot"></span>Cash</span></td>
+            <td><span class="chip ch-done" style="font-size:11px;padding:3px 9px;"><span class="chip-dot"></span>Done</span></td>
+          </tr>
+          <tr class="tbl-row">
+            <td class="tbl-num">A4kM</td>
+            <td style="font-weight:600;">Sara Ali</td>
+            <td style="color:var(--muted);">10:00 AM · 1HR Park</td>
+            <td>2</td>
+            <td style="font-weight:800;color:var(--navy);">EGP 320</td>
+            <td><span class="chip ch-visa" style="font-size:11px;padding:3px 9px;"><span class="chip-dot"></span>Visa</span></td>
+            <td><span class="chip ch-pending" style="font-size:11px;padding:3px 9px;"><span class="chip-dot"></span>Pending</span></td>
+          </tr>
+          <tr class="tbl-row">
+            <td class="tbl-num">R9pQ</td>
+            <td style="font-weight:600;">Mohamed Hassan</td>
+            <td style="color:var(--muted);">11:00 AM · 1HR Park</td>
+            <td>4</td>
+            <td style="font-weight:800;color:var(--navy);">EGP 640</td>
+            <td><span class="chip ch-cash" style="font-size:11px;padding:3px 9px;"><span class="chip-dot"></span>Cash</span></td>
+            <td><span class="chip ch-refund" style="font-size:11px;padding:3px 9px;"><span class="chip-dot"></span>Refunded</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
