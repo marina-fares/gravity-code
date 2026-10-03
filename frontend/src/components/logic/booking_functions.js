@@ -53,7 +53,7 @@ export async function create_sales_receipt({ shiftDetails, orderDetails, payment
         request_type: 'post',
         url: '/salesreceipts',
         payload: {
-            is_generic_customer: true,
+            is_generic_customer: 'true',
             customer_name: 'Walk-in Customer',
             date: dateStr,
             line_items: selectedZohoItems,
@@ -95,8 +95,24 @@ export async function add_to_inventory({ shiftDetails, subShiftDetails, paymentD
     }
 
     // Money/inventory only — must not touch current_shift_id / start_time.
-    await set_shift_money(shiftDetails);
-    await set_sub_shift_money(subShiftDetails);
+    // Both the shift (End Shift totals) and sub-shift rows must be written. If
+    // either write fails we must surface it: a swallowed failure here is exactly
+    // what leaves a booking's money on one row but not the other (End Shift and
+    // Sub Shift totals drift apart), or missing from both.
+    const shiftResult = await set_shift_money(shiftDetails);
+    const subShiftResult = await set_sub_shift_money(subShiftDetails);
+
+    const shiftFailed = !shiftResult || shiftResult.error;
+    const subShiftFailed = !subShiftResult || subShiftResult.error;
+    if (shiftFailed || subShiftFailed) {
+        const parts = [];
+        if (shiftFailed) parts.push(`shift totals (${shiftResult?.error || 'no response'})`);
+        if (subShiftFailed) parts.push(`sub-shift totals (${subShiftResult?.error || 'no response'})`);
+        return {
+            error: `Payment recorded, but failed to update ${parts.join(' and ')}. ` +
+                   `Re-open the shift and verify the End Shift / Sub Shift totals before continuing.`,
+        };
+    }
     return true;
 }
 
@@ -117,8 +133,23 @@ export async function delete_from_inventory({ bookingDetails, shiftDetails, subS
     }
 
     // Refund of money/inventory only — must not touch current_shift_id / start_time.
-    await set_shift_money(shiftDetails);
-    await set_sub_shift_money(subShiftDetails);
+    // As with add_to_inventory, both rows must be written; surface a failure so
+    // the refund isn't silently applied to only one of the two totals.
+    const shiftResult = await set_shift_money(shiftDetails);
+    const subShiftResult = await set_sub_shift_money(subShiftDetails);
+
+    const shiftFailed = !shiftResult || shiftResult.error;
+    const subShiftFailed = !subShiftResult || subShiftResult.error;
+    if (shiftFailed || subShiftFailed) {
+        const parts = [];
+        if (shiftFailed) parts.push(`shift totals (${shiftResult?.error || 'no response'})`);
+        if (subShiftFailed) parts.push(`sub-shift totals (${subShiftResult?.error || 'no response'})`);
+        return {
+            error: `Refund applied, but failed to update ${parts.join(' and ')}. ` +
+                   `Verify the End Shift / Sub Shift totals before continuing.`,
+        };
+    }
+    return true;
 }
 
 // ─── Booking CRUD ─────────────────────────────────────────────────────────────

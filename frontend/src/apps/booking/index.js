@@ -156,6 +156,8 @@ export default function Booking() {
           if (!res || res.error || !res.id) {
             failure = res || { error: 'Empty response from the server.' };
             failedRound = round;
+            setAlert(true);
+            setAlertMessage(`Failed to save booking on round ${round + 1} of ${times}.`, failure?.error || failure?.detail);
             break;
           }
         }
@@ -306,7 +308,12 @@ export default function Booking() {
       }
     }
     const options = orderDetails.line_items;
-    await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note });
+    const inventoryResult = await add_to_inventory({ shiftDetails, subShiftDetails, paymentData, options, note });
+    if (inventoryResult?.error) {
+      setAlert(true);
+      setAlertMessage(inventoryResult.error);
+      return;
+    }
     console.log('customerName', customerName);
     console.log('isRealCustomerName', isRealCustomerName(customerName));
     let customerData = null;

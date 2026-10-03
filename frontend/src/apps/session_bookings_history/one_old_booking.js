@@ -129,7 +129,12 @@ export default function OneOldBooking() {
       booking_customer: bookingDetails.booking_customer?.id ?? bookingDetails.booking_customer,
     };
     await app_put(`booking/${bookingDetails.id}/`, {}, payload);
-    await delete_from_inventory({ bookingDetails, shiftDetails, subShiftDetails });
+    const inventoryResult = await delete_from_inventory({ bookingDetails, shiftDetails, subShiftDetails });
+    if (inventoryResult?.error) {
+      setAlert(true);
+      setAlertMessage(inventoryResult.error);
+      return;
+    }
     setRefundSuccess(true);
     setAlert(true);
     setAlertMessage('The Booking is deleted refundSuccessfully');
