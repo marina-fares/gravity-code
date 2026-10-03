@@ -5,10 +5,14 @@ import { Typography, Box, Paper, InputAdornment } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { get_old_bookings } from './functioncs_api';
 import List from '../session_bookings_history/List';
+import AlertFun from '../../components/ui/alert';
 
 export default function BookingsHistory() {
   const [inputText, setInputText] = React.useState('');
   let [bookingDetails, setBookingDetails] = useState();
+  let [alert, setAlert] = useState(false);
+  let [alertMessage, setAlertMessage] = useState('');
+  let [isLoading, setIsLoading] = useState(false);
   const latestRequestId = useRef(0);
 
   useEffect(() => {
@@ -20,7 +24,13 @@ export default function BookingsHistory() {
     const fetchData = async () => {
       const response = await get_old_bookings({ search_field: inputText });
       if (requestId === latestRequestId.current) {
-        setBookingDetails(response);
+        if (response && response.status === 200) {
+          setBookingDetails(response.data);
+        }
+        else {
+          setAlert(true);
+          setAlertMessage('Error fetching booking details. Please try again later.', response);
+        }
       }
     };
     fetchData();
@@ -33,6 +43,7 @@ export default function BookingsHistory() {
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto' }}>
       {/* ── Header ───────────────────────────────────── */}
+      <AlertFun set_open_alert={setAlert} open_alert={alert} message={alertMessage} setLoading={setIsLoading} />
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main', mb: 0.5 }}>
           Bookings History

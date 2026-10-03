@@ -199,7 +199,7 @@ export default function EndSubShift() {
                         Cash Total
                       </Typography>
                       <Typography variant="h4" sx={{ color: '#ffffff', fontWeight: 800, lineHeight: 1.1 }}>
-                        {(sub_shift_details.shift_money_cash - sub_shift_details.refund_cash).toLocaleString()}
+                        {((sub_shift_details.start_shift_cash || 0) + sub_shift_details.shift_money_cash - sub_shift_details.refund_cash).toLocaleString()}
                       </Typography>
                       <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)' }}>
                         EGP

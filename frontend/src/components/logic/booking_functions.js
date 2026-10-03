@@ -3,6 +3,16 @@ import { set_shift_money, set_sub_shift_money } from './shifts_functions_apis';
 import { app_post, app_delete, app_get, app_put } from './app';
 import { set_localstorage, get_localstorage } from './localstorage';
 
+// app_* now resolve to a uniform { status, data } | { status, error, detail }.
+// Several booking helpers below expose the payload (the booking row, a session
+// list, …) directly to their callers, so unwrap `.data` on success and pass the
+// error object through unchanged on failure.
+function unwrap(res) {
+    if (res && res.error) return res;        // { status, error, detail }
+    if (res && 'data' in res) return res.data; // { status, data } → payload
+    return res;
+}
+
 // ─── Square / Zoho order helpers ─────────────────────────────────────────────
 
 export async function get_total_price({ shiftDetails, promoCode, selectedSquareItems }) {
@@ -129,12 +139,12 @@ export async function create_booking({ sessionsDetails, bookingDetails, round })
         // the same object is reused across retries / promo rounds. Mutating it
         // with `delete` corrupted later rounds and any retry attempt.
         const { id, ...rest } = bookingDetails;
-        return app_post('booking/', rest);
+        return unwrap(await app_post('booking/', rest));
     }
     if (bookingDetails.id) {
-        return app_put(`booking/${bookingDetails.id}/`, {}, bookingDetails);
+        return unwrap(await app_put(`booking/${bookingDetails.id}/`, {}, bookingDetails));
     }
-    return app_post('booking/', bookingDetails);
+    return unwrap(await app_post('booking/', bookingDetails));
 }
 
 // A booking write is only a real success when the server returns a row with a
@@ -218,9 +228,9 @@ export async function create_hold_booking({ bookingDetails, session_id, numberOf
     };
     if (bookingDetails?.id) {
         data.id = bookingDetails.id;
-        return app_put(`booking/${bookingDetails.id}/`, {}, data);
+        return unwrap(await app_put(`booking/${bookingDetails.id}/`, {}, data));
     }
-    return app_post('booking/', data);
+    return unwrap(await app_post('booking/', data));
 }
 
 export async function delete_hold_booking({ bookingId }) {
@@ -311,10 +321,13 @@ export async function repost_booking_to_zoho({ booking, shiftDetails }) {
     }
 
     try {
-        const updated = await app_put(`booking/${booking.id}/`, {}, {
+        const updated = unwrap(await app_put(`booking/${booking.id}/`, {}, {
             zoho_sales_receipt_id: result.sales_receipt_details?.sales_receipt_id,
             zoho_sales_receipt_num: result.sales_receipt_details?.receipt_number,
-        });
+        }));
+        if (updated && updated.error) {
+            return { error: `Receipt created in Zoho but saving it on the booking failed: ${updated.error}` };
+        }
         return { booking: updated };
     } catch (err) {
         return { error: `Receipt created in Zoho but saving it on the booking failed: ${err.message}` };
@@ -362,7 +375,7 @@ export async function get_session_details(session_id) {
 }
 
 export async function get_available_sessions(payload) {
-    return app_post('sessions/', { payload });
+    return unwrap(await app_post('sessions/', { payload }));
 }
 
 export async function get_old_bookings_for_spesific_session(session_id) {
@@ -374,5 +387,5 @@ export async function get_old_bookings_for_spesific_session(session_id) {
 // Kept here in case they are used in future, but not exported to avoid dead imports.
 
 export async function create_customer({ customerName }) {
-    return app_post('customers/', { identifier: customerName });
+    return unwrap(await app_post('customers/', { identifier: customerName }));
 }
